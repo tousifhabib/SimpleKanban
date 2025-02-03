@@ -116,9 +116,12 @@ class Store {
             if (!newCol.cards.some(c => c.id === cardId)) {
                 newCol.cards.push(cardData);
             }
-            newCol.cards = newCardOrder
+
+            const orderedCards = newCardOrder
                 .map(id => newCol.cards.find(c => c.id === id))
                 .filter(Boolean);
+            const remainingCards = newCol.cards.filter(card => !newCardOrder.includes(card.id));
+            newCol.cards = [...orderedCards, ...remainingCards];
         }
         this.notify();
     }
