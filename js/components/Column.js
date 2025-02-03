@@ -86,7 +86,7 @@ export default class Column {
         addCardBtn.style.display = 'block';
     }
 
-    onDeleteColumnClick(e) {
+    onDeleteColumnClick() {
         if (confirm('Delete this column and all its cards?')) {
             store.removeColumn(this.columnData.id);
         }

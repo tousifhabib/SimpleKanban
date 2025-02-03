@@ -1,4 +1,4 @@
-import { saveToLocalStorage, loadFromLocalStorage } from './services/localStorageService.js';
+import {loadFromLocalStorage, saveToLocalStorage} from './services/localStorageService.js';
 
 const STORAGE_KEY = 'flexibleKanbanState';
 
@@ -82,10 +82,9 @@ class Store {
     }
 
     reorderColumns(columnOrder) {
-        const newColumns = columnOrder.map((id) =>
+        this.state.columns = columnOrder.map((id) =>
             this.state.columns.find((c) => c.id === id)
         );
-        this.state.columns = newColumns;
         this.notify();
     }
 
@@ -117,10 +116,9 @@ class Store {
             if (!newCol.cards.some(c => c.id === cardId)) {
                 newCol.cards.push(cardData);
             }
-            const newCards = newCardOrder
+            newCol.cards = newCardOrder
                 .map(id => newCol.cards.find(c => c.id === id))
                 .filter(Boolean);
-            newCol.cards = newCards;
         }
         this.notify();
     }
@@ -133,7 +131,7 @@ class Store {
         return (
             prefix +
             '-' +
-            Math.random().toString(36).substr(2, 9)
+            Math.random().toString(36).slice(2, 11)
         );
     }
 }

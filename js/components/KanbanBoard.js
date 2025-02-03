@@ -125,7 +125,7 @@ export default class KanbanBoard {
             }
         });
 
-        this.kanbanContainer.addEventListener('drop', (e) => {
+        this.kanbanContainer.addEventListener('drop', () => {
             const draggedCol = document.querySelector('.column.dragging');
             if (draggedCol) {
                 draggedCol.classList.remove('dragging');
