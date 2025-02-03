@@ -12,9 +12,9 @@ export default class KanbanBoard {
         this.addColumnBtn = document.getElementById('addColumnBtn');
         this.cancelAddColumnBtn = document.getElementById('cancelAddColumn');
 
+        this.lastCardAfterElement = null;
         this.lastAfterElement = null;
 
-        // Subscribe to state changes.
         store.subscribe(() => {
             this.render();
         });
@@ -37,11 +37,39 @@ export default class KanbanBoard {
             if (!targetCards) return;
 
             const afterEl = getCardAfterElement(targetCards, e.clientY);
+            if (afterEl === this.lastCardAfterElement) return;
+            this.lastCardAfterElement = afterEl;
+
+            const cards = Array.from(targetCards.querySelectorAll('.card:not(.dragging)'));
+            const initialRects = new Map();
+            cards.forEach(card => {
+                initialRects.set(card, card.getBoundingClientRect());
+            });
+
             if (afterEl) {
                 targetCards.insertBefore(draggedCard, afterEl);
             } else {
                 targetCards.appendChild(draggedCard);
             }
+
+            const newCards = Array.from(targetCards.querySelectorAll('.card:not(.dragging)'));
+            newCards.forEach(card => {
+                const oldRect = initialRects.get(card);
+                const newRect = card.getBoundingClientRect();
+                const deltaX = oldRect.left - newRect.left;
+                const deltaY = oldRect.top - newRect.top;
+                if (deltaX !== 0 || deltaY !== 0) {
+                    card.style.transition = 'none';
+                    card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                }
+            });
+
+            requestAnimationFrame(() => {
+                newCards.forEach(card => {
+                    card.style.transition = 'transform 300ms ease';
+                    card.style.transform = '';
+                });
+            });
         });
 
         this.kanbanContainer.addEventListener('drop', (e) => {
