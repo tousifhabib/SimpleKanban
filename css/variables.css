@@ -8,4 +8,5 @@
     --hover-shadow-color: rgba(0, 0, 0, 0.15);
     --column-width: 280px;
     --spacing-unit: 8px;
+    --flip-transform: none;
 }

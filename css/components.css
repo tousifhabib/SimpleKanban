@@ -2,7 +2,6 @@
 .column {
     background: var(--card-color);
     width: var(--column-width);
-    min-width: var(--column-width);
     border-radius: var(--spacing-unit);
     box-shadow: 0 2px 8px var(--shadow-color);
     padding: calc(var(--spacing-unit) * 2);
@@ -11,6 +10,7 @@
     position: relative;
     cursor: grab;
     transition: transform 300ms ease;
+    transform: var(--flip-transform);
 }
 
 .column:hover {
@@ -20,8 +20,7 @@
 .column.dragging {
     opacity: 0.6;
     cursor: grabbing;
-    z-index: 1000; /* Ensure the dragging column stays on top */
-    /* Optionally, you can add position fixed to the dragging column */
+    z-index: 1000;
 }
 
 /* Column Header */
