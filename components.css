@@ -1,0 +1,219 @@
+/* Columns */
+.column {
+    background: var(--card-color);
+    width: var(--column-width);
+    border-radius: var(--spacing-unit);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    padding: calc(var(--spacing-unit) * 2);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    cursor: grab;
+    transition: transform 300ms ease;
+    transform: var(--flip-transform);
+}
+
+.column:hover {
+    box-shadow: 0 4px 12px var(--hover-shadow-color);
+}
+
+.column.dragging {
+    opacity: 0.6;
+    cursor: grabbing;
+    z-index: 1000;
+}
+
+/* Column Header */
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(9, 30, 66, 0.04);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    padding: calc(var(--spacing-unit) * 1);
+    cursor: text;
+}
+
+.column-header h2 {
+    font-size: 1rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.column-header button {
+    background: transparent;
+    border: none;
+    color: #5e6c84;
+    font-weight: bold;
+    margin-left: calc(var(--spacing-unit));
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.column-header button:hover {
+    background-color: rgba(9, 30, 66, 0.08);
+}
+
+/* Cards */
+.cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing-unit));
+}
+
+.card {
+    background: var(--card-color);
+    border-radius: calc(var(--spacing-unit) * 0.75);
+    padding: calc(var(--spacing-unit) * 1.5);
+    box-shadow: 0 1px 3px var(--shadow-color);
+    cursor: move;
+    position: relative;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px var(--hover-shadow-color);
+}
+
+.card.dragging {
+    opacity: 0.5;
+}
+
+/* Card Actions */
+.card-actions {
+    position: absolute;
+    top: calc(var(--spacing-unit) * 0.5);
+    right: calc(var(--spacing-unit) * 0.5);
+    display: none;
+    gap: calc(var(--spacing-unit) * 0.5);
+}
+
+.card:hover .card-actions {
+    display: flex;
+}
+
+.card-action-btn {
+    background: rgba(9, 30, 66, 0.08);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-color);
+    padding: 6px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.card-action-btn:hover {
+    background: rgba(9, 30, 66, 0.13);
+    opacity: 1;
+}
+
+/* Buttons */
+.add-card-btn,
+.add-column-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: calc(var(--spacing-unit)) calc(var(--spacing-unit) * 2);
+    border: none;
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.add-card-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--primary-color);
+    justify-content: flex-start;
+}
+
+.add-card-btn:hover {
+    background: rgba(9, 30, 66, 0.08);
+}
+
+.add-column-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.add-column-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateY(1px);
+}
+
+.add-card-form {
+    display: none;
+    margin-top: calc(var(--spacing-unit) * 1);
+}
+
+.add-card-form.active {
+    display: block;
+}
+
+.card-input,
+.column-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(var(--spacing-unit));
+    border: 2px solid rgba(9, 30, 66, 0.13);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    margin-bottom: var(--spacing-unit);
+    font-size: 1rem;
+    resize: none;
+}
+
+.card-input:focus,
+.column-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
+}
+
+.button-group {
+    display: flex;
+    gap: calc(var(--spacing-unit));
+}
+
+.btn {
+    padding: calc(var(--spacing-unit)) calc(var(--spacing-unit) * 2);
+    border: none;
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: var(--hover-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #5e6c84;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(9, 30, 66, 0.08);
+}

@@ -62,7 +62,7 @@
     <div class="card" draggable="true">
         <span class="card-text"></span>
         <div class="card-actions">
-            <button class="card-action-btn" data-action="edit">✎</button>
+            <button class="card-action-btn" data-action="edit">✏️</button>
             <button class="card-action-btn" data-action="delete">🗑</button>
         </div>
     </div>
@@ -70,11 +70,10 @@
 
 <script>
     const STORAGE_KEY = 'flexibleKanbanState';
-
     let state = loadState();
+
     const kanbanContainer = document.getElementById('kanbanContainer');
     const addColumnBtn = document.getElementById('addColumnBtn');
-
     const columnTemplate = document.getElementById('columnTemplate');
     const cardTemplate = document.getElementById('cardTemplate');
 
@@ -98,9 +97,7 @@
     }
 
     function generateId(type) {
-        const id = crypto.randomUUID
-            ? crypto.randomUUID()
-            : Math.random().toString(36).substr(2, 9);
+        const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9);
         return type === 'column' ? `column-${id}` : `card-${id}`;
     }
 
@@ -182,11 +179,7 @@
     }
 
     function addNewColumn(title) {
-        state.columns.push({
-            id: generateId('column'),
-            title: title || 'New Column',
-            cards: []
-        });
+        state.columns.push({ id: generateId('column'), title: title || 'New Column', cards: [] });
         saveState();
         renderBoard();
     }
@@ -237,9 +230,7 @@
         const targetCards = e.target.closest('.cards');
         if (!targetCards) return;
         const afterEl = getCardAfterElement(targetCards, e.clientY);
-        afterEl
-            ? targetCards.insertBefore(draggedCard, afterEl)
-            : targetCards.appendChild(draggedCard);
+        afterEl ? targetCards.insertBefore(draggedCard, afterEl) : targetCards.appendChild(draggedCard);
     });
 
     kanbanContainer.addEventListener('drop', e => {
@@ -247,12 +238,10 @@
         const draggedData = e.dataTransfer.getData('text/plain');
         const isCard = !draggedData.startsWith('column-');
         if (!isCard) return;
-
         const draggingCard = document.querySelector('.card.dragging');
         if (!draggingCard) return;
         const newCol = e.target.closest('.column');
         if (!newCol) return;
-
         let cardData;
         state.columns.forEach(col => {
             const idx = col.cards.findIndex(c => c.id === draggingCard.dataset.cardId);
@@ -263,9 +252,7 @@
             const targetCol = state.columns.find(c => c.id === newColId);
             const targetCardsContainer = newCol.querySelector('.cards');
             const afterEl = getCardAfterElement(targetCardsContainer, e.clientY);
-            const insertIndex = afterEl
-                ? targetCol.cards.findIndex(c => c.id === afterEl.dataset.cardId)
-                : targetCol.cards.length;
+            const insertIndex = afterEl ? targetCol.cards.findIndex(c => c.id === afterEl.dataset.cardId) : targetCol.cards.length;
             targetCol.cards.splice(insertIndex, 0, cardData);
             saveState();
             renderBoard();
@@ -278,9 +265,7 @@
             (closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                return offset < 0 && offset > closest.offset
-                    ? { offset, element: child }
-                    : closest;
+                return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
             },
             { offset: Number.NEGATIVE_INFINITY }
         ).element;
@@ -302,24 +287,59 @@
             draggedColumn = null;
             reorderColumns();
             saveState();
+            document.querySelectorAll('.column').forEach(col => {
+                col.style.transition = '';
+                col.style.transform = '';
+            });
         }
     }
 
     function handleColumnDrop(e) {
         e.preventDefault();
-        // This function can be empty because we handle the reordering in the dragover event
     }
 
     kanbanContainer.addEventListener('dragenter', e => e.preventDefault());
+
+    let lastAfterElement = null;
 
     kanbanContainer.addEventListener('dragover', e => {
         e.preventDefault();
         const draggedCol = document.querySelector('.column.dragging');
         if (!draggedCol) return;
+
         const afterEl = getColumnAfterElement(kanbanContainer, e.clientX);
-        afterEl
-            ? kanbanContainer.insertBefore(draggedCol, afterEl)
-            : kanbanContainer.appendChild(draggedCol);
+
+        if (afterEl !== lastAfterElement) {
+            lastAfterElement = afterEl;
+
+            const columns = Array.from(kanbanContainer.querySelectorAll('.column:not(.dragging)'));
+            const initialRects = new Map();
+            columns.forEach(col => initialRects.set(col, col.getBoundingClientRect()));
+
+            if (afterEl && afterEl !== draggedCol) {
+                kanbanContainer.insertBefore(draggedCol, afterEl);
+            } else if (!afterEl) {
+                kanbanContainer.appendChild(draggedCol);
+            }
+
+            // For each non-dragging column, calculate and apply the delta via a CSS variable.
+            columns.forEach(col => {
+                const oldRect = initialRects.get(col);
+                const newRect = col.getBoundingClientRect();
+                const deltaX = oldRect.left - newRect.left;
+                const deltaY = oldRect.top - newRect.top;
+
+                col.style.transition = 'none';
+                col.style.setProperty('--flip-transform', `translate(${deltaX}px, ${deltaY}px)`);
+            });
+
+            requestAnimationFrame(() => {
+                columns.forEach(col => {
+                    col.style.transition = 'transform 300ms ease';
+                    col.style.removeProperty('--flip-transform');
+                });
+            });
+        }
     });
 
     function getColumnAfterElement(container, x) {
@@ -328,9 +348,7 @@
             (closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = x - box.left - box.width / 2;
-                return offset < 0 && offset > closest.offset
-                    ? { offset, element: child }
-                    : closest;
+                return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
             },
             { offset: Number.NEGATIVE_INFINITY }
         ).element;
@@ -348,7 +366,6 @@
         const cardEl = btn.closest('.card');
         const colEl = btn.closest('.column');
         if (!cardEl || !colEl) return;
-
         const cardId = cardEl.dataset.cardId;
         const colId = colEl.dataset.columnId;
         if (action === 'edit') {
