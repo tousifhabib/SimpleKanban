@@ -5,7 +5,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     entry: {
         main: [
-            './js/kanban.js',
+            './js/index.js',
             './css/variables.css',
             './css/base.css',
             './css/layout.css',
