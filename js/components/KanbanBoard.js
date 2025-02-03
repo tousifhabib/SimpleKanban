@@ -1,6 +1,7 @@
 import { store } from '../store.js';
 import Column from './Column.js';
 import { getCardAfterElement, getColumnAfterElement } from '../utils/dragUtils.js';
+import {performFlipAnimation} from "../utils/flipAnimation";
 
 export default class KanbanBoard {
     constructor() {
@@ -40,36 +41,17 @@ export default class KanbanBoard {
             if (afterEl === this.lastCardAfterElement) return;
             this.lastCardAfterElement = afterEl;
 
-            const cards = Array.from(targetCards.querySelectorAll('.card:not(.dragging)'));
-            const initialRects = new Map();
-            cards.forEach(card => {
-                initialRects.set(card, card.getBoundingClientRect());
-            });
-
-            if (afterEl) {
-                targetCards.insertBefore(draggedCard, afterEl);
-            } else {
-                targetCards.appendChild(draggedCard);
-            }
-
-            const newCards = Array.from(targetCards.querySelectorAll('.card:not(.dragging)'));
-            newCards.forEach(card => {
-                const oldRect = initialRects.get(card);
-                const newRect = card.getBoundingClientRect();
-                const deltaX = oldRect.left - newRect.left;
-                const deltaY = oldRect.top - newRect.top;
-                if (deltaX !== 0 || deltaY !== 0) {
-                    card.style.transition = 'none';
-                    card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            performFlipAnimation(
+                targetCards,
+                draggedCard,
+                () => {
+                    if (afterEl) {
+                        targetCards.insertBefore(draggedCard, afterEl);
+                    } else {
+                        targetCards.appendChild(draggedCard);
+                    }
                 }
-            });
-
-            requestAnimationFrame(() => {
-                newCards.forEach(card => {
-                    card.style.transition = 'transform 300ms ease';
-                    card.style.transform = '';
-                });
-            });
+            );
         });
 
         this.kanbanContainer.addEventListener('drop', (e) => {
@@ -120,37 +102,20 @@ export default class KanbanBoard {
             if (!draggedCol) return;
 
             const afterEl = getColumnAfterElement(this.kanbanContainer, e.clientX);
-            if (afterEl !== this.lastAfterElement) {
-                this.lastAfterElement = afterEl;
+            if (afterEl === this.lastAfterElement) return;
+            this.lastAfterElement = afterEl;
 
-                const columns = Array.from(
-                    this.kanbanContainer.querySelectorAll('.column:not(.dragging)')
-                );
-                const initialRects = new Map();
-                columns.forEach((col) => initialRects.set(col, col.getBoundingClientRect()));
-
-                if (afterEl && afterEl !== draggedCol) {
-                    this.kanbanContainer.insertBefore(draggedCol, afterEl);
-                } else if (!afterEl) {
-                    this.kanbanContainer.appendChild(draggedCol);
+            performFlipAnimation(
+                this.kanbanContainer,
+                draggedCol,
+                () => {
+                    if (afterEl && afterEl !== draggedCol) {
+                        this.kanbanContainer.insertBefore(draggedCol, afterEl);
+                    } else if (!afterEl) {
+                        this.kanbanContainer.appendChild(draggedCol);
+                    }
                 }
-
-                columns.forEach((col) => {
-                    const oldRect = initialRects.get(col);
-                    const newRect = col.getBoundingClientRect();
-                    const deltaX = oldRect.left - newRect.left;
-                    const deltaY = oldRect.top - newRect.top;
-                    col.style.transition = 'none';
-                    col.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                });
-
-                requestAnimationFrame(() => {
-                    columns.forEach((col) => {
-                        col.style.transition = 'transform 300ms ease';
-                        col.style.transform = '';
-                    });
-                });
-            }
+            );
         });
 
         this.kanbanContainer.addEventListener('drop', () => {
