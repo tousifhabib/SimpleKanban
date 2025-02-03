@@ -1,15 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Dynamic Kanban Board</title>
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/modal.css">
-    <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
 <header>
@@ -19,6 +13,7 @@
 
 <div class="kanban-container" id="kanbanContainer"></div>
 
+<!-- Modal for adding a new column -->
 <div class="modal" id="addColumnModal" aria-hidden="true">
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal-content" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -39,6 +34,7 @@
     </div>
 </div>
 
+<!-- Template for a Kanban column -->
 <template id="columnTemplate">
     <div class="column" draggable="true">
         <div class="column-header">
@@ -57,6 +53,7 @@
     </div>
 </template>
 
+<!-- Template for a card -->
 <template id="cardTemplate">
     <div class="card" draggable="true">
         <span class="card-text"></span>
@@ -67,6 +64,5 @@
     </div>
 </template>
 
-<script src="js/kanban.js"></script>
 </body>
 </html>
