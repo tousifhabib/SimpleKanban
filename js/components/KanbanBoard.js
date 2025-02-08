@@ -168,19 +168,28 @@ export default class KanbanBoard {
         let swapped = false;
         const draggedCard = document.querySelector('.card.dragging');
         const draggedCol = document.querySelector('.column.dragging');
+
         if (draggedCard) {
             const rect = draggedCard.getBoundingClientRect();
             const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
+
             document.querySelectorAll('.card:not(.dragging)').forEach(staticCard => {
                 const staticRect = this.getInnerRect(staticCard, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect) && !swapped) swapped = this.swapCards(draggedCard, staticCard);
+                if (this.checkCollision(ghostRect, staticRect) && !swapped) {
+                    console.log("DEBUG: Drag ghost inner box is touching card's inner box (cardId:", staticCard.dataset.cardId, ")");
+                    swapped = this.swapCards(draggedCard, staticCard);
+                }
             });
         } else if (draggedCol) {
             const rect = draggedCol.getBoundingClientRect();
             const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
+
             document.querySelectorAll('.column:not(.dragging)').forEach(staticCol => {
                 const staticRect = this.getInnerRect(staticCol, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect) && !swapped) swapped = this.swapColumns(draggedCol, staticCol);
+                if (this.checkCollision(ghostRect, staticRect) && !swapped) {
+                    console.log("DEBUG: Drag ghost inner box is touching column's inner box (columnId:", staticCol.dataset.columnId, ")");
+                    swapped = this.swapColumns(draggedCol, staticCol);
+                }
             });
         }
         return swapped;
