@@ -1,5 +1,6 @@
 import { store } from '../store.js';
 import Card from './Card.js';
+import { addDebugInnerBoxToElement } from '../utils/dragUtils';
 
 export default class Column {
     constructor(columnData) {
@@ -24,7 +25,7 @@ export default class Column {
         header.textContent = this.columnData.title;
 
         const cardsContainer = colEl.querySelector('.cards');
-        this.columnData.cards.forEach((cardData) => {
+        this.columnData.cards.forEach(cardData => {
             const card = new Card(cardData, this.columnData.id);
             cardsContainer.appendChild(card.render());
         });
@@ -43,15 +44,11 @@ export default class Column {
 
         colEl.addEventListener('dragstart', this.handleColumnDragStart);
         colEl.addEventListener('dragend', this.handleColumnDragEnd);
-        colEl.addEventListener('dragover', (e) => e.preventDefault());
-        colEl.addEventListener('drop', (e) => e.preventDefault());
+        colEl.addEventListener('dragover', e => e.preventDefault());
+        colEl.addEventListener('drop', e => e.preventDefault());
 
         return colEl;
     }
-
-    // -----------
-    // Column Event Handlers
-    // -----------
 
     onAddCardClick(e) {
         const colEl = e.currentTarget.closest('.column');
@@ -98,14 +95,12 @@ export default class Column {
         store.updateColumnTitle(this.columnData.id, newTitle);
     }
 
-    // -----------
-    // Column Drag Handlers
-    // -----------
-
+    // Here we add the debug inner box for columns.
     handleColumnDragStart(e) {
         const colEl = e.target.closest('.column');
         if (!colEl) return;
         colEl.classList.add('dragging');
+        addDebugInnerBoxToElement(colEl, 0.8);
         e.dataTransfer.setData('text/column', colEl.dataset.columnId);
         e.dataTransfer.effectAllowed = 'move';
     }
@@ -116,10 +111,6 @@ export default class Column {
             colEl.classList.remove('dragging');
         }
     }
-
-    // -----------
-    // Render
-    // -----------
 
     render() {
         if (!this.columnEl) {
