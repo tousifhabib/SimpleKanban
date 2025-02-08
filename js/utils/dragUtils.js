@@ -1,40 +1,47 @@
+/**
+ * Returns the reference to insert before
+ * (for a vertical list) based on the Y position.
+ */
 export function getCardAfterElement(container, y) {
     const cards = Array.from(container.querySelectorAll('.card:not(.dragging)'));
-    return cards.reduce(
-        (closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset, element: child };
-            } else {
-                return closest;
-            }
-        },
-        { offset: Number.NEGATIVE_INFINITY }
-    ).element;
+    return cards.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+/**
+ * Returns the reference to insert before
+ * (for a horizontal list) based on the X position.
+ */
 export function getColumnAfterElement(container, x) {
     const columns = Array.from(container.querySelectorAll('.column:not(.dragging)'));
-    return columns.reduce(
-        (closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = x - box.left - box.width / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset, element: child };
-            } else {
-                return closest;
-            }
-        },
-        { offset: Number.NEGATIVE_INFINITY }
-    ).element;
+    return columns.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = x - box.left - box.width / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+/**
+ * Adds a red dashed overlay box to visualize the “inner box” used for collisions.
+ * We maintain the original element’s positioning for correct drawing.
+ */
 export function addDebugInnerBoxToElement(element, ratio = 0.8) {
     const w = element.offsetWidth * ratio;
     const h = element.offsetHeight * ratio;
     const left = (element.offsetWidth - w) / 2;
     const top = (element.offsetHeight - h) / 2;
+
     let overlay = element.querySelector('.debug-inner-box');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -42,6 +49,8 @@ export function addDebugInnerBoxToElement(element, ratio = 0.8) {
         overlay.style.position = 'absolute';
         overlay.style.border = '2px dashed red';
         overlay.style.pointerEvents = 'none';
+
+        // If the element is not positioned, set it to relative
         if (window.getComputedStyle(element).position === 'static') {
             element.style.position = 'relative';
         }
