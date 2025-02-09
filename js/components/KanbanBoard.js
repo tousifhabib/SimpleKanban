@@ -12,7 +12,7 @@ export default class KanbanBoard {
         this.columnTitleInput = document.getElementById('columnTitleInput');
         this.addColumnBtn = document.getElementById('addColumnBtn');
         this.cancelAddColumnBtn = document.getElementById('cancelAddColumn');
-        this.DEBUG_RATIO = 0.8;
+        this.DEBUG_RATIO = 0.6;
         this.dragData = {offsetX: 0, offsetY: 0, origWidth: 0, origHeight: 0};
         this.lastCardAfterElement = null;
         this.lastAfterElement = null;
@@ -195,7 +195,7 @@ export default class KanbanBoard {
         return swapped;
     }
 
-    getInnerRect(el, ratio = 0.8) {
+    getInnerRect(el, ratio = 0.6) {
         const r = el.getBoundingClientRect();
         const insetX = (r.width * (1 - ratio)) / 2, insetY = (r.height * (1 - ratio)) / 2;
         return {left: r.left + insetX, top: r.top + insetY, right: r.right - insetX, bottom: r.bottom - insetY};
