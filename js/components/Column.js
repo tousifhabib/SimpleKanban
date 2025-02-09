@@ -100,7 +100,7 @@ export default class Column {
         const colEl = e.target.closest('.column');
         if (!colEl) return;
         colEl.classList.add('dragging');
-        addDebugInnerBoxToElement(colEl, 0.6);
+        addDebugInnerBoxToElement(colEl, 0.7);
         e.dataTransfer.setData('text/column', colEl.dataset.columnId);
         e.dataTransfer.effectAllowed = 'move';
     }

@@ -1,7 +1,7 @@
-import {store} from '../store.js';
+import { store } from '../store.js';
 import Column from './Column.js';
-import {addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement} from '../utils/dragUtils.js';
-import {performFlipAnimation} from "../utils/flipAnimation";
+import { addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement } from '../utils/dragUtils.js';
+import { performFlipAnimation } from "../utils/flipAnimation";
 
 export default class KanbanBoard {
     constructor() {
@@ -12,8 +12,10 @@ export default class KanbanBoard {
         this.columnTitleInput = document.getElementById('columnTitleInput');
         this.addColumnBtn = document.getElementById('addColumnBtn');
         this.cancelAddColumnBtn = document.getElementById('cancelAddColumn');
-        this.DEBUG_RATIO = 0.6;
-        this.dragData = {offsetX: 0, offsetY: 0, origWidth: 0, origHeight: 0};
+        this.DEBUG_RATIO = 0.7;
+        this.dragData = { offsetX: 0, offsetY: 0, origWidth: 0, origHeight: 0, lastX: 0, dragDirection: null };
+        this.lastSwappedColumn = null;
+        this.lastSwappedCard = null;
         this.lastCardAfterElement = null;
         this.lastAfterElement = null;
         store.subscribe(() => this.render());
@@ -25,34 +27,25 @@ export default class KanbanBoard {
         this.kanbanContainer.addEventListener('dragstart', e => {
             const card = e.target.closest('.card');
             const col = e.target.closest('.column');
-            if (card) {
-                this.handleDragStart(e, card);
-                return;
-            }
-            if (col) this.handleDragStart(e, col);
+            if (card) return this.handleDragStart(e, card);
+            if (col) return this.handleDragStart(e, col);
         }, true);
         this.kanbanContainer.addEventListener('dragover', e => {
             e.preventDefault();
-            const {clientX, clientY} = e;
-            const didSwap = this.checkGhostCollision(clientX, clientY);
-            if (!didSwap) {
+            const { clientX, clientY } = e;
+            if (!this.checkGhostCollision(clientX, clientY)) {
                 const draggedCard = document.querySelector('.card.dragging');
-                if (draggedCard) {
-                    this.handleCardDragOver(e, draggedCard);
-                    return;
-                }
+                if (draggedCard) return this.handleCardDragOver(e, draggedCard);
                 const draggedCol = document.querySelector('.column.dragging');
-                if (draggedCol) this.handleColumnDragOver(e, draggedCol);
+                if (draggedCol) return this.handleColumnDragOver(e, draggedCol);
             }
         });
         this.kanbanContainer.addEventListener('drop', e => {
             e.preventDefault();
             const draggedCol = document.querySelector('.column.dragging');
-            if (draggedCol) this.finalizeColumnDrop(draggedCol);
-            else {
-                const draggedCard = document.querySelector('.card.dragging');
-                if (draggedCard) this.finalizeCardDrop(e, draggedCard);
-            }
+            if (draggedCol) return this.finalizeColumnDrop(draggedCol);
+            const draggedCard = document.querySelector('.card.dragging');
+            if (draggedCard) return this.finalizeCardDrop(e, draggedCard);
         });
         this.kanbanContainer.addEventListener('dragenter', e => e.preventDefault());
         document.addEventListener('click', e => {
@@ -62,13 +55,14 @@ export default class KanbanBoard {
             const cardEl = btn.closest('.card');
             const colEl = btn.closest('.column');
             if (!cardEl || !colEl) return;
-            const cardId = cardEl.dataset.cardId, colId = colEl.dataset.columnId;
+            const { cardId } = cardEl.dataset;
+            const { columnId: colId } = colEl.dataset;
             if (action === 'edit') {
                 const currentText = cardEl.querySelector('.card-text').textContent.trim();
                 const newText = prompt('Edit card text:', currentText);
                 if (newText && newText.trim()) store.updateCard(colId, cardId, newText.trim());
-            } else if (action === 'delete') {
-                if (confirm('Delete this card?')) store.removeCard(colId, cardId);
+            } else if (action === 'delete' && confirm('Delete this card?')) {
+                store.removeCard(colId, cardId);
             }
         });
         this.addColumnBtn.addEventListener('click', () => this.openAddColumnModal());
@@ -87,16 +81,19 @@ export default class KanbanBoard {
 
     handleDragStart(e, element) {
         const rect = element.getBoundingClientRect();
-        this.dragData = {
+        Object.assign(this.dragData, {
             offsetX: e.clientX - rect.left,
             offsetY: e.clientY - rect.top,
             origWidth: rect.width,
-            origHeight: rect.height
-        };
+            origHeight: rect.height,
+            lastX: e.clientX,
+            dragDirection: null
+        });
+        this.lastSwappedColumn = null;
+        this.lastSwappedCard = null;
         if (e.dataTransfer) e.dataTransfer.setDragImage(element, this.dragData.offsetX, this.dragData.offsetY);
         const isCard = element.classList.contains('card');
-        const elements = document.querySelectorAll(isCard ? '.card' : '.column');
-        elements.forEach(el => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
+        document.querySelectorAll(isCard ? '.card' : '.column').forEach(el => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
     }
 
     handleCardDragOver(e, draggedCard) {
@@ -116,8 +113,7 @@ export default class KanbanBoard {
         if (afterEl !== this.lastAfterElement) {
             this.lastAfterElement = afterEl;
             performFlipAnimation(this.kanbanContainer, draggedCol, () => {
-                if (afterEl && afterEl !== draggedCol) this.kanbanContainer.insertBefore(draggedCol, afterEl);
-                else if (!afterEl) this.kanbanContainer.appendChild(draggedCol);
+                afterEl && afterEl !== draggedCol ? this.kanbanContainer.insertBefore(draggedCol, afterEl) : this.kanbanContainer.appendChild(draggedCol);
             });
         }
     }
@@ -125,8 +121,8 @@ export default class KanbanBoard {
     finalizeColumnDrop(draggedCol) {
         draggedCol.classList.remove('dragging');
         this.lastAfterElement = null;
-        const cols = Array.from(this.kanbanContainer.querySelectorAll('.column'));
-        store.reorderColumns(cols.map(c => c.dataset.columnId));
+        const cols = [...this.kanbanContainer.querySelectorAll('.column')].map(c => c.dataset.columnId);
+        store.reorderColumns(cols);
     }
 
     finalizeCardDrop(e, draggedCard) {
@@ -134,145 +130,117 @@ export default class KanbanBoard {
         this.lastCardAfterElement = null;
         const newCol = e.target.closest('.column');
         if (!newCol) return;
-        const cardId = draggedCard.dataset.cardId, targetColumnId = newCol.dataset.columnId;
-        const {columns} = store.getState();
-        let oldColumnId = null;
+        const { cardId } = draggedCard.dataset;
+        const { columnId: targetColumnId } = newCol.dataset;
+        const { columns } = store.getState();
+        let oldColumnId;
         for (const c of columns) {
-            if (c.cards.some(cd => cd.id === cardId)) {
-                oldColumnId = c.id;
-                break;
-            }
+            if (c.cards.some(cd => cd.id === cardId)) { oldColumnId = c.id; break; }
         }
         const container = newCol.querySelector('.cards');
-        const cardEls = Array.from(container.querySelectorAll('.card'));
-        const newOrder = cardEls.map(el => el.dataset.cardId);
-        oldColumnId === targetColumnId ? store.reorderCards(targetColumnId, newOrder) : store.moveCard(cardId, oldColumnId, targetColumnId, newOrder);
+        const newOrder = [...container.querySelectorAll('.card')].map(el => el.dataset.cardId);
+        oldColumnId === targetColumnId
+            ? store.reorderCards(targetColumnId, newOrder)
+            : store.moveCard(cardId, oldColumnId, targetColumnId, newOrder);
     }
 
     computeGhostInnerRect(rect, clientX, clientY, offsetX, offsetY, ratio) {
         const ghostLeft = clientX - offsetX, ghostTop = clientY - offsetY;
         const w = rect.width * ratio, h = rect.height * ratio;
-        return {
-            left: ghostLeft + (rect.width - w) / 2,
-            top: ghostTop + (rect.height - h) / 2,
-            right: ghostLeft + (rect.width + w) / 2,
-            bottom: ghostTop + (rect.height + h) / 2
-        };
+        return { left: ghostLeft + (rect.width - w) / 2, top: ghostTop + (rect.height - h) / 2, right: ghostLeft + (rect.width + w) / 2, bottom: ghostTop + (rect.height + h) / 2 };
     }
 
     checkCollision(ghostRect, staticRect) {
-        return Math.max(ghostRect.left, staticRect.left) <= Math.min(ghostRect.right, staticRect.right) && Math.max(ghostRect.top, staticRect.top) <= Math.min(ghostRect.bottom, staticRect.bottom);
+        return Math.max(ghostRect.left, staticRect.left) <= Math.min(ghostRect.right, staticRect.right) &&
+            Math.max(ghostRect.top, staticRect.top) <= Math.min(ghostRect.bottom, staticRect.bottom);
     }
 
     checkGhostCollision(clientX, clientY) {
         let swapped = false;
-        const draggedCard = document.querySelector('.card.dragging');
         const draggedCol = document.querySelector('.column.dragging');
-
-        if (draggedCard) {
-            const rect = draggedCard.getBoundingClientRect();
-            const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
-
-            document.querySelectorAll('.card:not(.dragging)').forEach(staticCard => {
-                const staticRect = this.getInnerRect(staticCard, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect) && !swapped) {
-                    console.log("DEBUG: Drag ghost inner box is touching card's inner box (cardId:", staticCard.dataset.cardId, ")");
-                    swapped = this.swapCards(draggedCard, staticCard);
-                }
-            });
-        } else if (draggedCol) {
+        const draggedCard = document.querySelector('.card.dragging');
+        if (draggedCol) {
+            this.updateDragDirection(clientX);
             const rect = draggedCol.getBoundingClientRect();
             const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
-
             document.querySelectorAll('.column:not(.dragging)').forEach(staticCol => {
-                const staticRect = this.getInnerRect(staticCol, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect) && !swapped) {
-                    console.log("DEBUG: Drag ghost inner box is touching column's inner box (columnId:", staticCol.dataset.columnId, ")");
+                if (this.shouldSwap(draggedCol, staticCol, ghostRect, 'column')) {
+                    console.log("DEBUG: Swapping columns based on direction:", this.dragData.dragDirection);
                     swapped = this.swapColumns(draggedCol, staticCol);
+                    this.lastSwappedColumn = staticCol;
+                }
+            });
+        } else if (draggedCard) {
+            this.updateDragDirection(clientX);
+            const rect = draggedCard.getBoundingClientRect();
+            const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
+            document.querySelectorAll('.card:not(.dragging)').forEach(staticCard => {
+                if (this.shouldSwap(draggedCard, staticCard, ghostRect, 'card')) {
+                    console.log("DEBUG: Swapping cards based on direction:", this.dragData.dragDirection);
+                    swapped = this.swapCards(draggedCard, staticCard);
+                    this.lastSwappedCard = staticCard;
                 }
             });
         }
         return swapped;
     }
 
-    getInnerRect(el, ratio = 0.6) {
+    updateDragDirection(clientX) {
+        if (clientX !== this.dragData.lastX) {
+            this.dragData.dragDirection = clientX > this.dragData.lastX ? 'right' : 'left';
+            this.dragData.lastX = clientX;
+        }
+    }
+
+    shouldSwap(dragged, target, ghostRect, type) {
+        if ((type === 'column' && target === this.lastSwappedColumn) || (type === 'card' && target === this.lastSwappedCard)) return false;
+        const staticRect = this.getInnerRect(target, this.DEBUG_RATIO);
+        if (!this.checkCollision(ghostRect, staticRect)) return false;
+        const draggedRect = dragged.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        if (this.dragData.dragDirection === 'right' && targetRect.left < draggedRect.left) return false;
+        if (this.dragData.dragDirection === 'left' && targetRect.left > draggedRect.left) return false;
+        const overlapX = Math.min(ghostRect.right, staticRect.right) - Math.max(ghostRect.left, staticRect.left);
+        const minWidth = Math.min(ghostRect.right - ghostRect.left, staticRect.right - staticRect.left);
+        return overlapX / minWidth > 0.025;
+    }
+
+    getInnerRect(el, ratio = 0.7) {
         const r = el.getBoundingClientRect();
-        const insetX = (r.width * (1 - ratio)) / 2, insetY = (r.height * (1 - ratio)) / 2;
-        return {left: r.left + insetX, top: r.top + insetY, right: r.right - insetX, bottom: r.bottom - insetY};
+        const insetX = (r.width * (1 - ratio)) / 2;
+        const insetY = (r.height * (1 - ratio)) / 2;
+        return { left: r.left + insetX, top: r.top + insetY, right: r.right - insetX, bottom: r.bottom - insetY };
     }
 
     swapCards(draggedCard, staticCard) {
         const draggedParent = draggedCard.closest('.cards'),
             staticParent = staticCard.closest('.cards');
         if (!draggedParent || !staticParent) return false;
-
-        // First, animate the swap in the dragged container
         performFlipAnimation(draggedParent, draggedCard, () => {
-            // Then animate the swap in the static card's container
             performFlipAnimation(staticParent, staticCard, () => {
-                // Swap the positions in the DOM
-                const draggedNext = draggedCard.nextSibling,
-                    staticNext = staticCard.nextSibling;
-
-                // If both cards are in the same container
+                const draggedNext = draggedCard.nextSibling, staticNext = staticCard.nextSibling;
                 if (draggedParent === staticParent) {
-                    // A simple swap can be done by inserting a temporary placeholder
                     const placeholder = document.createElement('div');
                     draggedParent.insertBefore(placeholder, draggedCard);
                     draggedParent.insertBefore(draggedCard, staticCard);
                     draggedParent.insertBefore(staticCard, placeholder);
                     draggedParent.removeChild(placeholder);
                 } else {
-                    // For different containers, do the respective insertions
-                    if (draggedNext) {
-                        draggedParent.insertBefore(staticCard, draggedNext);
-                    } else {
-                        draggedParent.appendChild(staticCard);
-                    }
-                    if (staticNext) {
-                        staticParent.insertBefore(draggedCard, staticNext);
-                    } else {
-                        staticParent.appendChild(draggedCard);
-                    }
+                    draggedNext ? draggedParent.insertBefore(staticCard, draggedNext) : draggedParent.appendChild(staticCard);
+                    staticNext ? staticParent.insertBefore(draggedCard, staticNext) : staticParent.appendChild(draggedCard);
                 }
-                // IMPORTANT: Do NOT update the store here.
-                // Wait until the drop event to update the underlying state.
             });
         });
         return true;
     }
 
-    updateCardPositionsAfterSwap(cardA, cardB) {
-        const cardAId = cardA.dataset.cardId, cardBId = cardB.dataset.cardId;
-        const colA = cardA.closest('.column'), colB = cardB.closest('.column');
-        if (!colA || !colB) return;
-        const colAId = colA.dataset.columnId, colBId = colB.dataset.columnId;
-        const colAContainer = colA.querySelector('.cards'), colBContainer = colB.querySelector('.cards');
-        const colAOrder = [...colAContainer.querySelectorAll('.card')].map(c => c.dataset.cardId);
-        const colBOrder = [...colBContainer.querySelectorAll('.card')].map(c => c.dataset.cardId);
-        colAId === colBId ? store.reorderCards(colAId, colAOrder) : (store.moveCard(cardAId, colAId, colBId, colBOrder), store.moveCard(cardBId, colBId, colAId, colAOrder));
-    }
-
     swapColumns(draggedCol, staticCol) {
         const parent = this.kanbanContainer;
-
         performFlipAnimation(parent, draggedCol, () => {
             performFlipAnimation(parent, staticCol, () => {
-                const draggedNext = draggedCol.nextSibling,
-                    staticNext = staticCol.nextSibling;
-
-                if (draggedNext) {
-                    parent.insertBefore(staticCol, draggedNext);
-                } else {
-                    parent.appendChild(staticCol);
-                }
-                if (staticNext) {
-                    parent.insertBefore(draggedCol, staticNext);
-                } else {
-                    parent.appendChild(draggedCol);
-                }
-                // Again, DO NOT update the store here.
-                // The store update (and full re-render) happens on drop.
+                const draggedNext = draggedCol.nextSibling, staticNext = staticCol.nextSibling;
+                draggedNext ? parent.insertBefore(staticCol, draggedNext) : parent.appendChild(staticCol);
+                staticNext ? parent.insertBefore(draggedCol, staticNext) : parent.appendChild(draggedCol);
             });
         });
         return true;
@@ -292,8 +260,7 @@ export default class KanbanBoard {
 
     render() {
         this.kanbanContainer.innerHTML = '';
-        const {columns} = store.getState();
-        columns.forEach(colData => {
+        store.getState().columns.forEach(colData => {
             const column = new Column(colData);
             this.kanbanContainer.appendChild(column.render());
         });

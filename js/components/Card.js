@@ -25,7 +25,7 @@ export default class Card {
     handleDragStart(e) {
         e.stopPropagation();
         const allCards = document.querySelectorAll('.card');
-        allCards.forEach(card => addDebugInnerBoxToElement(card, 0.6));
+        allCards.forEach(card => addDebugInnerBoxToElement(card, 0.7));
         e.target.classList.add('dragging');
         e.dataTransfer.setData('text/plain', e.target.dataset.cardId);
         e.dataTransfer.effectAllowed = 'move';
