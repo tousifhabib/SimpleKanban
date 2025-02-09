@@ -202,14 +202,41 @@ export default class KanbanBoard {
     }
 
     swapCards(draggedCard, staticCard) {
-        const draggedParent = draggedCard.closest('.cards'), staticParent = staticCard.closest('.cards');
+        const draggedParent = draggedCard.closest('.cards'),
+            staticParent = staticCard.closest('.cards');
         if (!draggedParent || !staticParent) return false;
+
+        // First, animate the swap in the dragged container
         performFlipAnimation(draggedParent, draggedCard, () => {
+            // Then animate the swap in the static card's container
             performFlipAnimation(staticParent, staticCard, () => {
-                const draggedNext = draggedCard.nextSibling, staticNext = staticCard.nextSibling;
-                draggedNext ? draggedParent.insertBefore(staticCard, draggedNext) : draggedParent.appendChild(staticCard);
-                staticNext ? staticParent.insertBefore(draggedCard, staticNext) : staticParent.appendChild(draggedCard);
-                this.updateCardPositionsAfterSwap(draggedCard, staticCard);
+                // Swap the positions in the DOM
+                const draggedNext = draggedCard.nextSibling,
+                    staticNext = staticCard.nextSibling;
+
+                // If both cards are in the same container
+                if (draggedParent === staticParent) {
+                    // A simple swap can be done by inserting a temporary placeholder
+                    const placeholder = document.createElement('div');
+                    draggedParent.insertBefore(placeholder, draggedCard);
+                    draggedParent.insertBefore(draggedCard, staticCard);
+                    draggedParent.insertBefore(staticCard, placeholder);
+                    draggedParent.removeChild(placeholder);
+                } else {
+                    // For different containers, do the respective insertions
+                    if (draggedNext) {
+                        draggedParent.insertBefore(staticCard, draggedNext);
+                    } else {
+                        draggedParent.appendChild(staticCard);
+                    }
+                    if (staticNext) {
+                        staticParent.insertBefore(draggedCard, staticNext);
+                    } else {
+                        staticParent.appendChild(draggedCard);
+                    }
+                }
+                // IMPORTANT: Do NOT update the store here.
+                // Wait until the drop event to update the underlying state.
             });
         });
         return true;
@@ -228,13 +255,24 @@ export default class KanbanBoard {
 
     swapColumns(draggedCol, staticCol) {
         const parent = this.kanbanContainer;
+
         performFlipAnimation(parent, draggedCol, () => {
             performFlipAnimation(parent, staticCol, () => {
-                const draggedNext = draggedCol.nextSibling, staticNext = staticCol.nextSibling;
-                draggedNext ? parent.insertBefore(staticCol, draggedNext) : parent.appendChild(staticCol);
-                staticNext ? parent.insertBefore(draggedCol, staticNext) : parent.appendChild(draggedCol);
-                const cols = Array.from(parent.querySelectorAll('.column'));
-                store.reorderColumns(cols.map(c => c.dataset.columnId));
+                const draggedNext = draggedCol.nextSibling,
+                    staticNext = staticCol.nextSibling;
+
+                if (draggedNext) {
+                    parent.insertBefore(staticCol, draggedNext);
+                } else {
+                    parent.appendChild(staticCol);
+                }
+                if (staticNext) {
+                    parent.insertBefore(draggedCol, staticNext);
+                } else {
+                    parent.appendChild(draggedCol);
+                }
+                // Again, DO NOT update the store here.
+                // The store update (and full re-render) happens on drop.
             });
         });
         return true;
