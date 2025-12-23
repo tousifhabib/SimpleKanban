@@ -1,0 +1,112 @@
+nana bhai, your board already has the core loop nailed (columns/cards CRUD + drag for both + localStorage + nice FLIP). The next “good” features are the ones that add real usefulness **without** turning it into Jira.
+
+### High-impact features (worth doing first)
+
+**1) Card details (real “task” object)**
+
+* Add fields: `description`, `dueDate`, `labels[]`, `priority`, `checklist[]`, `createdAt`, `updatedAt`.
+* UX: click card opens a modal (like your Add Column modal) instead of `prompt()`.
+* Where it fits: extend `store.js` card shape + new `CardDetailsModal` component + update `Card.js` to open it.
+
+**2) Search + quick filter**
+
+* Search box in header filters visible cards by text.
+* Filters: label, priority, due date (“overdue”, “today”, “this week”).
+* Where: a small “ui state” (search query, active filters) in `KanbanBoard` (doesn’t need to persist), and render only matching cards.
+
+**3) Undo / redo (and/or “toast undo”)**
+
+* Users will mis-drag or delete columns/cards. Undo makes the app feel “safe”.
+* Implementation: keep a history stack of previous `state` snapshots in `store.js` (cap at like 30).
+* Bonus: after delete, show toast “Deleted card — Undo”.
+
+**4) Column WIP limits**
+
+* Per-column “max cards” number; when exceeded, show a subtle warning + optionally block dropping into that column.
+* Where: `columnData.wipLimit`, enforce in `KanbanBoard.handleDrop()` when target column changes.
+
+**5) Keyboard shortcuts**
+
+* Examples:
+
+  * `N` = new card (in focused column)
+  * `/` = focus search
+  * `Esc` = close modals
+  * `Enter` to save edits in card modal
+* Makes it feel pro with minimal code.
+
+---
+
+### Next tier (still very useful)
+
+**6) Inline card add (faster flow)**
+
+* You already show the add-card form; add “Enter submits, Shift+Enter newline”.
+* Also add “Add card to top/bottom” preference per column.
+
+**7) Drag improvements**
+
+* Auto-scroll horizontally when dragging near left/right edges of `.kanban-container`.
+* Add a visible placeholder “drop indicator” so it’s clearer where the card will land.
+* (Optional) switch to Pointer Events + custom ghost later, but you can keep native drag for now.
+
+**8) Export / import board**
+
+* Export JSON to file; import JSON file to restore/share.
+* Where: header buttons; use `URL.createObjectURL(new Blob(...))` for download.
+
+**9) Multiple boards / workspaces**
+
+* Right now you persist one `STORAGE_KEY`. Support many boards:
+
+  * `STORAGE_KEY = flexibleKanbanState:<boardId>`
+  * board selector in header
+* This is a “big perceived upgrade” with small structural change.
+
+**10) Analytics-lite**
+
+* Count cards per column, “done this week”, average cycle time (if you add timestamps).
+* Display small badges in column header.
+
+---
+
+### “Polish” features that make it feel finished
+
+**11) Better editing than `contenteditable` for column title**
+
+* `contenteditable` is fine, but you’ll eventually hit weirdness (paste formatting, newlines).
+* Swap to “click to edit” -> input field -> save on blur/enter.
+
+**12) Accessibility**
+
+* Focus trapping inside modal, `aria` labels for action buttons, keyboard-accessible card actions.
+* Add “reorder with keyboard” fallback (optional).
+
+**13) Theme + settings**
+
+* Light/dark toggle, compact mode, show/hide animations/debug overlays.
+* Your CSS variables make this super easy.
+
+---
+
+### Engineering cleanups that unlock features
+
+These aren’t user features, but they make the above painless:
+
+* **Centralize ID generation**: you have `store.generateId()` and also `utils.generateId()`. Pick one.
+* **Separate “UI state” vs “data state”**: data in `store`, UI in `KanbanBoard` (filters, open modals, selected card).
+* **Debug overlays toggle**: right now `.cards` and `.column` have forced debug outlines in CSS. Wrap those in a `.debug` body class so you can turn it on/off.
+
+---
+
+### If you want the best “wow per hour”
+
+If you only build **three** next, I’d do:
+
+1. **Card details modal** (description, labels, due date)
+2. **Search + filters**
+3. **Undo**
+
+Those three make it feel like a real product immediately.
+
+If you tell me which direction you want (personal todo vs team-ish board), I’ll propose the best data model changes and the minimal set of new components/files to add.

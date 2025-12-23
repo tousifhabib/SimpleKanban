@@ -13,6 +13,7 @@
 
 <div class="kanban-container" id="kanbanContainer"></div>
 
+<!-- Add Column Modal -->
 <div class="modal" id="addColumnModal" aria-hidden="true">
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal-content" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -28,6 +29,42 @@
             <div class="button-group">
                 <button type="submit" class="btn btn-primary">Add Column</button>
                 <button type="button" class="btn btn-secondary" id="cancelAddColumn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Card Detail Modal -->
+<div class="modal" id="cardDetailModal" aria-hidden="true">
+    <div class="modal-overlay" id="cardDetailOverlay"></div>
+    <div class="modal-content card-detail-content" role="dialog" aria-labelledby="cardDetailTitle" aria-modal="true">
+        <button class="modal-close-btn" id="cardDetailCloseBtn">&times;</button>
+        <form id="cardDetailForm">
+            <div class="card-detail-header">
+                <span class="card-detail-icon">📋</span>
+                <input
+                        type="text"
+                        id="cardTitleInput"
+                        class="card-title-input"
+                        placeholder="Card Title"
+                        required
+                />
+            </div>
+            <div class="card-detail-section">
+                <label for="cardDescriptionInput" class="card-detail-label">
+                    <span class="card-detail-icon">📝</span>
+                    Description
+                </label>
+                <textarea
+                        id="cardDescriptionInput"
+                        class="card-description-input"
+                        placeholder="Add a more detailed description..."
+                        rows="6"
+                ></textarea>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" id="cancelCardDetail">Cancel</button>
             </div>
         </form>
     </div>
@@ -54,6 +91,7 @@
 <template id="cardTemplate">
     <div class="card" draggable="true">
         <span class="card-text"></span>
+        <span class="card-has-description" title="Has description">📝</span>
         <div class="card-actions">
             <button class="card-action-btn" data-action="edit">✏️</button>
             <button class="card-action-btn" data-action="delete">🗑</button>

@@ -1,21 +1,53 @@
-import { store } from '../store.js';
+import {store} from '../store.js';
 import Column from './Column.js';
-import {addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement} from '../utils/dragUtils.js';
-import { performFlipAnimation } from "../utils/flipAnimation";
+import {
+    addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement
+} from '../utils/dragUtils.js';
+import {performFlipAnimation} from '../utils/flipAnimation.js';
+import {CONFIG} from './kanbanBoardConfig.js';
 
 export default class KanbanBoard {
     constructor() {
-        this.kanbanContainer = document.getElementById('kanbanContainer');
-        this.addColumnModal = document.getElementById('addColumnModal');
-        this.modalOverlay = document.getElementById('modalOverlay');
-        this.addColumnForm = document.getElementById('addColumnForm');
-        this.columnTitleInput = document.getElementById('columnTitleInput');
-        this.addColumnBtn = document.getElementById('addColumnBtn');
-        this.cancelAddColumnBtn = document.getElementById('cancelAddColumn');
-        this.DEBUG_RATIO = 0.8;
-        this.dragData = { offsetX: 0, offsetY: 0, origWidth: 0, origHeight: 0 };
-        this.lastCardAfterElement = null;
+        this.kanbanContainer = document.getElementById(CONFIG.selectors.kanbanContainer);
+        this.addColumnModal = document.getElementById(CONFIG.selectors.addColumnModal);
+        this.modalOverlay = document.getElementById(CONFIG.selectors.modalOverlay);
+        this.addColumnForm = document.getElementById(CONFIG.selectors.addColumnForm);
+        this.columnTitleInput = document.getElementById(CONFIG.selectors.columnTitleInput);
+        this.addColumnBtn = document.getElementById(CONFIG.selectors.addColumnBtn);
+        this.cancelAddColumnBtn = document.getElementById(CONFIG.selectors.cancelAddColumn);
+
+        this.cardDetailModal = document.getElementById('cardDetailModal');
+        this.cardDetailOverlay = document.getElementById('cardDetailOverlay');
+        this.cardDetailForm = document.getElementById('cardDetailForm');
+        this.cardTitleInput = document.getElementById('cardTitleInput');
+        this.cardDescriptionInput = document.getElementById('cardDescriptionInput');
+        this.cardDetailCloseBtn = document.getElementById('cardDetailCloseBtn');
+        this.cancelCardDetailBtn = document.getElementById('cancelCardDetail');
+
+        this.currentCardId = null;
+        this.currentColumnId = null;
+
+        this.DEBUG_RATIO = CONFIG.values.debugRatio;
+
+        this.dragState = {
+            active: false,
+            element: null,
+            type: null,
+            offsetX: 0,
+            offsetY: 0,
+            rect: null,
+            cachedTargets: [],
+            lastX: 0,
+            lastY: 0,
+            direction: null
+        };
+
+        this.lastSwappedElement = null;
         this.lastAfterElement = null;
+
+        this._lastLoggedContainer = null;
+
+        this.handleCardClick = this.handleCardClick.bind(this);
 
         store.subscribe(() => this.render());
         this.setupEventListeners();
@@ -23,204 +55,408 @@ export default class KanbanBoard {
     }
 
     setupEventListeners() {
-        this.kanbanContainer.addEventListener(
-            'dragstart',
-            e => {
-                const card = e.target.closest('.card');
-                const col = e.target.closest('.column');
-                if (card) {
-                    this.handleDragStart(e, card);
-                    return;
-                }
-                if (col) {
-                    this.handleDragStart(e, col);
-                }
-            },
-            true
-        );
+        this.kanbanContainer.addEventListener('dragstart', e => {
+            const card = e.target.closest('.card');
+            const col = e.target.closest('.column');
+            if (card) return this.handleDragStart(e, card, 'card');
+            if (col) return this.handleDragStart(e, col, 'column');
+        }, true);
 
         this.kanbanContainer.addEventListener('dragover', e => {
             e.preventDefault();
-            const { clientX, clientY } = e;
-            this.checkGhostCollision(clientX, clientY);
-
-            const draggedCard = document.querySelector('.card.dragging');
-            if (draggedCard) {
-                const targetCards = e.target.closest('.cards');
-                if (!targetCards) return;
-                const afterEl = getCardAfterElement(targetCards, clientY);
-                if (afterEl !== this.lastCardAfterElement) {
-                    this.lastCardAfterElement = afterEl;
-                    performFlipAnimation(targetCards, draggedCard, () => {
-                        afterEl ? targetCards.insertBefore(draggedCard, afterEl) : targetCards.appendChild(draggedCard);
-                    });
-                }
-                return;
-            }
-
-            const draggedCol = document.querySelector('.column.dragging');
-            if (!draggedCol) return;
-            const afterEl = getColumnAfterElement(this.kanbanContainer, clientX);
-            if (afterEl !== this.lastAfterElement) {
-                this.lastAfterElement = afterEl;
-                performFlipAnimation(this.kanbanContainer, draggedCol, () => {
-                    if (afterEl && afterEl !== draggedCol) {
-                        this.kanbanContainer.insertBefore(draggedCol, afterEl);
-                    } else if (!afterEl) {
-                        this.kanbanContainer.appendChild(draggedCol);
-                    }
-                });
-            }
-            this.checkGhostCollision(clientX, clientY);
+            if (!this.dragState.active) return;
+            this.handleDragOver(e);
         });
 
         this.kanbanContainer.addEventListener('drop', e => {
             e.preventDefault();
-            const draggedCol = document.querySelector('.column.dragging');
-            if (draggedCol) {
-                draggedCol.classList.remove('dragging');
-                this.lastAfterElement = null;
-                const colEls = Array.from(this.kanbanContainer.querySelectorAll('.column'));
-                store.reorderColumns(colEls.map(c => c.dataset.columnId));
-            } else {
-                const draggedCard = document.querySelector('.card.dragging');
-                if (!draggedCard) return;
-                const newCol = e.target.closest('.column');
-                if (!newCol) return;
-                const cardId = draggedCard.dataset.cardId;
-                const targetColumnId = newCol.dataset.columnId;
-                const { columns } = store.getState();
-                let oldColumnId = null;
-                for (const c of columns) {
-                    if (c.cards.some(cd => cd.id === cardId)) {
-                        oldColumnId = c.id;
-                        break;
-                    }
-                }
-                const targetCardsContainer = newCol.querySelector('.cards');
-                const cardEls = Array.from(targetCardsContainer.querySelectorAll('.card'));
-                const newCardOrder = cardEls.map(el => el.dataset.cardId);
-                if (oldColumnId === targetColumnId) {
-                    store.reorderCards(targetColumnId, newCardOrder);
-                } else {
-                    store.moveCard(cardId, oldColumnId, targetColumnId, newCardOrder);
-                }
-            }
+            this.handleDrop(e);
         });
 
         this.kanbanContainer.addEventListener('dragenter', e => e.preventDefault());
 
-        document.addEventListener('click', e => {
-            const btn = e.target.closest('.card-action-btn');
-            if (!btn) return;
-            const action = btn.dataset.action;
-            const cardEl = btn.closest('.card');
-            const colEl = btn.closest('.column');
-            if (!cardEl || !colEl) return;
-            const cardId = cardEl.dataset.cardId;
-            const colId = colEl.dataset.columnId;
-            if (action === 'edit') {
-                const currentText = cardEl.querySelector('.card-text').textContent.trim();
-                const newText = prompt('Edit card text:', currentText);
-                if (newText && newText.trim()) {
-                    store.updateCard(colId, cardId, newText.trim());
-                }
-            } else if (action === 'delete') {
-                if (confirm('Delete this card?')) {
-                    store.removeCard(colId, cardId);
-                }
-            }
-        });
+        document.addEventListener('click', e => this.handleClick(e));
 
+        this.setupModalListeners();
+        this.setupCardDetailModalListeners();
+    }
+
+    setupModalListeners() {
         this.addColumnBtn.addEventListener('click', () => this.openAddColumnModal());
         this.cancelAddColumnBtn.addEventListener('click', () => this.closeAddColumnModal());
         this.modalOverlay.addEventListener('click', () => this.closeAddColumnModal());
         this.addColumnForm.addEventListener('submit', e => {
             e.preventDefault();
             const title = this.columnTitleInput.value.trim();
-            if (title) {
-                store.addColumn(title);
-            }
+            if (title) store.addColumn(title);
             this.closeAddColumnModal();
         });
+
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && this.addColumnModal.classList.contains('active')) {
-                this.closeAddColumnModal();
+            if (e.key === CONFIG.keys.escape) {
+                if (this.addColumnModal.classList.contains('active')) {
+                    this.closeAddColumnModal();
+                }
+                if (this.cardDetailModal.classList.contains('active')) {
+                    this.closeCardDetailModal();
+                }
             }
         });
     }
 
-    handleDragStart(e, element) {
+    setupCardDetailModalListeners() {
+        this.cardDetailCloseBtn.addEventListener('click', () => this.closeCardDetailModal());
+        this.cancelCardDetailBtn.addEventListener('click', () => this.closeCardDetailModal());
+        this.cardDetailOverlay.addEventListener('click', () => this.closeCardDetailModal());
+        
+        this.cardDetailForm.addEventListener('submit', e => {
+            e.preventDefault();
+            this.saveCardDetails();
+        });
+    }
+
+    handleCardClick(cardId, columnId) {
+        this.openCardDetailModal(cardId, columnId);
+    }
+
+    openCardDetailModal(cardId, columnId) {
+        const result = store.getCard(cardId);
+        if (!result) return;
+
+        const { card } = result;
+        this.currentCardId = cardId;
+        this.currentColumnId = columnId;
+
+        this.cardTitleInput.value = card.text || '';
+        this.cardDescriptionInput.value = card.description || '';
+
+        this.cardDetailModal.classList.add('active');
+        this.cardDetailModal.setAttribute('aria-hidden', 'false');
+        
+        this.cardTitleInput.focus();
+        this.cardTitleInput.select();
+    }
+
+    closeCardDetailModal() {
+        this.cardDetailModal.classList.remove('active');
+        this.cardDetailModal.setAttribute('aria-hidden', 'true');
+        this.cardDetailForm.reset();
+        this.currentCardId = null;
+        this.currentColumnId = null;
+    }
+
+    saveCardDetails() {
+        if (!this.currentCardId || !this.currentColumnId) return;
+
+        const newTitle = this.cardTitleInput.value.trim();
+        const newDescription = this.cardDescriptionInput.value.trim();
+
+        if (newTitle) {
+            store.updateCardDetails(this.currentColumnId, this.currentCardId, {
+                text: newTitle,
+                description: newDescription
+            });
+        }
+
+        this.closeCardDetailModal();
+    }
+
+    handleClick(e) {
+        const btn = e.target.closest('.card-action-btn');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const cardEl = btn.closest('.card');
+        const colEl = btn.closest('.column');
+        if (!cardEl || !colEl) return;
+
+        const {cardId} = cardEl.dataset;
+        const {columnId: colId} = colEl.dataset;
+
+        if (action === 'edit') {
+            this.openCardDetailModal(cardId, colId);
+        } else if (action === 'delete' && confirm('Delete this card?')) {
+            store.removeCard(colId, cardId);
+        }
+    }
+
+    handleDragStart(e, element, type) {
         const rect = element.getBoundingClientRect();
-        this.dragData = {
+
+        this._lastLoggedContainer = null;
+
+        this.dragState = {
+            active: true,
+            element,
+            type,
             offsetX: e.clientX - rect.left,
             offsetY: e.clientY - rect.top,
-            origWidth: rect.width,
-            origHeight: rect.height
+            rect,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            direction: null,
+            cachedTargets: this.cacheTargets(type, element)
         };
+
+        this.lastSwappedElement = null;
+        this.lastAfterElement = null;
 
         if (e.dataTransfer) {
-            e.dataTransfer.setDragImage(element, this.dragData.offsetX, this.dragData.offsetY);
+            e.dataTransfer.setDragImage(element, this.dragState.offsetX, this.dragState.offsetY);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', element.dataset.cardId || element.dataset.columnId);
         }
 
-        const isCard = element.classList.contains('card');
-        const elements = document.querySelectorAll(isCard ? '.card' : '.column');
-        elements.forEach(el => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
+        const selector = type === 'card' ? '.card' : '.column';
+        document
+            .querySelectorAll(selector)
+            .forEach(el => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
     }
 
-    computeGhostInnerRect(rect, clientX, clientY, offsetX, offsetY, ratio) {
-        const ghostLeft = clientX - offsetX;
-        const ghostTop = clientY - offsetY;
-        const w = rect.width * ratio;
-        const h = rect.height * ratio;
+    cacheTargets(type) {
+        const targets = [];
+        const selector = type === 'card' ? '.card:not(.dragging)' : '.column:not(.dragging)';
+        const elements = document.querySelectorAll(selector);
+
+        elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const innerRect = this.calculateInnerRect(rect, this.DEBUG_RATIO);
+            targets.push({
+                element: el, rect, innerRect
+            });
+        });
+
+        return targets;
+    }
+
+    calculateInnerRect(rect, ratio) {
+        const insetX = (rect.width * (1 - ratio)) / 2;
+        const insetY = (rect.height * (1 - ratio)) / 2;
+
         return {
-            left: ghostLeft + (rect.width - w) / 2,
-            top: ghostTop + (rect.height - h) / 2,
-            right: ghostLeft + (rect.width + w) / 2,
-            bottom: ghostTop + (rect.height + h) / 2
+            left: rect.left + insetX,
+            top: rect.top + insetY,
+            right: rect.right - insetX,
+            bottom: rect.bottom - insetY,
+            width: rect.width * ratio,
+            height: rect.height * ratio
         };
     }
 
-    checkCollision(ghostRect, staticRect) {
-        const overlapX = Math.max(ghostRect.left, staticRect.left) <= Math.min(ghostRect.right, staticRect.right);
-        const overlapY = Math.max(ghostRect.top, staticRect.top) <= Math.min(ghostRect.bottom, staticRect.bottom);
-        return overlapX && overlapY;
+    handleDragOver(e) {
+        const {clientX, clientY} = e;
+        this.updateDirection(clientX, clientY);
+
+        const ghostRect = this.getGhostRect(clientX, clientY);
+        const collisionHandled = this.checkGhostCollision(ghostRect);
+
+        if (!collisionHandled) {
+            if (this.dragState.type === 'card') {
+                this.handleFallbackCardMove(e);
+            } else {
+                this.handleFallbackColumnMove(e);
+            }
+        }
     }
 
-    checkGhostCollision(clientX, clientY) {
-        const draggedCard = document.querySelector('.card.dragging');
-        const draggedColumn = document.querySelector('.column.dragging');
-        if (draggedCard) {
-            const rect = draggedCard.getBoundingClientRect();
-            const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
-            document.querySelectorAll('.card:not(.dragging)').forEach(card => {
-                const staticRect = this.getInnerRect(card, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect)) {
-                    console.log("DEBUG: Drag ghost inner box is touching card's inner box (cardId:", card.dataset.cardId, ")");
+    updateDirection(x, y) {
+        if (this.dragState.type === 'column') {
+            if (Math.abs(x - this.dragState.lastX) > 0) {
+                this.dragState.direction = x > this.dragState.lastX ? 'right' : 'left';
+            }
+        } else {
+            if (Math.abs(y - this.dragState.lastY) > 0) {
+                this.dragState.direction = y > this.dragState.lastY ? 'down' : 'up';
+            }
+        }
+
+        this.dragState.lastX = x;
+        this.dragState.lastY = y;
+    }
+
+    getGhostRect(clientX, clientY) {
+        const left = clientX - this.dragState.offsetX;
+        const top = clientY - this.dragState.offsetY;
+        const width = this.dragState.rect.width;
+        const height = this.dragState.rect.height;
+
+        return this.calculateInnerRect({
+            left, top, right: left + width, bottom: top + height, width, height
+        }, this.DEBUG_RATIO);
+    }
+
+    checkGhostCollision(ghostRect) {
+        for (const target of this.dragState.cachedTargets) {
+            if (target.element === this.lastSwappedElement) continue;
+
+            const intersect = ghostRect.left < target.innerRect.right && ghostRect.right > target.innerRect.left && ghostRect.top < target.innerRect.bottom && ghostRect.bottom > target.innerRect.top;
+
+            const debugBox = target.element.querySelector('.debug-inner-box');
+
+            if (intersect) {
+                if (debugBox) debugBox.style.borderColor = 'yellow';
+
+                if (this.shouldSwap(ghostRect, target, this.dragState.type)) {
+                    this.performSwap(this.dragState.element, target.element);
+                    return true;
                 }
+            } else if (debugBox) {
+                debugBox.style.borderColor = 'red';
+            }
+        }
+
+        return false;
+    }
+
+    shouldSwap(ghostRect, targetObj, type) {
+        const targetRect = targetObj.rect;
+        const ghostFullLeft = ghostRect.left - (targetRect.width * (1 - this.DEBUG_RATIO)) / 2;
+
+        if (type === 'column') {
+            if (this.dragState.direction === 'right' && targetRect.left < ghostFullLeft) return false;
+            if (this.dragState.direction === 'left' && targetRect.left > ghostFullLeft) return false;
+
+            const overlapX = Math.min(ghostRect.right, targetObj.innerRect.right) - Math.max(ghostRect.left, targetObj.innerRect.left);
+            const minWidth = Math.min(ghostRect.width, targetObj.innerRect.width);
+
+            return overlapX / minWidth > CONFIG.values.swapThreshold;
+        }
+
+        const overlapY = Math.min(ghostRect.bottom, targetObj.innerRect.bottom) - Math.max(ghostRect.top, targetObj.innerRect.top);
+        const minHeight = Math.min(ghostRect.height, targetObj.innerRect.height);
+
+        return overlapY / minHeight > CONFIG.values.swapThreshold;
+    }
+
+    performSwap(draggedEl, staticEl) {
+        const draggedParent = draggedEl.parentNode;
+        const staticParent = staticEl.parentNode;
+
+        performFlipAnimation(staticParent, staticEl, () => {
+            performFlipAnimation(draggedParent, draggedEl, () => {
+                this.swapNodes(draggedEl, staticEl);
             });
-        } else if (draggedColumn) {
-            const rect = draggedColumn.getBoundingClientRect();
-            const ghostRect = this.computeGhostInnerRect(rect, clientX, clientY, this.dragData.offsetX, this.dragData.offsetY, this.DEBUG_RATIO);
-            document.querySelectorAll('.column:not(.dragging)').forEach(col => {
-                const staticRect = this.getInnerRect(col, this.DEBUG_RATIO);
-                if (this.checkCollision(ghostRect, staticRect)) {
-                    console.log("DEBUG: Drag ghost inner box is touching column's inner box (columnId:", col.dataset.columnId, ")");
+        });
+
+        this.lastSwappedElement = staticEl;
+
+        requestAnimationFrame(() => {
+            this.dragState.cachedTargets = this.cacheTargets(this.dragState.type, this.dragState.element);
+        });
+    }
+
+    swapNodes(a, b) {
+        const parentA = a.parentNode;
+        const parentB = b.parentNode;
+        const siblingA = a.nextSibling === b ? a : a.nextSibling;
+
+        parentB.insertBefore(a, b);
+
+        if (parentA === parentB) {
+            parentA.insertBefore(b, siblingA);
+        }
+    }
+
+    handleFallbackCardMove(e) {
+        let container = e.target.closest('.cards');
+
+        if (!container) {
+            const column = e.target.closest('.column');
+            if (column) {
+                container = column.querySelector('.cards');
+            }
+        }
+
+        if (!container) return;
+
+        const afterEl = getCardAfterElement(container, e.clientY);
+
+        const isNewContainer = container !== this.dragState.element.parentNode;
+
+        if (afterEl !== this.lastAfterElement || isNewContainer) {
+            this.lastAfterElement = afterEl;
+            performFlipAnimation(container, this.dragState.element, () => {
+                if (afterEl) {
+                    container.insertBefore(this.dragState.element, afterEl);
+                } else {
+                    container.appendChild(this.dragState.element);
                 }
             });
         }
     }
 
-    getInnerRect(el, ratio = 0.8) {
-        const r = el.getBoundingClientRect();
-        const insetX = (r.width * (1 - ratio)) / 2;
-        const insetY = (r.height * (1 - ratio)) / 2;
-        return {
-            left: r.left + insetX,
-            top: r.top + insetY,
-            right: r.right - insetX,
-            bottom: r.bottom - insetY
-        };
+    handleFallbackColumnMove(e) {
+        const afterEl = getColumnAfterElement(this.kanbanContainer, e.clientX);
+        if (afterEl !== this.lastAfterElement) {
+            this.lastAfterElement = afterEl;
+            performFlipAnimation(this.kanbanContainer, this.dragState.element, () => {
+                if (afterEl) {
+                    this.kanbanContainer.insertBefore(this.dragState.element, afterEl);
+                } else {
+                    this.kanbanContainer.appendChild(this.dragState.element);
+                }
+            });
+        }
+    }
+
+    handleDrop(e) {
+        console.group('⬇️ Handle Drop Triggered');
+        const element = this.dragState.element;
+        if (!element) {
+            console.error('❌ Error: No dragged element found in state.');
+            console.groupEnd();
+            return;
+        }
+
+        element.classList.remove('dragging');
+
+        if (this.dragState.type === 'column') {
+            const cols = Array.from(this.kanbanContainer.querySelectorAll('.column')).map(c => c.dataset.columnId);
+            store.reorderColumns(cols);
+            console.log('Reordered Columns');
+        } else {
+            const newCol = element.closest('.column');
+
+            console.log('Dragged Element:', element);
+            console.log('Detected New Column (via DOM):', newCol);
+
+            if (newCol) {
+                const {cardId} = element.dataset;
+                const {columnId: targetColumnId} = newCol.dataset;
+
+                const state = store.getState();
+                let oldColumnId;
+
+                for (const c of state.columns) {
+                    if (c.cards.some(cd => cd.id === cardId)) {
+                        oldColumnId = c.id;
+                        break;
+                    }
+                }
+
+                console.log(`Card ID: ${cardId}`);
+                console.log(`Old Column ID: ${oldColumnId}`);
+                console.log(`Target Column ID: ${targetColumnId}`);
+
+                const container = newCol.querySelector('.cards');
+                const newOrder = Array.from(container.querySelectorAll('.card')).map(el => el.dataset.cardId);
+
+                if (oldColumnId === targetColumnId) {
+                    console.log('Action: Reordering in same column');
+                    store.reorderCards(targetColumnId, newOrder);
+                } else {
+                    console.log('Action: Moving to new column');
+                    store.moveCard(cardId, oldColumnId, targetColumnId, newOrder);
+                }
+            } else {
+                console.error('❌ Error: Dropped card but could not find parent .column in DOM.');
+            }
+        }
+
+        this.dragState.active = false;
+        this.dragState.element = null;
+        this._lastLoggedContainer = null;
+        console.groupEnd();
     }
 
     openAddColumnModal() {
@@ -237,9 +473,8 @@ export default class KanbanBoard {
 
     render() {
         this.kanbanContainer.innerHTML = '';
-        const { columns } = store.getState();
-        columns.forEach(colData => {
-            const column = new Column(colData);
+        store.getState().columns.forEach(colData => {
+            const column = new Column(colData, this.handleCardClick);
             this.kanbanContainer.appendChild(column.render());
         });
     }

@@ -5,7 +5,7 @@ const STORAGE_KEY = 'flexibleKanbanState';
 class Store {
     constructor() {
         const savedState = loadFromLocalStorage(STORAGE_KEY);
-        this.state = savedState || { columns: [] };
+        this.state = savedState || {columns: []};
         this.listeners = [];
 
         this.subscribe((state) => {
@@ -27,10 +27,6 @@ class Store {
     notify() {
         this.listeners.forEach((listener) => listener(this.state));
     }
-
-    // ----------
-    // Actions on State
-    // ----------
 
     addColumn(title) {
         this.state.columns.push({
@@ -60,18 +56,30 @@ class Store {
         col.cards.push({
             id: this.generateId('card'),
             text,
+            description: '',
         });
         this.notify();
     }
 
-    updateCard(columnId, cardId, newText) {
+    updateCardDetails(columnId, cardId, updates) {
         const col = this.state.columns.find((c) => c.id === columnId);
         if (!col) return;
         const card = col.cards.find((c) => c.id === cardId);
         if (card) {
-            card.text = newText;
+            if (updates.text !== undefined) card.text = updates.text;
+            if (updates.description !== undefined) card.description = updates.description;
             this.notify();
         }
+    }
+
+    getCard(cardId) {
+        for (const col of this.state.columns) {
+            const card = col.cards.find(c => c.id === cardId);
+            if (card) {
+                return {card, columnId: col.id};
+            }
+        }
+        return null;
     }
 
     removeCard(columnId, cardId) {
@@ -125,10 +133,6 @@ class Store {
         }
         this.notify();
     }
-
-    // ----------
-    // Utility
-    // ----------
 
     generateId(prefix) {
         return (

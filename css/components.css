@@ -60,20 +60,22 @@
     background-color: rgba(9, 30, 66, 0.08);
 }
 
-/* Cards */
+/* Cards Container */
 .cards {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: calc(var(--spacing-unit));
+    min-height: 50px;
 }
 
+/* Cards */
 .card {
     background: var(--card-color);
     border-radius: calc(var(--spacing-unit) * 0.75);
     padding: calc(var(--spacing-unit) * 1.5);
     box-shadow: 0 1px 3px var(--shadow-color);
-    cursor: move;
+    cursor: pointer;
     position: relative;
     transition: all 0.2s ease;
     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -82,10 +84,18 @@
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 3px 8px var(--hover-shadow-color);
+    border-color: var(--primary-color);
 }
 
 .card.dragging {
     opacity: 0.5;
+    cursor: grabbing;
+}
+
+.card-text {
+    display: block;
+    padding-right: calc(var(--spacing-unit) * 3);
+    word-wrap: break-word;
 }
 
 /* Card Actions */
@@ -109,6 +119,7 @@
     padding: 6px;
     transition: all 0.2s ease;
     opacity: 0.7;
+    cursor: pointer;
 }
 
 .card-action-btn:hover {
@@ -184,4 +195,10 @@
 .button-group {
     display: flex;
     gap: calc(var(--spacing-unit));
+}
+
+.debug-inner-box {
+    background: rgba(0, 255, 0, 0.2) !important;
+    z-index: 9999;
+    border-color: yellow !important;
 }
