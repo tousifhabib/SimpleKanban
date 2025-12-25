@@ -5,7 +5,25 @@ const STORAGE_KEY = 'flexibleKanbanState';
 class Store {
     constructor() {
         const savedState = loadFromLocalStorage(STORAGE_KEY);
-        this.state = savedState || {columns: []};
+        this.state = savedState || {
+            columns: [],
+            labels: [
+                { id: 'label-1', name: 'Bug', color: '#e53935' },
+                { id: 'label-2', name: 'Feature', color: '#43a047' },
+                { id: 'label-3', name: 'Urgent', color: '#ff9800' },
+                { id: 'label-4', name: 'Review', color: '#8e24aa' }
+            ]
+        };
+
+        if (!this.state.labels) {
+            this.state.labels = [
+                { id: 'label-1', name: 'Bug', color: '#e53935' },
+                { id: 'label-2', name: 'Feature', color: '#43a047' },
+                { id: 'label-3', name: 'Urgent', color: '#ff9800' },
+                { id: 'label-4', name: 'Review', color: '#8e24aa' }
+            ];
+        }
+
         this.listeners = [];
 
         this.subscribe((state) => {
@@ -26,6 +44,42 @@ class Store {
 
     notify() {
         this.listeners.forEach((listener) => listener(this.state));
+    }
+
+    getLabels() {
+        return this.state.labels || [];
+    }
+
+    addLabel(name, color) {
+        const newLabel = {
+            id: this.generateId('label'),
+            name,
+            color
+        };
+        this.state.labels.push(newLabel);
+        this.notify();
+        return newLabel;
+    }
+
+    updateLabel(labelId, name, color) {
+        const label = this.state.labels.find(l => l.id === labelId);
+        if (label) {
+            label.name = name;
+            label.color = color;
+            this.notify();
+        }
+    }
+
+    removeLabel(labelId) {
+        this.state.labels = this.state.labels.filter(l => l.id !== labelId);
+        this.state.columns.forEach(col => {
+            col.cards.forEach(card => {
+                if (card.labels) {
+                    card.labels = card.labels.filter(id => id !== labelId);
+                }
+            });
+        });
+        this.notify();
     }
 
     addColumn(title) {
@@ -57,6 +111,11 @@ class Store {
             id: this.generateId('card'),
             text,
             description: '',
+            startDate: null,
+            dueDate: null,
+            completed: false,
+            priority: 'none',
+            labels: []
         });
         this.notify();
     }
@@ -68,6 +127,21 @@ class Store {
         if (card) {
             if (updates.text !== undefined) card.text = updates.text;
             if (updates.description !== undefined) card.description = updates.description;
+            if (updates.startDate !== undefined) card.startDate = updates.startDate;
+            if (updates.dueDate !== undefined) card.dueDate = updates.dueDate;
+            if (updates.completed !== undefined) card.completed = updates.completed;
+            if (updates.priority !== undefined) card.priority = updates.priority;
+            if (updates.labels !== undefined) card.labels = updates.labels;
+            this.notify();
+        }
+    }
+
+    toggleCardComplete(columnId, cardId) {
+        const col = this.state.columns.find((c) => c.id === columnId);
+        if (!col) return;
+        const card = col.cards.find((c) => c.id === cardId);
+        if (card) {
+            card.completed = !card.completed;
             this.notify();
         }
     }

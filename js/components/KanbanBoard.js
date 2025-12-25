@@ -24,8 +24,24 @@ export default class KanbanBoard {
         this.cardDetailCloseBtn = document.getElementById('cardDetailCloseBtn');
         this.cancelCardDetailBtn = document.getElementById('cancelCardDetail');
 
+        this.cardStartDateInput = document.getElementById('cardStartDateInput');
+        this.cardDueDateInput = document.getElementById('cardDueDateInput');
+        this.cardCompletedInput = document.getElementById('cardCompletedInput');
+        this.cardPriorityInput = document.getElementById('cardPriorityInput');
+        this.labelsSelector = document.getElementById('labelsSelector');
+
+        this.manageLabelModal = document.getElementById('manageLabelModal');
+        this.manageLabelOverlay = document.getElementById('manageLabelOverlay');
+        this.manageLabelCloseBtn = document.getElementById('manageLabelCloseBtn');
+        this.manageLabelBtn = document.getElementById('manageLabelBtn');
+        this.labelsList = document.getElementById('labelsList');
+        this.newLabelName = document.getElementById('newLabelName');
+        this.newLabelColor = document.getElementById('newLabelColor');
+        this.addLabelBtn = document.getElementById('addLabelBtn');
+
         this.currentCardId = null;
         this.currentColumnId = null;
+        this.selectedLabels = [];
 
         this.DEBUG_RATIO = CONFIG.values.debugRatio;
 
@@ -79,6 +95,7 @@ export default class KanbanBoard {
 
         this.setupModalListeners();
         this.setupCardDetailModalListeners();
+        this.setupLabelModalListeners();
     }
 
     setupModalListeners() {
@@ -100,6 +117,9 @@ export default class KanbanBoard {
                 if (this.cardDetailModal.classList.contains('active')) {
                     this.closeCardDetailModal();
                 }
+                if (this.manageLabelModal.classList.contains('active')) {
+                    this.closeLabelModal();
+                }
             }
         });
     }
@@ -108,10 +128,24 @@ export default class KanbanBoard {
         this.cardDetailCloseBtn.addEventListener('click', () => this.closeCardDetailModal());
         this.cancelCardDetailBtn.addEventListener('click', () => this.closeCardDetailModal());
         this.cardDetailOverlay.addEventListener('click', () => this.closeCardDetailModal());
-        
+
         this.cardDetailForm.addEventListener('submit', e => {
             e.preventDefault();
             this.saveCardDetails();
+        });
+    }
+
+    setupLabelModalListeners() {
+        this.manageLabelBtn.addEventListener('click', () => this.openLabelModal());
+        this.manageLabelCloseBtn.addEventListener('click', () => this.closeLabelModal());
+        this.manageLabelOverlay.addEventListener('click', () => this.closeLabelModal());
+        this.addLabelBtn.addEventListener('click', () => this.addNewLabel());
+
+        this.newLabelName.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.addNewLabel();
+            }
         });
     }
 
@@ -129,12 +163,54 @@ export default class KanbanBoard {
 
         this.cardTitleInput.value = card.text || '';
         this.cardDescriptionInput.value = card.description || '';
+        this.cardStartDateInput.value = card.startDate || '';
+        this.cardDueDateInput.value = card.dueDate || '';
+        this.cardCompletedInput.checked = card.completed || false;
+        this.cardPriorityInput.value = card.priority || 'none';
+
+        this.selectedLabels = card.labels ? [...card.labels] : [];
+
+        this.renderLabelsSelector();
 
         this.cardDetailModal.classList.add('active');
         this.cardDetailModal.setAttribute('aria-hidden', 'false');
-        
+
         this.cardTitleInput.focus();
         this.cardTitleInput.select();
+    }
+
+    renderLabelsSelector() {
+        const labels = store.getLabels();
+        this.labelsSelector.innerHTML = '';
+
+        labels.forEach(label => {
+            const labelEl = document.createElement('label');
+            labelEl.className = 'label-checkbox';
+
+            const isSelected = this.selectedLabels.includes(label.id);
+
+            labelEl.innerHTML = `
+                <input type="checkbox" value="${label.id}" ${isSelected ? 'checked' : ''}/>
+                <span class="label-chip" style="background-color: ${label.color}">${label.name}</span>
+            `;
+
+            const checkbox = labelEl.querySelector('input');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    if (!this.selectedLabels.includes(label.id)) {
+                        this.selectedLabels.push(label.id);
+                    }
+                } else {
+                    this.selectedLabels = this.selectedLabels.filter(id => id !== label.id);
+                }
+            });
+
+            this.labelsSelector.appendChild(labelEl);
+        });
+
+        if (labels.length === 0) {
+            this.labelsSelector.innerHTML = '<p class="no-labels">No labels yet. Create labels from the header button.</p>';
+        }
     }
 
     closeCardDetailModal() {
@@ -143,6 +219,7 @@ export default class KanbanBoard {
         this.cardDetailForm.reset();
         this.currentCardId = null;
         this.currentColumnId = null;
+        this.selectedLabels = [];
     }
 
     saveCardDetails() {
@@ -150,15 +227,95 @@ export default class KanbanBoard {
 
         const newTitle = this.cardTitleInput.value.trim();
         const newDescription = this.cardDescriptionInput.value.trim();
+        const startDate = this.cardStartDateInput.value || null;
+        const dueDate = this.cardDueDateInput.value || null;
+        const completed = this.cardCompletedInput.checked;
+        const priority = this.cardPriorityInput.value;
 
         if (newTitle) {
             store.updateCardDetails(this.currentColumnId, this.currentCardId, {
                 text: newTitle,
-                description: newDescription
+                description: newDescription,
+                startDate,
+                dueDate,
+                completed,
+                priority,
+                labels: this.selectedLabels
             });
         }
 
         this.closeCardDetailModal();
+    }
+
+    openLabelModal() {
+        this.renderLabelsList();
+        this.manageLabelModal.classList.add('active');
+        this.manageLabelModal.setAttribute('aria-hidden', 'false');
+        this.newLabelName.focus();
+    }
+
+    closeLabelModal() {
+        this.manageLabelModal.classList.remove('active');
+        this.manageLabelModal.setAttribute('aria-hidden', 'true');
+        this.newLabelName.value = '';
+        this.newLabelColor.value = '#5e6c84';
+    }
+
+    renderLabelsList() {
+        const labels = store.getLabels();
+        this.labelsList.innerHTML = '';
+
+        labels.forEach(label => {
+            const labelItem = document.createElement('div');
+            labelItem.className = 'label-item';
+            labelItem.innerHTML = `
+                <span class="label-preview" style="background-color: ${label.color}">${label.name}</span>
+                <div class="label-actions">
+                    <button class="label-edit-btn" data-id="${label.id}" title="Edit">✏️</button>
+                    <button class="label-delete-btn" data-id="${label.id}" title="Delete">🗑️</button>
+                </div>
+            `;
+
+            const editBtn = labelItem.querySelector('.label-edit-btn');
+            const deleteBtn = labelItem.querySelector('.label-delete-btn');
+
+            editBtn.addEventListener('click', () => this.editLabel(label));
+            deleteBtn.addEventListener('click', () => this.deleteLabel(label.id));
+
+            this.labelsList.appendChild(labelItem);
+        });
+
+        if (labels.length === 0) {
+            this.labelsList.innerHTML = '<p class="no-labels">No labels created yet.</p>';
+        }
+    }
+
+    addNewLabel() {
+        const name = this.newLabelName.value.trim();
+        const color = this.newLabelColor.value;
+
+        if (name) {
+            store.addLabel(name, color);
+            this.newLabelName.value = '';
+            this.newLabelColor.value = '#5e6c84';
+            this.renderLabelsList();
+        }
+    }
+
+    editLabel(label) {
+        const newName = prompt('Enter new label name:', label.name);
+        if (newName && newName.trim()) {
+            const newColor = prompt('Enter new color (hex):', label.color) || label.color;
+            store.updateLabel(label.id, newName.trim(), newColor);
+            this.renderLabelsList();
+        }
+    }
+
+    deleteLabel(labelId) {
+        if (confirm('Delete this label? It will be removed from all cards.')) {
+            store.removeLabel(labelId);
+            this.renderLabelsList();
+        }
     }
 
     handleClick(e) {

@@ -79,12 +79,14 @@
     position: relative;
     transition: all 0.2s ease;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    border-left: 3px solid transparent;
 }
 
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 3px 8px var(--hover-shadow-color);
     border-color: var(--primary-color);
+    border-left-color: inherit;
 }
 
 .card.dragging {
@@ -92,10 +94,129 @@
     cursor: grabbing;
 }
 
+/* Priority Colors */
+.card.priority-high {
+    border-left-color: #e53935;
+}
+
+.card.priority-medium {
+    border-left-color: #ff9800;
+}
+
+.card.priority-low {
+    border-left-color: #2196f3;
+}
+
+/* Completed Card */
+.card.completed {
+    opacity: 0.7;
+    background: #f8f9fa;
+}
+
+.card.completed .card-text {
+    text-decoration: line-through;
+    color: #6b778c;
+}
+
+/* Card Labels */
+.card-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: calc(var(--spacing-unit) * 0.75);
+}
+
+.card-labels:empty {
+    display: none;
+}
+
+.card-label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Card Content */
+.card-content {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--spacing-unit) * 0.75);
+}
+
 .card-text {
     display: block;
+    flex: 1;
     padding-right: calc(var(--spacing-unit) * 3);
     word-wrap: break-word;
+}
+
+/* Card Completion Checkbox */
+.card-complete-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.card-complete-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.card-complete-checkmark {
+    display: none;
+}
+
+/* Card Metadata */
+.card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--spacing-unit) * 0.75);
+    margin-top: calc(var(--spacing-unit) * 0.75);
+    font-size: 0.75rem;
+}
+
+.card-meta:empty {
+    display: none;
+}
+
+.card-due-date,
+.card-start-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(9, 30, 66, 0.06);
+    color: #5e6c84;
+}
+
+.card-due-date .meta-icon,
+.card-start-date .meta-icon {
+    font-size: 0.65rem;
+}
+
+/* Due Date Status Colors */
+.card-due-date.overdue {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.card-due-date.due-today {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.card-due-date.due-soon {
+    background: #fff8e1;
+    color: #f57f17;
 }
 
 /* Card Actions */
@@ -201,4 +322,17 @@
     background: rgba(0, 255, 0, 0.2) !important;
     z-index: 9999;
     border-color: yellow !important;
+}
+
+.card-has-description {
+    display: none;
+    position: absolute;
+    bottom: calc(var(--spacing-unit) * 0.5);
+    right: calc(var(--spacing-unit) * 0.5);
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.card.has-description .card-has-description {
+    display: block;
 }

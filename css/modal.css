@@ -56,7 +56,7 @@
 }
 
 .card-detail-content {
-    max-width: 600px;
+    max-width: 550px;
     max-height: 90vh;
     overflow-y: auto;
     padding: calc(var(--spacing-unit) * 3);
@@ -87,16 +87,15 @@
 
 .card-detail-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: calc(var(--spacing-unit) * 1.5);
-    margin-bottom: calc(var(--spacing-unit) * 3);
+    margin-bottom: calc(var(--spacing-unit) * 2);
     padding-right: calc(var(--spacing-unit) * 4);
 }
 
 .card-detail-icon {
-    font-size: 1.25rem;
+    font-size: 1rem;
     flex-shrink: 0;
-    margin-top: calc(var(--spacing-unit) * 0.5);
 }
 
 .card-title-input {
@@ -121,17 +120,17 @@
 }
 
 .card-detail-section {
-    margin-bottom: calc(var(--spacing-unit) * 3);
+    margin-bottom: calc(var(--spacing-unit) * 2);
 }
 
 .card-detail-label {
     display: flex;
     align-items: center;
-    gap: calc(var(--spacing-unit));
+    gap: calc(var(--spacing-unit) * 0.75);
     font-weight: 600;
     color: var(--text-color);
-    margin-bottom: calc(var(--spacing-unit) * 1.5);
-    font-size: 0.95rem;
+    margin-bottom: calc(var(--spacing-unit));
+    font-size: 0.9rem;
 }
 
 .card-description-input {
@@ -143,7 +142,7 @@
     font-size: 0.95rem;
     font-family: inherit;
     resize: vertical;
-    min-height: 120px;
+    min-height: 100px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     line-height: 1.5;
 }
@@ -158,17 +157,208 @@
     color: #a5adba;
 }
 
-.card-has-description {
-    display: none;
-    position: absolute;
-    bottom: calc(var(--spacing-unit) * 0.5);
-    right: calc(var(--spacing-unit) * 0.5);
-    font-size: 0.75rem;
-    opacity: 0.6;
+/* Completion Toggle in Modal */
+.completion-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.card.has-description .card-has-description {
-    display: block;
+.completion-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.completion-checkmark {
+    display: none;
+}
+
+/* Date Fields Row */
+.card-detail-row {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 2);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.card-detail-field {
+    flex: 1;
+}
+
+.date-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(var(--spacing-unit) * 1);
+    border: 2px solid rgba(9, 30, 66, 0.13);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
+}
+
+/* Priority Select */
+.priority-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(var(--spacing-unit) * 1);
+    border: 2px solid rgba(9, 30, 66, 0.13);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.priority-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
+}
+
+/* Labels Selector */
+.labels-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--spacing-unit) * 0.75);
+}
+
+.label-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.label-checkbox input {
+    display: none;
+}
+
+.label-checkbox .label-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    opacity: 0.5;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.label-checkbox input:checked + .label-chip {
+    opacity: 1;
+    border-color: rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.label-checkbox:hover .label-chip {
+    opacity: 0.8;
+}
+
+.no-labels {
+    color: #5e6c84;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Manage Labels Modal */
+.labels-list {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.label-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(var(--spacing-unit)) 0;
+    border-bottom: 1px solid rgba(9, 30, 66, 0.08);
+}
+
+.label-item:last-child {
+    border-bottom: none;
+}
+
+.label-preview {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.label-actions {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 0.5);
+}
+
+.label-edit-btn,
+.label-delete-btn {
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.label-edit-btn:hover,
+.label-delete-btn:hover {
+    background: rgba(9, 30, 66, 0.08);
+}
+
+.add-label-form {
+    display: flex;
+    gap: calc(var(--spacing-unit));
+    align-items: center;
+}
+
+.label-name-input {
+    flex: 1;
+    padding: calc(var(--spacing-unit) * 1);
+    border: 2px solid rgba(9, 30, 66, 0.13);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.label-name-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.label-color-input {
+    width: 40px;
+    height: 36px;
+    padding: 0;
+    border: 2px solid rgba(9, 30, 66, 0.13);
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    cursor: pointer;
+    background: none;
+}
+
+.label-color-input::-webkit-color-swatch-wrapper {
+    padding: 2px;
+}
+
+.label-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 2px;
 }
 
 @media (max-width: 768px) {
@@ -176,8 +366,13 @@
         max-width: 95%;
         padding: calc(var(--spacing-unit) * 2);
     }
-    
+
     .card-title-input {
         font-size: 1.1rem;
+    }
+
+    .card-detail-row {
+        flex-direction: column;
+        gap: calc(var(--spacing-unit));
     }
 }

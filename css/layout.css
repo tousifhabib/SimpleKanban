@@ -12,6 +12,31 @@ header h1 {
     font-size: 1.5rem;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing-unit) * 1.5);
+}
+
+.header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: calc(var(--spacing-unit)) calc(var(--spacing-unit) * 1.5);
+    border: none;
+    border-radius: calc(var(--spacing-unit) * 0.5);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.header-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
 .kanban-container {
     flex: 1;
     overflow-x: auto;

@@ -110,3 +110,80 @@ If you only build **three** next, I’d do:
 Those three make it feel like a real product immediately.
 
 If you tell me which direction you want (personal todo vs team-ish board), I’ll propose the best data model changes and the minimal set of new components/files to add.
+
+
+
+
+
+
+Implementation notes (what you built is actually solid)
+1) Architecture: clear separation for vanilla JS
+
+store.js is a simple pub/sub store with persistence. That’s the right level of abstraction for this size.
+
+Card, Column, KanbanBoard classes keep responsibilities mostly sane:
+
+Card: rendering + click/drag behavior
+
+Column: column UI + card creation/removal + title editing
+
+KanbanBoard: orchestration, modals, and the drag system
+
+2) Drag & drop: you went beyond “basic HTML5 drag”
+
+You’re not just using dragover + “insert before”. You added:
+
+Cached target rects (cacheTargets) so you’re not recomputing everything every mouse move.
+
+A ghost inner-rect collision model (the DEBUG_RATIO inner box) — nice way to reduce jitter.
+
+A direction-aware swap gate (left/right for columns, up/down for cards) so swaps feel intentional.
+
+Swap thresholding (swapThreshold) to avoid accidental swaps.
+
+FLIP animation (performFlipAnimation) to make rearranges feel smooth rather than jumpy.
+
+That combo is basically what a sortable library does internally, and your version is readable.
+
+3) Persistence: simple and effective
+
+Auto-saving via a store subscription is clean. You mutate state, call notify(), and persistence happens as a side effect — good ergonomics.
+
+The main things I’d tighten (because “no libs” means polish matters)
+A) You currently have two drag systems running
+
+KanbanBoard listens in capture phase and manages dragState.
+
+Card also handles dragstart/dragend.
+
+Column also handles dragstart/dragend.
+
+It can work, but it’s fragile: now behavior is split across three places (class toggling, dataTransfer, debug overlays). If you want this to be bulletproof, I’d centralize drag start/end into only KanbanBoard and let Card/Column be dumb renderers.
+
+B) Full re-render on every store update
+
+render() nukes kanbanContainer.innerHTML and recreates everything. It’s fine for small boards, but it can:
+
+reset transient UI state (focus inside a column title edit, open “add card” form, etc.)
+
+get expensive as board size grows
+
+Even without a framework, you can keep it simple: update only the affected column/card, or keep element instances keyed by ID.
+
+C) Storage robustness
+
+localStorageService.loadFromLocalStorage() can throw if the saved JSON is corrupted. One bad value and the whole app can fail to boot. A try/catch there makes it resilient.
+
+D) Minor consistency smell: duplicated utilities
+
+You have js/utils.js with generateId + localStorage helpers, but the app uses store.generateId() and services/localStorageService.js. That’s not harmful, but it’s the kind of thing that confuses “future you”.
+
+E) Accessibility details (common in vanilla apps)
+
+You’ve started strong with aria-modal / aria-hidden. Next step (still no libs):
+
+trap focus inside modals
+
+restore focus to the triggering button on close
+
+ensure contenteditable headers have sensible keyboard behavior and sanitization (prevent newlines, trim weird pasted formatting)
