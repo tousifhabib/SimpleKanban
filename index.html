@@ -28,7 +28,6 @@
 
 <div class="kanban-container" id="kanbanContainer"></div>
 
-<!-- Add Board Modal -->
 <div class="modal" id="createBoardModal" aria-hidden="true">
     <div class="modal-overlay" id="createBoardOverlay"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
@@ -50,7 +49,6 @@
     </div>
 </div>
 
-<!-- Rename Board Modal -->
 <div class="modal" id="renameBoardModal" aria-hidden="true">
     <div class="modal-overlay" id="renameBoardOverlay"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
@@ -65,7 +63,6 @@
     </div>
 </div>
 
-<!-- Delete Board Modal -->
 <div class="modal" id="deleteBoardModal" aria-hidden="true">
     <div class="modal-overlay" id="deleteBoardOverlay"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
@@ -80,7 +77,6 @@
     </div>
 </div>
 
-<!-- Add Column Modal -->
 <div class="modal" id="addColumnModal" aria-hidden="true">
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal-content" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -101,7 +97,6 @@
     </div>
 </div>
 
-<!-- Card Detail Modal -->
 <div class="modal" id="cardDetailModal" aria-hidden="true">
     <div class="modal-overlay" id="cardDetailOverlay"></div>
     <div class="modal-content card-detail-content" role="dialog" aria-labelledby="cardDetailTitle" aria-modal="true">
@@ -188,7 +183,6 @@
     </div>
 </div>
 
-<!-- Manage Labels Modal -->
 <div class="modal" id="manageLabelModal" aria-hidden="true">
     <div class="modal-overlay" id="manageLabelOverlay"></div>
     <div class="modal-content" role="dialog" aria-labelledby="manageLabelTitle" aria-modal="true">
@@ -228,7 +222,7 @@
     <div class="card" draggable="true">
         <div class="card-labels"></div>
         <div class="card-content">
-            <label class="card-complete-toggle" onclick="event.stopPropagation()">
+            <label class="card-complete-toggle">
                 <input type="checkbox" class="card-complete-checkbox"/>
                 <span class="card-complete-checkmark"></span>
             </label>

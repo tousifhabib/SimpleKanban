@@ -291,8 +291,7 @@ export default class KanbanBoard {
             if (action === 'delete' && confirm('Delete this card?')) store.removeCard(columnId, cardId);
         });
 
-        on(this.kanbanContainer, 'click', '.card-complete-checkbox', (e, cb) => {
-            e.stopPropagation();
+        on(this.kanbanContainer, 'change', '.card-complete-checkbox', (e, cb) => {
             const cardEl = cb.closest('.card');
             const colEl = cb.closest('.column');
             if (!cardEl || !colEl) return;
@@ -300,7 +299,7 @@ export default class KanbanBoard {
         });
 
         on(this.kanbanContainer, 'click', '.card', (e, cardEl) => {
-            if (e.target.closest('.card-actions') || e.target.closest('.card-complete-checkbox')) return;
+            if (e.target.closest('.card-actions') || e.target.closest('.card-complete-toggle')) return;
             if (cardEl.classList.contains('dragging')) return;
             const colEl = cardEl.closest('.column');
             if (!colEl) return;
