@@ -390,6 +390,16 @@
     font-weight: 600;
 }
 
+.log-column-badge {
+    font-size: 0.7rem;
+    background-color: rgba(9, 30, 66, 0.08);
+    color: #42526e;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
 .log-text {
     font-size: 0.9rem;
     color: var(--text-color);

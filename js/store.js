@@ -276,6 +276,7 @@ class Store {
 
     addCardLog(columnId, cardId, text) {
         const card = this.card(columnId, cardId);
+        const column = this.col(columnId);
         if (!card) return;
 
         if (!card.logs) card.logs = [];
@@ -283,6 +284,7 @@ class Store {
         card.logs.push({
             id: generateId('log'),
             text,
+            columnTitle: column ? column.title : null,
             createdAt: new Date().toISOString()
         });
 

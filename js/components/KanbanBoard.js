@@ -504,9 +504,14 @@ export default class KanbanBoard {
                 minute: '2-digit'
             });
 
+            const columnBadge = log.columnTitle
+                ? `<span class="log-column-badge">${this.escapeHtml(log.columnTitle)}</span>`
+                : '';
+
             entry.innerHTML = `
                 <div class="log-header">
                     <span class="log-timestamp">${dateStr}</span>
+                    ${columnBadge}
                 </div>
                 <div class="log-text">${this.escapeHtml(log.text)}</div>
             `;
