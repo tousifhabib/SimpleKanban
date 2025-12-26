@@ -4,12 +4,20 @@ export const CONFIG = {
 
         boardSelector: 'boardSelector',
         addBoardBtn: 'addBoardBtn',
+        deleteBoardBtn: 'deleteBoardBtn',
+
         createBoardModal: 'createBoardModal',
         createBoardOverlay: 'createBoardOverlay',
         createBoardForm: 'createBoardForm',
         newBoardName: 'newBoardName',
         newBoardTemplate: 'newBoardTemplate',
         cancelCreateBoard: 'cancelCreateBoard',
+
+        deleteBoardModal: 'deleteBoardModal',
+        deleteBoardOverlay: 'deleteBoardOverlay',
+        deleteBoardName: 'deleteBoardName',
+        confirmDeleteBoard: 'confirmDeleteBoard',
+        cancelDeleteBoard: 'cancelDeleteBoard',
 
         importBtn: 'importBtn',
         exportBtn: 'exportBtn',

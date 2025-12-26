@@ -114,6 +114,23 @@ class Store {
         this.notify();
     }
 
+    deleteBoard(boardId) {
+        const idx = this.state.boards.findIndex((b) => b.id === boardId);
+        if (idx === -1) return false;
+        if (this.state.boards.length <= 1) return false;
+
+        const deletingActive = this.state.activeBoardId === boardId;
+
+        this.state.boards.splice(idx, 1);
+
+        if (deletingActive) {
+            this.state.activeBoardId = this.state.boards[0]?.id || null;
+        }
+
+        this.notify();
+        return true;
+    }
+
     importData(jsonData) {
         try {
             const data = JSON.parse(jsonData);

@@ -12,6 +12,7 @@
         <div class="board-selector-wrapper">
             <select id="boardSelector" class="board-select"></select>
             <button class="header-btn-icon" id="addBoardBtn" title="Create New Board">+</button>
+            <button class="header-btn-icon danger" id="deleteBoardBtn" title="Delete Board">🗑</button>
         </div>
     </div>
     <div class="header-actions">
@@ -45,6 +46,21 @@
                 <button type="button" class="btn btn-secondary" id="cancelCreateBoard">Cancel</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Delete Board Modal -->
+<div class="modal" id="deleteBoardModal" aria-hidden="true">
+    <div class="modal-overlay" id="deleteBoardOverlay"></div>
+    <div class="modal-content" role="dialog" aria-modal="true">
+        <h2>Delete Board</h2>
+        <p style="margin-top: 0;">
+            This will permanently delete <strong id="deleteBoardName"></strong> and all its columns/cards.
+        </p>
+        <div class="button-group">
+            <button type="button" class="btn btn-primary" id="confirmDeleteBoard">Delete</button>
+            <button type="button" class="btn btn-secondary" id="cancelDeleteBoard">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -89,7 +105,6 @@
                 />
             </div>
 
-            <!-- Labels Section -->
             <div class="card-detail-section">
                 <label class="card-detail-label">
                     <span class="card-detail-icon">🏷️</span>
@@ -98,7 +113,6 @@
                 <div class="labels-selector" id="labelsSelector"></div>
             </div>
 
-            <!-- Date Fields -->
             <div class="card-detail-row">
                 <div class="card-detail-field">
                     <label for="cardStartDateInput" class="card-detail-label">
@@ -124,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- Priority -->
             <div class="card-detail-section">
                 <label for="cardPriorityInput" class="card-detail-label">
                     <span class="card-detail-icon">🚩</span>
@@ -138,7 +151,6 @@
                 </select>
             </div>
 
-            <!-- Description -->
             <div class="card-detail-section">
                 <label for="cardDescriptionInput" class="card-detail-label">
                     <span class="card-detail-icon">📝</span>
