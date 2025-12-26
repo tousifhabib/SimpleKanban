@@ -114,6 +114,18 @@ class Store {
         this.notify();
     }
 
+    renameBoard(boardId, name) {
+        const board = this.state.boards.find((b) => b.id === boardId);
+        if (!board) return false;
+
+        const newName = (name || '').trim();
+        if (!newName) return false;
+
+        board.name = newName;
+        this.notify();
+        return true;
+    }
+
     deleteBoard(boardId) {
         const idx = this.state.boards.findIndex((b) => b.id === boardId);
         if (idx === -1) return false;

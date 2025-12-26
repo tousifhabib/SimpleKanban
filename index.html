@@ -12,6 +12,7 @@
         <div class="board-selector-wrapper">
             <select id="boardSelector" class="board-select"></select>
             <button class="header-btn-icon" id="addBoardBtn" title="Create New Board">+</button>
+            <button class="header-btn-icon" id="renameBoardBtn" title="Rename Board">✏️</button>
             <button class="header-btn-icon danger" id="deleteBoardBtn" title="Delete Board">🗑</button>
         </div>
     </div>
@@ -44,6 +45,21 @@
             <div class="button-group">
                 <button type="submit" class="btn btn-primary">Create</button>
                 <button type="button" class="btn btn-secondary" id="cancelCreateBoard">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Rename Board Modal -->
+<div class="modal" id="renameBoardModal" aria-hidden="true">
+    <div class="modal-overlay" id="renameBoardOverlay"></div>
+    <div class="modal-content" role="dialog" aria-modal="true">
+        <h2>Rename Board</h2>
+        <form id="renameBoardForm">
+            <input type="text" id="renameBoardName" class="column-input" placeholder="Board Name" required />
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" id="cancelRenameBoard">Cancel</button>
             </div>
         </form>
     </div>

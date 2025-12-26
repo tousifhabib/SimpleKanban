@@ -4,6 +4,7 @@ export const CONFIG = {
 
         boardSelector: 'boardSelector',
         addBoardBtn: 'addBoardBtn',
+        renameBoardBtn: 'renameBoardBtn',
         deleteBoardBtn: 'deleteBoardBtn',
 
         createBoardModal: 'createBoardModal',
@@ -12,6 +13,12 @@ export const CONFIG = {
         newBoardName: 'newBoardName',
         newBoardTemplate: 'newBoardTemplate',
         cancelCreateBoard: 'cancelCreateBoard',
+
+        renameBoardModal: 'renameBoardModal',
+        renameBoardOverlay: 'renameBoardOverlay',
+        renameBoardForm: 'renameBoardForm',
+        renameBoardName: 'renameBoardName',
+        cancelRenameBoard: 'cancelRenameBoard',
 
         deleteBoardModal: 'deleteBoardModal',
         deleteBoardOverlay: 'deleteBoardOverlay',

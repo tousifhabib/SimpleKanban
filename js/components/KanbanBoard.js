@@ -59,6 +59,11 @@ export default class KanbanBoard {
                 overlay: this.createBoardOverlay,
                 reset: () => this.createBoardForm.reset()
             },
+            renameBoard: {
+                el: this.renameBoardModal,
+                overlay: this.renameBoardOverlay,
+                reset: () => this.renameBoardForm.reset()
+            },
             deleteBoard: {
                 el: this.deleteBoardModal,
                 overlay: this.deleteBoardOverlay,
@@ -144,6 +149,18 @@ export default class KanbanBoard {
         if (this.confirmDeleteBoard) this.confirmDeleteBoard.focus();
     }
 
+    openRenameBoardModal() {
+        const activeId = store.getActiveBoardId();
+        const boards = store.getBoards();
+        const active = boards.find((b) => b.id === activeId);
+        if (!active) return;
+
+        this.renameBoardName.value = active.name || '';
+        this.openModal(this.modals.renameBoard);
+        this.renameBoardName.focus();
+        this.renameBoardName.select();
+    }
+
     setupEventListeners() {
         this.boardSelector.addEventListener('change', (e) => {
             store.setActiveBoard(e.target.value);
@@ -154,8 +171,25 @@ export default class KanbanBoard {
             this.newBoardName.focus();
         });
 
+        if (this.renameBoardBtn) {
+            this.renameBoardBtn.addEventListener('click', () => this.openRenameBoardModal());
+        }
+
         if (this.deleteBoardBtn) {
             this.deleteBoardBtn.addEventListener('click', () => this.openDeleteBoardModal());
+        }
+
+        if (this.cancelRenameBoard) {
+            this.cancelRenameBoard.addEventListener('click', () => this.closeModal(this.modals.renameBoard));
+        }
+
+        if (this.renameBoardForm) {
+            this.renameBoardForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = this.renameBoardName.value.trim();
+                if (name) store.renameBoard(store.getActiveBoardId(), name);
+                this.closeModal(this.modals.renameBoard);
+            });
         }
 
         if (this.cancelDeleteBoard) {
