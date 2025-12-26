@@ -157,7 +157,6 @@
     color: #a5adba;
 }
 
-/* Completion Toggle in Modal */
 .completion-toggle {
     display: flex;
     align-items: center;
@@ -177,7 +176,6 @@
     display: none;
 }
 
-/* Date Fields Row */
 .card-detail-row {
     display: flex;
     gap: calc(var(--spacing-unit) * 2);
@@ -205,7 +203,6 @@
     box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
 }
 
-/* Priority Select */
 .priority-select {
     width: 100%;
     box-sizing: border-box;
@@ -225,7 +222,6 @@
     box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.2);
 }
 
-/* Labels Selector */
 .labels-selector {
     display: flex;
     flex-wrap: wrap;
@@ -272,7 +268,6 @@
     margin: 0;
 }
 
-/* Manage Labels Modal */
 .labels-list {
     max-height: 250px;
     overflow-y: auto;
@@ -359,6 +354,53 @@
 .label-color-input::-webkit-color-swatch {
     border: none;
     border-radius: 2px;
+}
+
+.card-log-list {
+    background: #f9fafc;
+    border: 1px solid rgba(9, 30, 66, 0.08);
+    border-radius: 4px;
+    padding: 0;
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.log-entry {
+    padding: 10px;
+    border-bottom: 1px solid rgba(9, 30, 66, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-timestamp {
+    font-size: 0.7rem;
+    color: #6b778c;
+    font-weight: 600;
+}
+
+.log-text {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.card-log-input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
 
 @media (max-width: 768px) {

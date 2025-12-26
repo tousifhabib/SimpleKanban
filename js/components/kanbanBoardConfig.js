@@ -50,6 +50,10 @@ export const CONFIG = {
         cardPriorityInput: 'cardPriorityInput',
         labelsSelector: 'labelsSelector',
 
+        cardLogList: 'cardLogList',
+        newLogInput: 'newLogInput',
+        addLogBtn: 'addLogBtn',
+
         manageLabelModal: 'manageLabelModal',
         manageLabelOverlay: 'manageLabelOverlay',
         manageLabelCloseBtn: 'manageLabelCloseBtn',

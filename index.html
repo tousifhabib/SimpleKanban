@@ -175,6 +175,24 @@
                 ></textarea>
             </div>
 
+            <div class="card-detail-section">
+                <label class="card-detail-label">
+                    <span class="card-detail-icon">📋</span>
+                    Work Log
+                </label>
+                <div id="cardLogList" class="card-log-list"></div>
+                <div class="card-log-input-container">
+                    <textarea
+                            id="newLogInput"
+                            class="card-description-input"
+                            placeholder="Add a progress update..."
+                            rows="2"
+                            style="min-height: 60px; margin-bottom: 8px;"
+                    ></textarea>
+                    <button type="button" class="btn btn-secondary" id="addLogBtn" style="font-size: 0.85rem;">Add Entry</button>
+                </div>
+            </div>
+
             <div class="button-group">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <button type="button" class="btn btn-secondary" id="cancelCardDetail">Cancel</button>
@@ -229,7 +247,7 @@
             <span class="card-text"></span>
         </div>
         <div class="card-meta"></div>
-        <span class="card-has-description" title="Has description">📝</span>
+        <span class="card-has-description" title="Has notes">📝</span>
         <div class="card-actions">
             <button class="card-action-btn" data-action="edit">✏️</button>
             <button class="card-action-btn" data-action="delete">🗑</button>

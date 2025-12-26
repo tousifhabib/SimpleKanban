@@ -28,6 +28,7 @@ const newCard = (text) => {
         completed: false,
         priority: 'none',
         labels: [],
+        logs: [],
         createdAt: now,
         updatedAt: now
     };
@@ -53,6 +54,7 @@ class Store {
                 col.cards.forEach(card => {
                     if (!card.createdAt) card.createdAt = new Date().toISOString();
                     if (!card.updatedAt) card.updatedAt = new Date().toISOString();
+                    if (!card.logs) card.logs = [];
                 });
             });
         } else {
@@ -269,6 +271,22 @@ class Store {
         const col = this.col(columnId);
         if (!col) return;
         col.cards = col.cards.filter((c) => c.id !== cardId);
+        this.notify();
+    }
+
+    addCardLog(columnId, cardId, text) {
+        const card = this.card(columnId, cardId);
+        if (!card) return;
+
+        if (!card.logs) card.logs = [];
+
+        card.logs.push({
+            id: generateId('log'),
+            text,
+            createdAt: new Date().toISOString()
+        });
+
+        card.updatedAt = new Date().toISOString();
         this.notify();
     }
 

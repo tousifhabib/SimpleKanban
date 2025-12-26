@@ -79,6 +79,8 @@ export default class KanbanBoard {
                     this.currentCardId = null;
                     this.currentColumnId = null;
                     this.selectedLabels = [];
+                    this.cardLogList.innerHTML = '';
+                    this.newLogInput.value = '';
                 }
             },
             labels: {
@@ -385,6 +387,10 @@ export default class KanbanBoard {
         this.cardDetailCloseBtn.addEventListener('click', () => this.closeModal(this.modals.cardDetail));
         this.cancelCardDetail.addEventListener('click', () => this.closeModal(this.modals.cardDetail));
 
+        if (this.addLogBtn) {
+            this.addLogBtn.addEventListener('click', () => this.handleAddLog());
+        }
+
         this.cardDetailForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveCardDetails();
@@ -463,6 +469,8 @@ export default class KanbanBoard {
         this.cardCompletedInput.checked = card.completed || false;
         this.cardPriorityInput.value = card.priority || 'none';
 
+        this.renderCardLogs(card.logs || []);
+
         this.selectedLabels = card.labels ? [...card.labels] : [];
         this.renderLabelsSelector();
 
@@ -470,6 +478,66 @@ export default class KanbanBoard {
 
         this.cardTitleInput.focus();
         this.cardTitleInput.select();
+    }
+
+    renderCardLogs(logs) {
+        this.cardLogList.innerHTML = '';
+
+        if (!logs || logs.length === 0) {
+            this.cardLogList.style.display = 'none';
+            return;
+        }
+
+        this.cardLogList.style.display = 'block';
+
+        const sortedLogs = [...logs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        sortedLogs.forEach(log => {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+
+            const date = new Date(log.createdAt);
+            const dateStr = date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            entry.innerHTML = `
+                <div class="log-header">
+                    <span class="log-timestamp">${dateStr}</span>
+                </div>
+                <div class="log-text">${this.escapeHtml(log.text)}</div>
+            `;
+            this.cardLogList.appendChild(entry);
+        });
+    }
+
+    handleAddLog() {
+        const text = this.newLogInput.value.trim();
+        if (!text) return;
+
+        if (this.currentColumnId && this.currentCardId) {
+            store.addCardLog(this.currentColumnId, this.currentCardId, text);
+
+            const result = store.getCard(this.currentCardId);
+            if (result) {
+                this.renderCardLogs(result.card.logs);
+            }
+
+            this.newLogInput.value = '';
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     renderLabelsSelector() {

@@ -38,7 +38,10 @@ export default class Card {
 
         cardEl.querySelector('.card-text').textContent = this.cardData.text;
 
-        if (this.cardData.description && this.cardData.description.trim()) {
+        const hasDesc = this.cardData.description && this.cardData.description.trim();
+        const hasLogs = this.cardData.logs && this.cardData.logs.length > 0;
+
+        if (hasDesc || hasLogs) {
             cardEl.classList.add('has-description');
         }
 
