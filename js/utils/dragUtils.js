@@ -3,8 +3,8 @@ export function getCardAfterElement(container, y) {
     return cards.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        return offset < 0 && offset > closest.offset ? {offset, element: child} : closest;
-    }, {offset: Number.NEGATIVE_INFINITY}).element;
+        return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 export function getColumnAfterElement(container, x) {
@@ -12,8 +12,8 @@ export function getColumnAfterElement(container, x) {
     return columns.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = x - box.left - box.width / 2;
-        return offset < 0 && offset > closest.offset ? {offset, element: child} : closest;
-    }, {offset: Number.NEGATIVE_INFINITY}).element;
+        return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 export function addDebugInnerBoxToElement(element, ratio = 0.8) {

@@ -1,7 +1,5 @@
 export const performFlipAnimation = (container, draggedElement, insertCallback) => {
-    const elements = Array.from(
-        container.querySelectorAll(`:scope > *:not(.dragging)`)
-    );
+    const elements = Array.from(container.querySelectorAll(`:scope > *:not(.dragging)`));
 
     const initialRects = new Map();
     elements.forEach(element => {

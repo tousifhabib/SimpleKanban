@@ -45,21 +45,6 @@
     white-space: nowrap;
 }
 
-.column-header button {
-    background: transparent;
-    border: none;
-    color: #5e6c84;
-    font-weight: bold;
-    margin-left: calc(var(--spacing-unit));
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-
-.column-header button:hover {
-    background-color: rgba(9, 30, 66, 0.08);
-}
-
 /* Cards Container */
 .cards {
     flex: 1;
@@ -230,59 +215,6 @@
 
 .card:hover .card-actions {
     display: flex;
-}
-
-.card-action-btn {
-    background: rgba(9, 30, 66, 0.08);
-    border: none;
-    border-radius: 4px;
-    color: var(--text-color);
-    padding: 6px;
-    transition: all 0.2s ease;
-    opacity: 0.7;
-    cursor: pointer;
-}
-
-.card-action-btn:hover {
-    background: rgba(9, 30, 66, 0.13);
-    opacity: 1;
-}
-
-/* Buttons */
-.add-card-btn,
-.add-column-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: calc(var(--spacing-unit)) calc(var(--spacing-unit) * 2);
-    border: none;
-    border-radius: calc(var(--spacing-unit) * 0.5);
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-.add-card-btn {
-    width: 100%;
-    background: transparent;
-    color: var(--primary-color);
-    justify-content: flex-start;
-}
-
-.add-card-btn:hover {
-    background: rgba(9, 30, 66, 0.08);
-}
-
-.add-column-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.add-column-btn:active {
-    background: rgba(255, 255, 255, 0.4);
-    transform: translateY(1px);
 }
 
 .add-card-form {

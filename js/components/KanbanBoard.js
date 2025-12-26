@@ -1,43 +1,16 @@
-import {store} from '../store.js';
+import { store } from '../store.js';
 import Column from './Column.js';
-import {
-    addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement
-} from '../utils/dragUtils.js';
-import {performFlipAnimation} from '../utils/flipAnimation.js';
-import {CONFIG} from './kanbanBoardConfig.js';
+import { addDebugInnerBoxToElement, getCardAfterElement, getColumnAfterElement } from '../utils/dragUtils.js';
+import { performFlipAnimation } from '../utils/flipAnimation.js';
+import { CONFIG } from './kanbanBoardConfig.js';
+import { on } from '../utils/dom.js';
 
 export default class KanbanBoard {
     constructor() {
-        this.kanbanContainer = document.getElementById(CONFIG.selectors.kanbanContainer);
-        this.addColumnModal = document.getElementById(CONFIG.selectors.addColumnModal);
-        this.modalOverlay = document.getElementById(CONFIG.selectors.modalOverlay);
-        this.addColumnForm = document.getElementById(CONFIG.selectors.addColumnForm);
-        this.columnTitleInput = document.getElementById(CONFIG.selectors.columnTitleInput);
-        this.addColumnBtn = document.getElementById(CONFIG.selectors.addColumnBtn);
-        this.cancelAddColumnBtn = document.getElementById(CONFIG.selectors.cancelAddColumn);
-
-        this.cardDetailModal = document.getElementById('cardDetailModal');
-        this.cardDetailOverlay = document.getElementById('cardDetailOverlay');
-        this.cardDetailForm = document.getElementById('cardDetailForm');
-        this.cardTitleInput = document.getElementById('cardTitleInput');
-        this.cardDescriptionInput = document.getElementById('cardDescriptionInput');
-        this.cardDetailCloseBtn = document.getElementById('cardDetailCloseBtn');
-        this.cancelCardDetailBtn = document.getElementById('cancelCardDetail');
-
-        this.cardStartDateInput = document.getElementById('cardStartDateInput');
-        this.cardDueDateInput = document.getElementById('cardDueDateInput');
-        this.cardCompletedInput = document.getElementById('cardCompletedInput');
-        this.cardPriorityInput = document.getElementById('cardPriorityInput');
-        this.labelsSelector = document.getElementById('labelsSelector');
-
-        this.manageLabelModal = document.getElementById('manageLabelModal');
-        this.manageLabelOverlay = document.getElementById('manageLabelOverlay');
-        this.manageLabelCloseBtn = document.getElementById('manageLabelCloseBtn');
-        this.manageLabelBtn = document.getElementById('manageLabelBtn');
-        this.labelsList = document.getElementById('labelsList');
-        this.newLabelName = document.getElementById('newLabelName');
-        this.newLabelColor = document.getElementById('newLabelColor');
-        this.addLabelBtn = document.getElementById('addLabelBtn');
+        Object.assign(
+            this,
+            Object.fromEntries(Object.entries(CONFIG.selectors).map(([k, id]) => [k, document.getElementById(id)]))
+        );
 
         this.currentCardId = null;
         this.currentColumnId = null;
@@ -60,97 +33,249 @@ export default class KanbanBoard {
 
         this.lastSwappedElement = null;
         this.lastAfterElement = null;
-
         this._lastLoggedContainer = null;
 
-        this.handleCardClick = this.handleCardClick.bind(this);
-
         store.subscribe(() => this.render());
+
+        this.initModals();
         this.setupEventListeners();
         this.render();
     }
 
-    setupEventListeners() {
-        this.kanbanContainer.addEventListener('dragstart', e => {
-            const card = e.target.closest('.card');
-            const col = e.target.closest('.column');
-            if (card) return this.handleDragStart(e, card, 'card');
-            if (col) return this.handleDragStart(e, col, 'column');
-        }, true);
+    initModals() {
+        this.modals = {
+            addColumn: {
+                el: this.addColumnModal,
+                overlay: this.modalOverlay,
+                reset: () => this.addColumnForm.reset()
+            },
+            cardDetail: {
+                el: this.cardDetailModal,
+                overlay: this.cardDetailOverlay,
+                reset: () => {
+                    this.cardDetailForm.reset();
+                    this.currentCardId = null;
+                    this.currentColumnId = null;
+                    this.selectedLabels = [];
+                }
+            },
+            labels: {
+                el: this.manageLabelModal,
+                overlay: this.manageLabelOverlay,
+                reset: () => {
+                    this.newLabelName.value = '';
+                    this.newLabelColor.value = '#5e6c84';
+                }
+            }
+        };
 
-        this.kanbanContainer.addEventListener('dragover', e => {
+        Object.values(this.modals).forEach((m) => {
+            m.overlay.addEventListener('click', () => this.closeModal(m));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== CONFIG.keys.escape) return;
+            Object.values(this.modals).forEach((m) => {
+                if (this.isOpen(m)) this.closeModal(m);
+            });
+        });
+    }
+
+    isOpen(modal) {
+        return modal.el.classList.contains('active');
+    }
+
+    openModal(modal) {
+        modal.el.classList.add('active');
+        modal.el.setAttribute('aria-hidden', 'false');
+    }
+
+    closeModal(modal) {
+        modal.el.classList.remove('active');
+        modal.el.setAttribute('aria-hidden', 'true');
+        modal.reset?.();
+    }
+
+    setupEventListeners() {
+        this.kanbanContainer.addEventListener(
+            'dragstart',
+            (e) => {
+                const card = e.target.closest('.card');
+                const col = e.target.closest('.column');
+                if (card) return this.handleDragStart(e, card, 'card');
+                if (col) return this.handleDragStart(e, col, 'column');
+            },
+            true
+        );
+
+        this.kanbanContainer.addEventListener(
+            'dragend',
+            () => {
+                if (!this.dragState.active) return;
+                if (this.dragState.element) this.dragState.element.classList.remove('dragging');
+                this.dragState.active = false;
+                this.dragState.element = null;
+                this._lastLoggedContainer = null;
+            },
+            true
+        );
+
+        this.kanbanContainer.addEventListener('dragover', (e) => {
             e.preventDefault();
             if (!this.dragState.active) return;
             this.handleDragOver(e);
         });
 
-        this.kanbanContainer.addEventListener('drop', e => {
+        this.kanbanContainer.addEventListener('drop', (e) => {
             e.preventDefault();
             this.handleDrop(e);
         });
 
-        this.kanbanContainer.addEventListener('dragenter', e => e.preventDefault());
+        this.kanbanContainer.addEventListener('dragenter', (e) => e.preventDefault());
 
-        document.addEventListener('click', e => this.handleClick(e));
+        on(this.kanbanContainer, 'click', '.card-action-btn', (e, btn) => {
+            const action = btn.dataset.action;
+            const cardEl = btn.closest('.card');
+            const colEl = btn.closest('.column');
+            if (!cardEl || !colEl) return;
 
-        this.setupModalListeners();
-        this.setupCardDetailModalListeners();
-        this.setupLabelModalListeners();
-    }
+            const { cardId } = cardEl.dataset;
+            const { columnId } = colEl.dataset;
 
-    setupModalListeners() {
-        this.addColumnBtn.addEventListener('click', () => this.openAddColumnModal());
-        this.cancelAddColumnBtn.addEventListener('click', () => this.closeAddColumnModal());
-        this.modalOverlay.addEventListener('click', () => this.closeAddColumnModal());
-        this.addColumnForm.addEventListener('submit', e => {
+            if (action === 'edit') this.openCardDetailModal(cardId, columnId);
+            if (action === 'delete' && confirm('Delete this card?')) store.removeCard(columnId, cardId);
+        });
+
+        on(this.kanbanContainer, 'click', '.card-complete-checkbox', (e, cb) => {
+            e.stopPropagation();
+            const cardEl = cb.closest('.card');
+            const colEl = cb.closest('.column');
+            if (!cardEl || !colEl) return;
+            store.toggleCardComplete(colEl.dataset.columnId, cardEl.dataset.cardId);
+        });
+
+        on(this.kanbanContainer, 'click', '.card', (e, cardEl) => {
+            if (e.target.closest('.card-actions') || e.target.closest('.card-complete-checkbox')) return;
+            if (cardEl.classList.contains('dragging')) return;
+            const colEl = cardEl.closest('.column');
+            if (!colEl) return;
+            this.openCardDetailModal(cardEl.dataset.cardId, colEl.dataset.columnId);
+        });
+
+        on(this.kanbanContainer, 'click', '[data-action="delete-column"]', (e, btn) => {
+            const colEl = btn.closest('.column');
+            if (!colEl) return;
+            if (confirm('Delete this column and all its cards?')) store.removeColumn(colEl.dataset.columnId);
+        });
+
+        on(this.kanbanContainer, 'click', '.add-card-btn', (e, btn) => {
+            const colEl = btn.closest('.column');
+            if (!colEl) return;
+            btn.style.display = 'none';
+            const form = colEl.querySelector('.add-card-form');
+            form.classList.add('active');
+            form.querySelector('.card-input').focus();
+        });
+
+        on(this.kanbanContainer, 'click', '[data-action="confirm-add-card"]', (e, btn) => {
+            const colEl = btn.closest('.column');
+            if (!colEl) return;
+
+            const form = colEl.querySelector('.add-card-form');
+            const addBtn = colEl.querySelector('.add-card-btn');
+            const input = form.querySelector('.card-input');
+            const text = input.value.trim();
+
+            if (text) store.addCard(colEl.dataset.columnId, text);
+
+            input.value = '';
+            form.classList.remove('active');
+            addBtn.style.display = 'block';
+        });
+
+        on(this.kanbanContainer, 'click', '[data-action="cancel-add-card"]', (e, btn) => {
+            const colEl = btn.closest('.column');
+            if (!colEl) return;
+            colEl.querySelector('.add-card-form').classList.remove('active');
+            colEl.querySelector('.add-card-btn').style.display = 'block';
+        });
+
+        on(
+            this.kanbanContainer,
+            'blur',
+            '.column-header h2',
+            (e, h2) => {
+                const colEl = h2.closest('.column');
+                if (!colEl) return;
+                const newTitle = h2.textContent.trim() || 'Untitled Column';
+                h2.textContent = newTitle;
+                store.updateColumnTitle(colEl.dataset.columnId, newTitle);
+            },
+            true
+        );
+
+        this.addColumnBtn.addEventListener('click', () => {
+            this.openModal(this.modals.addColumn);
+            this.columnTitleInput.focus();
+        });
+
+        this.cancelAddColumn.addEventListener('click', () => this.closeModal(this.modals.addColumn));
+
+        this.addColumnForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const title = this.columnTitleInput.value.trim();
             if (title) store.addColumn(title);
-            this.closeAddColumnModal();
+            this.closeModal(this.modals.addColumn);
         });
 
-        document.addEventListener('keydown', e => {
-            if (e.key === CONFIG.keys.escape) {
-                if (this.addColumnModal.classList.contains('active')) {
-                    this.closeAddColumnModal();
-                }
-                if (this.cardDetailModal.classList.contains('active')) {
-                    this.closeCardDetailModal();
-                }
-                if (this.manageLabelModal.classList.contains('active')) {
-                    this.closeLabelModal();
-                }
-            }
-        });
-    }
+        this.cardDetailCloseBtn.addEventListener('click', () => this.closeModal(this.modals.cardDetail));
+        this.cancelCardDetail.addEventListener('click', () => this.closeModal(this.modals.cardDetail));
 
-    setupCardDetailModalListeners() {
-        this.cardDetailCloseBtn.addEventListener('click', () => this.closeCardDetailModal());
-        this.cancelCardDetailBtn.addEventListener('click', () => this.closeCardDetailModal());
-        this.cardDetailOverlay.addEventListener('click', () => this.closeCardDetailModal());
-
-        this.cardDetailForm.addEventListener('submit', e => {
+        this.cardDetailForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveCardDetails();
         });
-    }
 
-    setupLabelModalListeners() {
-        this.manageLabelBtn.addEventListener('click', () => this.openLabelModal());
-        this.manageLabelCloseBtn.addEventListener('click', () => this.closeLabelModal());
-        this.manageLabelOverlay.addEventListener('click', () => this.closeLabelModal());
+        this.manageLabelBtn.addEventListener('click', () => {
+            this.renderLabelsList();
+            this.openModal(this.modals.labels);
+            this.newLabelName.focus();
+        });
+
+        this.manageLabelCloseBtn.addEventListener('click', () => this.closeModal(this.modals.labels));
+
         this.addLabelBtn.addEventListener('click', () => this.addNewLabel());
 
-        this.newLabelName.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.addNewLabel();
+        this.newLabelName.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            this.addNewLabel();
+        });
+
+        this.labelsSelector.addEventListener('change', (e) => {
+            const cb = e.target.closest('input[type="checkbox"]');
+            if (!cb) return;
+            const id = cb.value;
+            if (cb.checked) {
+                if (!this.selectedLabels.includes(id)) this.selectedLabels.push(id);
+            } else {
+                this.selectedLabels = this.selectedLabels.filter((x) => x !== id);
             }
         });
-    }
 
-    handleCardClick(cardId, columnId) {
-        this.openCardDetailModal(cardId, columnId);
+        this.labelsList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.label-edit-btn');
+            const deleteBtn = e.target.closest('.label-delete-btn');
+
+            if (editBtn) {
+                const label = store.getLabels().find((l) => l.id === editBtn.dataset.id);
+                if (label) this.editLabel(label);
+            }
+
+            if (deleteBtn) {
+                this.deleteLabel(deleteBtn.dataset.id);
+            }
+        });
     }
 
     openCardDetailModal(cardId, columnId) {
@@ -158,6 +283,7 @@ export default class KanbanBoard {
         if (!result) return;
 
         const { card } = result;
+
         this.currentCardId = cardId;
         this.currentColumnId = columnId;
 
@@ -169,11 +295,9 @@ export default class KanbanBoard {
         this.cardPriorityInput.value = card.priority || 'none';
 
         this.selectedLabels = card.labels ? [...card.labels] : [];
-
         this.renderLabelsSelector();
 
-        this.cardDetailModal.classList.add('active');
-        this.cardDetailModal.setAttribute('aria-hidden', 'false');
+        this.openModal(this.modals.cardDetail);
 
         this.cardTitleInput.focus();
         this.cardTitleInput.select();
@@ -183,43 +307,21 @@ export default class KanbanBoard {
         const labels = store.getLabels();
         this.labelsSelector.innerHTML = '';
 
-        labels.forEach(label => {
+        if (labels.length === 0) {
+            this.labelsSelector.innerHTML = '<p class="no-labels">No labels yet. Create labels from the header button.</p>';
+            return;
+        }
+
+        labels.forEach((label) => {
+            const isSelected = this.selectedLabels.includes(label.id);
             const labelEl = document.createElement('label');
             labelEl.className = 'label-checkbox';
-
-            const isSelected = this.selectedLabels.includes(label.id);
-
             labelEl.innerHTML = `
                 <input type="checkbox" value="${label.id}" ${isSelected ? 'checked' : ''}/>
                 <span class="label-chip" style="background-color: ${label.color}">${label.name}</span>
             `;
-
-            const checkbox = labelEl.querySelector('input');
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) {
-                    if (!this.selectedLabels.includes(label.id)) {
-                        this.selectedLabels.push(label.id);
-                    }
-                } else {
-                    this.selectedLabels = this.selectedLabels.filter(id => id !== label.id);
-                }
-            });
-
             this.labelsSelector.appendChild(labelEl);
         });
-
-        if (labels.length === 0) {
-            this.labelsSelector.innerHTML = '<p class="no-labels">No labels yet. Create labels from the header button.</p>';
-        }
-    }
-
-    closeCardDetailModal() {
-        this.cardDetailModal.classList.remove('active');
-        this.cardDetailModal.setAttribute('aria-hidden', 'true');
-        this.cardDetailForm.reset();
-        this.currentCardId = null;
-        this.currentColumnId = null;
-        this.selectedLabels = [];
     }
 
     saveCardDetails() {
@@ -244,28 +346,19 @@ export default class KanbanBoard {
             });
         }
 
-        this.closeCardDetailModal();
-    }
-
-    openLabelModal() {
-        this.renderLabelsList();
-        this.manageLabelModal.classList.add('active');
-        this.manageLabelModal.setAttribute('aria-hidden', 'false');
-        this.newLabelName.focus();
-    }
-
-    closeLabelModal() {
-        this.manageLabelModal.classList.remove('active');
-        this.manageLabelModal.setAttribute('aria-hidden', 'true');
-        this.newLabelName.value = '';
-        this.newLabelColor.value = '#5e6c84';
+        this.closeModal(this.modals.cardDetail);
     }
 
     renderLabelsList() {
         const labels = store.getLabels();
         this.labelsList.innerHTML = '';
 
-        labels.forEach(label => {
+        if (labels.length === 0) {
+            this.labelsList.innerHTML = '<p class="no-labels">No labels created yet.</p>';
+            return;
+        }
+
+        labels.forEach((label) => {
             const labelItem = document.createElement('div');
             labelItem.className = 'label-item';
             labelItem.innerHTML = `
@@ -275,72 +368,43 @@ export default class KanbanBoard {
                     <button class="label-delete-btn" data-id="${label.id}" title="Delete">🗑️</button>
                 </div>
             `;
-
-            const editBtn = labelItem.querySelector('.label-edit-btn');
-            const deleteBtn = labelItem.querySelector('.label-delete-btn');
-
-            editBtn.addEventListener('click', () => this.editLabel(label));
-            deleteBtn.addEventListener('click', () => this.deleteLabel(label.id));
-
             this.labelsList.appendChild(labelItem);
         });
-
-        if (labels.length === 0) {
-            this.labelsList.innerHTML = '<p class="no-labels">No labels created yet.</p>';
-        }
     }
 
     addNewLabel() {
         const name = this.newLabelName.value.trim();
         const color = this.newLabelColor.value;
 
-        if (name) {
-            store.addLabel(name, color);
-            this.newLabelName.value = '';
-            this.newLabelColor.value = '#5e6c84';
-            this.renderLabelsList();
-        }
+        if (!name) return;
+
+        store.addLabel(name, color);
+        this.newLabelName.value = '';
+        this.newLabelColor.value = '#5e6c84';
+        this.renderLabelsList();
     }
 
     editLabel(label) {
         const newName = prompt('Enter new label name:', label.name);
-        if (newName && newName.trim()) {
-            const newColor = prompt('Enter new color (hex):', label.color) || label.color;
-            store.updateLabel(label.id, newName.trim(), newColor);
-            this.renderLabelsList();
-        }
+        if (!newName || !newName.trim()) return;
+
+        const newColor = prompt('Enter new color (hex):', label.color) || label.color;
+        store.updateLabel(label.id, newName.trim(), newColor);
+        this.renderLabelsList();
     }
 
     deleteLabel(labelId) {
-        if (confirm('Delete this label? It will be removed from all cards.')) {
-            store.removeLabel(labelId);
-            this.renderLabelsList();
-        }
-    }
-
-    handleClick(e) {
-        const btn = e.target.closest('.card-action-btn');
-        if (!btn) return;
-
-        const action = btn.dataset.action;
-        const cardEl = btn.closest('.card');
-        const colEl = btn.closest('.column');
-        if (!cardEl || !colEl) return;
-
-        const {cardId} = cardEl.dataset;
-        const {columnId: colId} = colEl.dataset;
-
-        if (action === 'edit') {
-            this.openCardDetailModal(cardId, colId);
-        } else if (action === 'delete' && confirm('Delete this card?')) {
-            store.removeCard(colId, cardId);
-        }
+        if (!confirm('Delete this label? It will be removed from all cards.')) return;
+        store.removeLabel(labelId);
+        this.renderLabelsList();
     }
 
     handleDragStart(e, element, type) {
         const rect = element.getBoundingClientRect();
 
         this._lastLoggedContainer = null;
+
+        element.classList.add('dragging');
 
         this.dragState = {
             active: true,
@@ -352,7 +416,7 @@ export default class KanbanBoard {
             lastX: e.clientX,
             lastY: e.clientY,
             direction: null,
-            cachedTargets: this.cacheTargets(type, element)
+            cachedTargets: this.cacheTargets(type)
         };
 
         this.lastSwappedElement = null;
@@ -365,9 +429,7 @@ export default class KanbanBoard {
         }
 
         const selector = type === 'card' ? '.card' : '.column';
-        document
-            .querySelectorAll(selector)
-            .forEach(el => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
+        document.querySelectorAll(selector).forEach((el) => addDebugInnerBoxToElement(el, this.DEBUG_RATIO));
     }
 
     cacheTargets(type) {
@@ -375,12 +437,10 @@ export default class KanbanBoard {
         const selector = type === 'card' ? '.card:not(.dragging)' : '.column:not(.dragging)';
         const elements = document.querySelectorAll(selector);
 
-        elements.forEach(el => {
+        elements.forEach((el) => {
             const rect = el.getBoundingClientRect();
             const innerRect = this.calculateInnerRect(rect, this.DEBUG_RATIO);
-            targets.push({
-                element: el, rect, innerRect
-            });
+            targets.push({ element: el, rect, innerRect });
         });
 
         return targets;
@@ -401,30 +461,23 @@ export default class KanbanBoard {
     }
 
     handleDragOver(e) {
-        const {clientX, clientY} = e;
+        const { clientX, clientY } = e;
         this.updateDirection(clientX, clientY);
 
         const ghostRect = this.getGhostRect(clientX, clientY);
         const collisionHandled = this.checkGhostCollision(ghostRect);
 
         if (!collisionHandled) {
-            if (this.dragState.type === 'card') {
-                this.handleFallbackCardMove(e);
-            } else {
-                this.handleFallbackColumnMove(e);
-            }
+            if (this.dragState.type === 'card') this.handleFallbackCardMove(e);
+            else this.handleFallbackColumnMove(e);
         }
     }
 
     updateDirection(x, y) {
         if (this.dragState.type === 'column') {
-            if (Math.abs(x - this.dragState.lastX) > 0) {
-                this.dragState.direction = x > this.dragState.lastX ? 'right' : 'left';
-            }
+            if (Math.abs(x - this.dragState.lastX) > 0) this.dragState.direction = x > this.dragState.lastX ? 'right' : 'left';
         } else {
-            if (Math.abs(y - this.dragState.lastY) > 0) {
-                this.dragState.direction = y > this.dragState.lastY ? 'down' : 'up';
-            }
+            if (Math.abs(y - this.dragState.lastY) > 0) this.dragState.direction = y > this.dragState.lastY ? 'down' : 'up';
         }
 
         this.dragState.lastX = x;
@@ -437,16 +490,21 @@ export default class KanbanBoard {
         const width = this.dragState.rect.width;
         const height = this.dragState.rect.height;
 
-        return this.calculateInnerRect({
-            left, top, right: left + width, bottom: top + height, width, height
-        }, this.DEBUG_RATIO);
+        return this.calculateInnerRect(
+            { left, top, right: left + width, bottom: top + height, width, height },
+            this.DEBUG_RATIO
+        );
     }
 
     checkGhostCollision(ghostRect) {
         for (const target of this.dragState.cachedTargets) {
             if (target.element === this.lastSwappedElement) continue;
 
-            const intersect = ghostRect.left < target.innerRect.right && ghostRect.right > target.innerRect.left && ghostRect.top < target.innerRect.bottom && ghostRect.bottom > target.innerRect.top;
+            const intersect =
+                ghostRect.left < target.innerRect.right &&
+                ghostRect.right > target.innerRect.left &&
+                ghostRect.top < target.innerRect.bottom &&
+                ghostRect.bottom > target.innerRect.top;
 
             const debugBox = target.element.querySelector('.debug-inner-box');
 
@@ -498,7 +556,7 @@ export default class KanbanBoard {
         this.lastSwappedElement = staticEl;
 
         requestAnimationFrame(() => {
-            this.dragState.cachedTargets = this.cacheTargets(this.dragState.type, this.dragState.element);
+            this.dragState.cachedTargets = this.cacheTargets(this.dragState.type);
         });
     }
 
@@ -509,9 +567,7 @@ export default class KanbanBoard {
 
         parentB.insertBefore(a, b);
 
-        if (parentA === parentB) {
-            parentA.insertBefore(b, siblingA);
-        }
+        if (parentA === parentB) parentA.insertBefore(b, siblingA);
     }
 
     handleFallbackCardMove(e) {
@@ -519,25 +575,19 @@ export default class KanbanBoard {
 
         if (!container) {
             const column = e.target.closest('.column');
-            if (column) {
-                container = column.querySelector('.cards');
-            }
+            if (column) container = column.querySelector('.cards');
         }
 
         if (!container) return;
 
         const afterEl = getCardAfterElement(container, e.clientY);
-
         const isNewContainer = container !== this.dragState.element.parentNode;
 
         if (afterEl !== this.lastAfterElement || isNewContainer) {
             this.lastAfterElement = afterEl;
             performFlipAnimation(container, this.dragState.element, () => {
-                if (afterEl) {
-                    container.insertBefore(this.dragState.element, afterEl);
-                } else {
-                    container.appendChild(this.dragState.element);
-                }
+                if (afterEl) container.insertBefore(this.dragState.element, afterEl);
+                else container.appendChild(this.dragState.element);
             });
         }
     }
@@ -547,92 +597,58 @@ export default class KanbanBoard {
         if (afterEl !== this.lastAfterElement) {
             this.lastAfterElement = afterEl;
             performFlipAnimation(this.kanbanContainer, this.dragState.element, () => {
-                if (afterEl) {
-                    this.kanbanContainer.insertBefore(this.dragState.element, afterEl);
-                } else {
-                    this.kanbanContainer.appendChild(this.dragState.element);
-                }
+                if (afterEl) this.kanbanContainer.insertBefore(this.dragState.element, afterEl);
+                else this.kanbanContainer.appendChild(this.dragState.element);
             });
         }
     }
 
-    handleDrop(e) {
-        console.group('⬇️ Handle Drop Triggered');
+    handleDrop() {
         const element = this.dragState.element;
-        if (!element) {
-            console.error('❌ Error: No dragged element found in state.');
-            console.groupEnd();
-            return;
-        }
+        if (!element) return;
 
         element.classList.remove('dragging');
 
         if (this.dragState.type === 'column') {
-            const cols = Array.from(this.kanbanContainer.querySelectorAll('.column')).map(c => c.dataset.columnId);
+            const cols = Array.from(this.kanbanContainer.querySelectorAll('.column')).map((c) => c.dataset.columnId);
             store.reorderColumns(cols);
-            console.log('Reordered Columns');
         } else {
             const newCol = element.closest('.column');
 
-            console.log('Dragged Element:', element);
-            console.log('Detected New Column (via DOM):', newCol);
-
             if (newCol) {
-                const {cardId} = element.dataset;
-                const {columnId: targetColumnId} = newCol.dataset;
+                const { cardId } = element.dataset;
+                const { columnId: targetColumnId } = newCol.dataset;
 
                 const state = store.getState();
                 let oldColumnId;
 
                 for (const c of state.columns) {
-                    if (c.cards.some(cd => cd.id === cardId)) {
+                    if (c.cards.some((cd) => cd.id === cardId)) {
                         oldColumnId = c.id;
                         break;
                     }
                 }
 
-                console.log(`Card ID: ${cardId}`);
-                console.log(`Old Column ID: ${oldColumnId}`);
-                console.log(`Target Column ID: ${targetColumnId}`);
-
                 const container = newCol.querySelector('.cards');
-                const newOrder = Array.from(container.querySelectorAll('.card')).map(el => el.dataset.cardId);
+                const newOrder = Array.from(container.querySelectorAll('.card')).map((el) => el.dataset.cardId);
 
                 if (oldColumnId === targetColumnId) {
-                    console.log('Action: Reordering in same column');
                     store.reorderCards(targetColumnId, newOrder);
                 } else {
-                    console.log('Action: Moving to new column');
                     store.moveCard(cardId, oldColumnId, targetColumnId, newOrder);
                 }
-            } else {
-                console.error('❌ Error: Dropped card but could not find parent .column in DOM.');
             }
         }
 
         this.dragState.active = false;
         this.dragState.element = null;
         this._lastLoggedContainer = null;
-        console.groupEnd();
-    }
-
-    openAddColumnModal() {
-        this.addColumnModal.classList.add('active');
-        this.addColumnModal.setAttribute('aria-hidden', 'false');
-        this.columnTitleInput.focus();
-    }
-
-    closeAddColumnModal() {
-        this.addColumnModal.classList.remove('active');
-        this.addColumnModal.setAttribute('aria-hidden', 'true');
-        this.addColumnForm.reset();
     }
 
     render() {
         this.kanbanContainer.innerHTML = '';
-        store.getState().columns.forEach(colData => {
-            const column = new Column(colData, this.handleCardClick);
-            this.kanbanContainer.appendChild(column.render());
+        store.getState().columns.forEach((colData) => {
+            this.kanbanContainer.appendChild(new Column(colData).render());
         });
     }
 }
