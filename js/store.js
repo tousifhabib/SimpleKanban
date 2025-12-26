@@ -10,36 +10,129 @@ const DEFAULT_LABELS = [
     { id: 'label-4', name: 'Review', color: '#8e24aa' }
 ];
 
-const DEFAULT_STATE = {
-    columns: [],
-    labels: DEFAULT_LABELS
+const TEMPLATES = {
+    basic: ['To Do', 'Doing', 'Done'],
+    software: ['Backlog', 'Ready', 'In Progress', 'Review', 'Done'],
+    sales: ['Lead', 'Contacted', 'Proposal', 'Closed'],
+    empty: []
 };
 
-const newCard = (text) => ({
-    id: generateId('card'),
-    text,
-    description: '',
-    startDate: null,
-    dueDate: null,
-    completed: false,
-    priority: 'none',
-    labels: []
-});
+const newCard = (text) => {
+    const now = new Date().toISOString();
+    return {
+        id: generateId('card'),
+        text,
+        description: '',
+        startDate: null,
+        dueDate: null,
+        completed: false,
+        priority: 'none',
+        labels: [],
+        createdAt: now,
+        updatedAt: now
+    };
+};
 
 class Store {
     constructor() {
-        const savedState = loadFromLocalStorage(STORAGE_KEY);
-        this.state = savedState || structuredClone(DEFAULT_STATE);
-        this.state.labels ||= structuredClone(DEFAULT_LABELS);
-
+        const savedData = loadFromLocalStorage(STORAGE_KEY);
         this.listeners = [];
-        this.subscribe((state) => {
-            saveToLocalStorage(STORAGE_KEY, state);
-        });
+
+        if (savedData && Array.isArray(savedData.columns)) {
+            const defaultId = generateId('board');
+            this.state = {
+                activeBoardId: defaultId,
+                boards: [{
+                    id: defaultId,
+                    name: 'My Board',
+                    columns: savedData.columns,
+                    labels: savedData.labels || DEFAULT_LABELS
+                }]
+            };
+            this.state.boards[0].columns.forEach(col => {
+                col.cards.forEach(card => {
+                    if (!card.createdAt) card.createdAt = new Date().toISOString();
+                    if (!card.updatedAt) card.updatedAt = new Date().toISOString();
+                });
+            });
+        } else {
+            this.state = savedData || this.createInitialState();
+        }
+
+        this.subscribe((state) => saveToLocalStorage(STORAGE_KEY, state));
+    }
+
+    createInitialState() {
+        const boardId = generateId('board');
+        return {
+            activeBoardId: boardId,
+            boards: [{
+                id: boardId,
+                name: 'My First Board',
+                columns: [],
+                labels: structuredClone(DEFAULT_LABELS)
+            }]
+        };
+    }
+
+    getBoards() {
+        return this.state.boards.map(b => ({ id: b.id, name: b.name }));
+    }
+
+    getActiveBoardId() {
+        return this.state.activeBoardId;
+    }
+
+    getActiveBoard() {
+        return this.state.boards.find(b => b.id === this.state.activeBoardId);
+    }
+
+    setActiveBoard(boardId) {
+        if (this.state.boards.some(b => b.id === boardId)) {
+            this.state.activeBoardId = boardId;
+            this.notify();
+        }
+    }
+
+    createBoard(name, templateType = 'basic') {
+        const newId = generateId('board');
+        const columns = (TEMPLATES[templateType] || TEMPLATES.basic).map(title => ({
+            id: generateId('column'),
+            title,
+            cards: []
+        }));
+
+        const newBoard = {
+            id: newId,
+            name: name || 'New Board',
+            columns,
+            labels: structuredClone(DEFAULT_LABELS)
+        };
+
+        this.state.boards.push(newBoard);
+        this.state.activeBoardId = newId;
+        this.notify();
+    }
+
+    importData(jsonData) {
+        try {
+            const data = JSON.parse(jsonData);
+            if (!data.boards || !Array.isArray(data.boards)) throw new Error('Invalid format');
+
+            this.state = data;
+            if (!this.state.boards.find(b => b.id === this.state.activeBoardId)) {
+                this.state.activeBoardId = this.state.boards[0]?.id;
+            }
+            this.notify();
+            return true;
+        } catch (e) {
+            console.error('Import failed', e);
+            return false;
+        }
     }
 
     getState() {
-        return this.state;
+        return this.getActiveBoard();
     }
 
     subscribe(listener) {
@@ -54,7 +147,7 @@ class Store {
     }
 
     col(columnId) {
-        return this.state.columns.find((c) => c.id === columnId);
+        return this.getState().columns.find((c) => c.id === columnId);
     }
 
     card(columnId, cardId) {
@@ -62,18 +155,17 @@ class Store {
     }
 
     getLabels() {
-        return this.state.labels || [];
+        return this.getState().labels || [];
     }
 
     addLabel(name, color) {
         const newLabel = { id: generateId('label'), name, color };
-        this.state.labels.push(newLabel);
+        this.getState().labels.push(newLabel);
         this.notify();
-        return newLabel;
     }
 
     updateLabel(labelId, name, color) {
-        const label = this.state.labels.find((l) => l.id === labelId);
+        const label = this.getLabels().find((l) => l.id === labelId);
         if (!label) return;
         label.name = name;
         label.color = color;
@@ -81,8 +173,9 @@ class Store {
     }
 
     removeLabel(labelId) {
-        this.state.labels = this.state.labels.filter((l) => l.id !== labelId);
-        this.state.columns.forEach((col) => {
+        const board = this.getState();
+        board.labels = board.labels.filter((l) => l.id !== labelId);
+        board.columns.forEach((col) => {
             col.cards.forEach((card) => {
                 if (card.labels) card.labels = card.labels.filter((id) => id !== labelId);
             });
@@ -91,7 +184,7 @@ class Store {
     }
 
     addColumn(title) {
-        this.state.columns.push({
+        this.getState().columns.push({
             id: generateId('column'),
             title: title || 'New Column',
             cards: []
@@ -100,7 +193,8 @@ class Store {
     }
 
     removeColumn(columnId) {
-        this.state.columns = this.state.columns.filter((c) => c.id !== columnId);
+        const board = this.getState();
+        board.columns = board.columns.filter((c) => c.id !== columnId);
         this.notify();
     }
 
@@ -122,6 +216,7 @@ class Store {
         const card = this.card(columnId, cardId);
         if (!card) return;
         Object.assign(card, updates);
+        card.updatedAt = new Date().toISOString();
         this.notify();
     }
 
@@ -129,11 +224,12 @@ class Store {
         const card = this.card(columnId, cardId);
         if (!card) return;
         card.completed = !card.completed;
+        card.updatedAt = new Date().toISOString();
         this.notify();
     }
 
     getCard(cardId) {
-        for (const col of this.state.columns) {
+        for (const col of this.getState().columns) {
             const card = col.cards.find((c) => c.id === cardId);
             if (card) return { card, columnId: col.id };
         }
@@ -148,7 +244,8 @@ class Store {
     }
 
     reorderColumns(columnOrder) {
-        this.state.columns = columnOrder.map((id) => this.state.columns.find((c) => c.id === id));
+        const board = this.getState();
+        board.columns = columnOrder.map((id) => board.columns.find((c) => c.id === id));
         this.notify();
     }
 
@@ -174,6 +271,8 @@ class Store {
 
         const newCol = this.col(newColumnId);
         if (newCol && cardData) {
+            cardData.updatedAt = new Date().toISOString();
+
             if (!newCol.cards.some((c) => c.id === cardId)) newCol.cards.push(cardData);
 
             const orderedCards = newCardOrder.map((id) => newCol.cards.find((c) => c.id === id)).filter(Boolean);

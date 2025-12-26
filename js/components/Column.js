@@ -11,8 +11,11 @@ export default class Column {
 
         colEl.dataset.columnId = this.columnData.id;
 
-        const header = colEl.querySelector('.column-header h2');
-        header.textContent = this.columnData.title;
+        const headerTitle = colEl.querySelector('.column-title-text');
+        headerTitle.textContent = this.columnData.title;
+
+        const headerInput = colEl.querySelector('.column-title-input');
+        headerInput.value = this.columnData.title;
 
         const cardsContainer = colEl.querySelector('.cards');
         this.columnData.cards.forEach((cardData) => {

@@ -1,6 +1,20 @@
 export const CONFIG = {
     selectors: {
         kanbanContainer: 'kanbanContainer',
+
+        boardSelector: 'boardSelector',
+        addBoardBtn: 'addBoardBtn',
+        createBoardModal: 'createBoardModal',
+        createBoardOverlay: 'createBoardOverlay',
+        createBoardForm: 'createBoardForm',
+        newBoardName: 'newBoardName',
+        newBoardTemplate: 'newBoardTemplate',
+        cancelCreateBoard: 'cancelCreateBoard',
+
+        importBtn: 'importBtn',
+        exportBtn: 'exportBtn',
+        importFileInput: 'importFileInput',
+
         addColumnModal: 'addColumnModal',
         modalOverlay: 'modalOverlay',
         addColumnForm: 'addColumnForm',

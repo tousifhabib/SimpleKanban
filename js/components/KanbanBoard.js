@@ -35,11 +35,16 @@ export default class KanbanBoard {
         this.lastAfterElement = null;
         this._lastLoggedContainer = null;
 
-        store.subscribe(() => this.render());
-
         this.initModals();
         this.setupEventListeners();
+
+        this.updateBoardSelector();
         this.render();
+
+        store.subscribe(() => {
+            this.updateBoardSelector();
+            this.render();
+        });
     }
 
     initModals() {
@@ -48,6 +53,11 @@ export default class KanbanBoard {
                 el: this.addColumnModal,
                 overlay: this.modalOverlay,
                 reset: () => this.addColumnForm.reset()
+            },
+            createBoard: {
+                el: this.createBoardModal,
+                overlay: this.createBoardOverlay,
+                reset: () => this.createBoardForm.reset()
             },
             cardDetail: {
                 el: this.cardDetailModal,
@@ -70,7 +80,7 @@ export default class KanbanBoard {
         };
 
         Object.values(this.modals).forEach((m) => {
-            m.overlay.addEventListener('click', () => this.closeModal(m));
+            if(m.overlay) m.overlay.addEventListener('click', () => this.closeModal(m));
         });
 
         document.addEventListener('keydown', (e) => {
@@ -96,7 +106,68 @@ export default class KanbanBoard {
         modal.reset?.();
     }
 
+    updateBoardSelector() {
+        const boards = store.getBoards();
+        const activeId = store.getActiveBoardId();
+
+        this.boardSelector.innerHTML = '';
+        boards.forEach(b => {
+            const option = document.createElement('option');
+            option.value = b.id;
+            option.textContent = b.name;
+            if (b.id === activeId) option.selected = true;
+            this.boardSelector.appendChild(option);
+        });
+    }
+
     setupEventListeners() {
+        this.boardSelector.addEventListener('change', (e) => {
+            store.setActiveBoard(e.target.value);
+        });
+
+        this.addBoardBtn.addEventListener('click', () => {
+            this.openModal(this.modals.createBoard);
+            this.newBoardName.focus();
+        });
+
+        this.cancelCreateBoard.addEventListener('click', () => this.closeModal(this.modals.createBoard));
+
+        this.createBoardForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = this.newBoardName.value.trim();
+            const template = this.newBoardTemplate.value;
+            if(name) store.createBoard(name, template);
+            this.closeModal(this.modals.createBoard);
+        });
+
+        this.exportBtn.addEventListener('click', () => {
+            const data = JSON.stringify(store.state, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kanban-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        this.importBtn.addEventListener('click', () => {
+            this.importFileInput.click();
+        });
+
+        this.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const success = store.importData(evt.target.result);
+                if (success) alert('Board imported successfully!');
+                else alert('Failed to import board. Invalid JSON.');
+                this.importFileInput.value = '';
+            };
+            reader.readAsText(file);
+        });
+
         this.kanbanContainer.addEventListener(
             'dragstart',
             (e) => {
@@ -168,6 +239,24 @@ export default class KanbanBoard {
             if (confirm('Delete this column and all its cards?')) store.removeColumn(colEl.dataset.columnId);
         });
 
+        on(this.kanbanContainer, 'click', '.column-title-text', (e, textEl) => {
+            const container = textEl.parentElement;
+            const input = container.querySelector('.column-title-input');
+            textEl.style.display = 'none';
+            input.style.display = 'block';
+            input.focus();
+        });
+
+        on(this.kanbanContainer, 'blur', '.column-title-input', (e, input) => {
+            this.saveColumnTitle(input);
+        }, true);
+
+        on(this.kanbanContainer, 'keydown', '.column-title-input', (e, input) => {
+            if (e.key === 'Enter') {
+                input.blur();
+            }
+        });
+
         on(this.kanbanContainer, 'click', '.add-card-btn', (e, btn) => {
             const colEl = btn.closest('.column');
             if (!colEl) return;
@@ -199,20 +288,6 @@ export default class KanbanBoard {
             colEl.querySelector('.add-card-form').classList.remove('active');
             colEl.querySelector('.add-card-btn').style.display = 'block';
         });
-
-        on(
-            this.kanbanContainer,
-            'blur',
-            '.column-header h2',
-            (e, h2) => {
-                const colEl = h2.closest('.column');
-                if (!colEl) return;
-                const newTitle = h2.textContent.trim() || 'Untitled Column';
-                h2.textContent = newTitle;
-                store.updateColumnTitle(colEl.dataset.columnId, newTitle);
-            },
-            true
-        );
 
         this.addColumnBtn.addEventListener('click', () => {
             this.openModal(this.modals.addColumn);
@@ -276,6 +351,21 @@ export default class KanbanBoard {
                 this.deleteLabel(deleteBtn.dataset.id);
             }
         });
+    }
+
+    saveColumnTitle(input) {
+        const colEl = input.closest('.column');
+        const textEl = colEl.querySelector('.column-title-text');
+
+        const newTitle = input.value.trim() || 'Untitled Column';
+
+        textEl.textContent = newTitle;
+        input.style.display = 'none';
+        textEl.style.display = 'block';
+
+        if(colEl.dataset.columnId) {
+            store.updateColumnTitle(colEl.dataset.columnId, newTitle);
+        }
     }
 
     openCardDetailModal(cardId, columnId) {
@@ -647,8 +737,11 @@ export default class KanbanBoard {
 
     render() {
         this.kanbanContainer.innerHTML = '';
-        store.getState().columns.forEach((colData) => {
-            this.kanbanContainer.appendChild(new Column(colData).render());
-        });
+        const boardState = store.getState();
+        if(boardState && boardState.columns) {
+            boardState.columns.forEach((colData) => {
+                this.kanbanContainer.appendChild(new Column(colData).render());
+            });
+        }
     }
 }

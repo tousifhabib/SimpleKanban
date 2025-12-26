@@ -7,14 +7,46 @@
 </head>
 <body>
 <header>
-    <h1>Dynamic Kanban Board</h1>
+    <div class="header-section">
+        <h1>Dynamic Kanban</h1>
+        <div class="board-selector-wrapper">
+            <select id="boardSelector" class="board-select"></select>
+            <button class="header-btn-icon" id="addBoardBtn" title="Create New Board">+</button>
+        </div>
+    </div>
     <div class="header-actions">
+        <input type="file" id="importFileInput" hidden accept=".json" />
+        <button class="header-btn" id="importBtn">📥 Import</button>
+        <button class="header-btn" id="exportBtn">📤 Export</button>
+        <div class="divider"></div>
         <button class="header-btn" id="manageLabelBtn">🏷️ Labels</button>
         <button class="add-column-btn" id="addColumnBtn">+ Add Column</button>
     </div>
 </header>
 
 <div class="kanban-container" id="kanbanContainer"></div>
+
+<!-- Add Board Modal -->
+<div class="modal" id="createBoardModal" aria-hidden="true">
+    <div class="modal-overlay" id="createBoardOverlay"></div>
+    <div class="modal-content" role="dialog" aria-modal="true">
+        <h2>Create New Board</h2>
+        <form id="createBoardForm">
+            <input type="text" id="newBoardName" class="column-input" placeholder="Board Name" required />
+            <label class="card-detail-label">Template</label>
+            <select id="newBoardTemplate" class="priority-select" style="margin-bottom: 16px;">
+                <option value="empty">Empty Board</option>
+                <option value="basic" selected>Basic Kanban (To Do, Doing, Done)</option>
+                <option value="software">Software Dev (Backlog, Ready, In Progress, Review, Done)</option>
+                <option value="sales">Sales Pipeline (Lead, Contacted, Proposal, Closed)</option>
+            </select>
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <button type="button" class="btn btn-secondary" id="cancelCreateBoard">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Add Column Modal -->
 <div class="modal" id="addColumnModal" aria-hidden="true">
@@ -146,7 +178,10 @@
 <template id="columnTemplate">
     <div class="column" draggable="true">
         <div class="column-header">
-            <h2 contenteditable="true"></h2>
+            <div class="column-title-container">
+                <h2 class="column-title-text" title="Click to edit"></h2>
+                <input type="text" class="column-title-input" style="display: none;">
+            </div>
             <button data-action="delete-column">&times;</button>
         </div>
         <div class="cards"></div>
