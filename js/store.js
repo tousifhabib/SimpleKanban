@@ -1,35 +1,35 @@
 import {
   loadFromLocalStorage,
   saveToLocalStorage,
-} from "./services/localStorageService.js";
-import { generateId } from "./utils/id.js";
+} from './services/localStorageService.js';
+import { generateId } from './utils/id.js';
 
-const STORAGE_KEY = "flexibleKanbanState";
+const STORAGE_KEY = 'flexibleKanbanState';
 
 const DEFAULT_LABELS = [
-  { id: "label-1", name: "Bug", color: "#e53935" },
-  { id: "label-2", name: "Feature", color: "#43a047" },
-  { id: "label-3", name: "Urgent", color: "#ff9800" },
-  { id: "label-4", name: "Review", color: "#8e24aa" },
+  { id: 'label-1', name: 'Bug', color: '#e53935' },
+  { id: 'label-2', name: 'Feature', color: '#43a047' },
+  { id: 'label-3', name: 'Urgent', color: '#ff9800' },
+  { id: 'label-4', name: 'Review', color: '#8e24aa' },
 ];
 
 const TEMPLATES = {
-  basic: ["To Do", "Doing", "Done"],
-  software: ["Backlog", "Ready", "In Progress", "Review", "Done"],
-  sales: ["Lead", "Contacted", "Proposal", "Closed"],
+  basic: ['To Do', 'Doing', 'Done'],
+  software: ['Backlog', 'Ready', 'In Progress', 'Review', 'Done'],
+  sales: ['Lead', 'Contacted', 'Proposal', 'Closed'],
   empty: [],
 };
 
 const newCard = (text) => {
   const now = new Date().toISOString();
   return {
-    id: generateId("card"),
+    id: generateId('card'),
     text,
-    description: "",
+    description: '',
     startDate: null,
     dueDate: null,
     completed: false,
-    priority: "none",
+    priority: 'none',
     labels: [],
     createdAt: now,
     updatedAt: now,
@@ -42,13 +42,13 @@ class Store {
     this.listeners = [];
 
     if (savedData && Array.isArray(savedData.columns)) {
-      const defaultId = generateId("board");
+      const defaultId = generateId('board');
       this.state = {
         activeBoardId: defaultId,
         boards: [
           {
             id: defaultId,
-            name: "My Board",
+            name: 'My Board',
             columns: savedData.columns,
             labels: savedData.labels || DEFAULT_LABELS,
           },
@@ -68,13 +68,13 @@ class Store {
   }
 
   createInitialState() {
-    const boardId = generateId("board");
+    const boardId = generateId('board');
     return {
       activeBoardId: boardId,
       boards: [
         {
           id: boardId,
-          name: "My First Board",
+          name: 'My First Board',
           columns: [],
           labels: structuredClone(DEFAULT_LABELS),
         },
@@ -101,19 +101,19 @@ class Store {
     }
   }
 
-  createBoard(name, templateType = "basic") {
-    const newId = generateId("board");
+  createBoard(name, templateType = 'basic') {
+    const newId = generateId('board');
     const columns = (TEMPLATES[templateType] || TEMPLATES.basic).map(
       (title) => ({
-        id: generateId("column"),
+        id: generateId('column'),
         title,
         cards: [],
-      })
+      }),
     );
 
     const newBoard = {
       id: newId,
-      name: name || "New Board",
+      name: name || 'New Board',
       columns,
       labels: structuredClone(DEFAULT_LABELS),
     };
@@ -127,7 +127,7 @@ class Store {
     const board = this.state.boards.find((b) => b.id === boardId);
     if (!board) return false;
 
-    const newName = (name || "").trim();
+    const newName = (name || '').trim();
     if (!newName) return false;
 
     board.name = newName;
@@ -156,7 +156,7 @@ class Store {
     try {
       const data = JSON.parse(jsonData);
       if (!data.boards || !Array.isArray(data.boards))
-        throw new Error("Invalid format");
+        throw new Error('Invalid format');
 
       this.state = data;
       if (!this.state.boards.find((b) => b.id === this.state.activeBoardId)) {
@@ -165,7 +165,7 @@ class Store {
       this.notify();
       return true;
     } catch (e) {
-      console.error("Import failed", e);
+      console.error('Import failed', e);
       return false;
     }
   }
@@ -198,7 +198,7 @@ class Store {
   }
 
   addLabel(name, color) {
-    const newLabel = { id: generateId("label"), name, color };
+    const newLabel = { id: generateId('label'), name, color };
     this.getState().labels.push(newLabel);
     this.notify();
   }
@@ -225,8 +225,8 @@ class Store {
 
   addColumn(title) {
     this.getState().columns.push({
-      id: generateId("column"),
-      title: title || "New Column",
+      id: generateId('column'),
+      title: title || 'New Column',
       cards: [],
     });
     this.notify();
@@ -286,7 +286,7 @@ class Store {
   reorderColumns(columnOrder) {
     const board = this.getState();
     board.columns = columnOrder.map((id) =>
-      board.columns.find((c) => c.id === id)
+      board.columns.find((c) => c.id === id),
     );
     this.notify();
   }
@@ -299,7 +299,7 @@ class Store {
       .map((id) => col.cards.find((card) => card.id === id))
       .filter(Boolean);
     const missingCards = col.cards.filter(
-      (card) => !cardOrder.includes(card.id)
+      (card) => !cardOrder.includes(card.id),
     );
     col.cards = [...newCards, ...missingCards];
 
@@ -326,7 +326,7 @@ class Store {
         .map((id) => newCol.cards.find((c) => c.id === id))
         .filter(Boolean);
       const remainingCards = newCol.cards.filter(
-        (card) => !newCardOrder.includes(card.id)
+        (card) => !newCardOrder.includes(card.id),
       );
       newCol.cards = [...orderedCards, ...remainingCards];
     }

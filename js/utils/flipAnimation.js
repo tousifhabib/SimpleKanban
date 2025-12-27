@@ -1,10 +1,10 @@
 export const performFlipAnimation = (
   container,
   draggedElement,
-  insertCallback
+  insertCallback,
 ) => {
   const elements = Array.from(
-    container.querySelectorAll(`:scope > *:not(.dragging)`)
+    container.querySelectorAll(`:scope > *:not(.dragging)`),
   );
 
   const initialRects = new Map();
@@ -22,12 +22,12 @@ export const performFlipAnimation = (
     const deltaY = oldRect.top - newRect.top;
 
     if (deltaX !== 0 || deltaY !== 0) {
-      element.style.transition = "none";
+      element.style.transition = 'none';
       element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
       requestAnimationFrame(() => {
-        element.style.transition = "transform 300ms ease";
-        element.style.transform = "";
+        element.style.transition = 'transform 300ms ease';
+        element.style.transform = '';
       });
     }
   });

@@ -1,5 +1,5 @@
 export const $ = (idOrSel, root = document) =>
-  idOrSel.startsWith("#") || idOrSel.startsWith(".")
+  idOrSel.startsWith('#') || idOrSel.startsWith('.')
     ? root.querySelector(idOrSel)
     : root.getElementById(idOrSel);
 
@@ -13,6 +13,6 @@ export const on = (el, event, sel, fn, opts) => {
       const t = e.target.closest(sel);
       if (t && el.contains(t)) fn(e, t);
     },
-    opts
+    opts,
   );
 };
