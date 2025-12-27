@@ -1,246 +1,357 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dynamic Kanban Board</title>
-</head>
-<body>
-<header>
-    <div class="header-section">
+  </head>
+  <body>
+    <header>
+      <div class="header-section">
         <h1>Dynamic Kanban</h1>
         <div class="board-selector-wrapper">
-            <select id="boardSelector" class="board-select"></select>
-            <button class="header-btn-icon" id="addBoardBtn" title="Create New Board">+</button>
-            <button class="header-btn-icon" id="renameBoardBtn" title="Rename Board">✏️</button>
-            <button class="header-btn-icon danger" id="deleteBoardBtn" title="Delete Board">🗑</button>
+          <select id="boardSelector" class="board-select"></select>
+          <button
+            class="header-btn-icon"
+            id="addBoardBtn"
+            title="Create New Board"
+          >
+            +
+          </button>
+          <button
+            class="header-btn-icon"
+            id="renameBoardBtn"
+            title="Rename Board"
+          >
+            ✏️
+          </button>
+          <button
+            class="header-btn-icon danger"
+            id="deleteBoardBtn"
+            title="Delete Board"
+          >
+            🗑
+          </button>
         </div>
-    </div>
-    <div class="header-actions">
+      </div>
+      <div class="header-actions">
         <input type="file" id="importFileInput" hidden accept=".json" />
         <button class="header-btn" id="importBtn">📥 Import</button>
         <button class="header-btn" id="exportBtn">📤 Export</button>
         <div class="divider"></div>
         <button class="header-btn" id="manageLabelBtn">🏷️ Labels</button>
         <button class="add-column-btn" id="addColumnBtn">+ Add Column</button>
-    </div>
-</header>
+      </div>
+    </header>
 
-<div class="kanban-container" id="kanbanContainer"></div>
+    <div class="kanban-container" id="kanbanContainer"></div>
 
-<!-- Add Board Modal -->
-<div class="modal" id="createBoardModal" aria-hidden="true">
-    <div class="modal-overlay" id="createBoardOverlay"></div>
-    <div class="modal-content" role="dialog" aria-modal="true">
+    <!-- Add Board Modal -->
+    <div class="modal" id="createBoardModal" aria-hidden="true">
+      <div class="modal-overlay" id="createBoardOverlay"></div>
+      <div class="modal-content" role="dialog" aria-modal="true">
         <h2>Create New Board</h2>
         <form id="createBoardForm">
-            <input type="text" id="newBoardName" class="column-input" placeholder="Board Name" required />
-            <label class="card-detail-label">Template</label>
-            <select id="newBoardTemplate" class="priority-select" style="margin-bottom: 16px;">
-                <option value="empty">Empty Board</option>
-                <option value="basic" selected>Basic Kanban (To Do, Doing, Done)</option>
-                <option value="software">Software Dev (Backlog, Ready, In Progress, Review, Done)</option>
-                <option value="sales">Sales Pipeline (Lead, Contacted, Proposal, Closed)</option>
-            </select>
-            <div class="button-group">
-                <button type="submit" class="btn btn-primary">Create</button>
-                <button type="button" class="btn btn-secondary" id="cancelCreateBoard">Cancel</button>
-            </div>
+          <input
+            type="text"
+            id="newBoardName"
+            class="column-input"
+            placeholder="Board Name"
+            required
+          />
+          <label class="card-detail-label">Template</label>
+          <select
+            id="newBoardTemplate"
+            class="priority-select"
+            style="margin-bottom: 16px"
+          >
+            <option value="empty">Empty Board</option>
+            <option value="basic" selected>
+              Basic Kanban (To Do, Doing, Done)
+            </option>
+            <option value="software">
+              Software Dev (Backlog, Ready, In Progress, Review, Done)
+            </option>
+            <option value="sales">
+              Sales Pipeline (Lead, Contacted, Proposal, Closed)
+            </option>
+          </select>
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Create</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelCreateBoard"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<!-- Rename Board Modal -->
-<div class="modal" id="renameBoardModal" aria-hidden="true">
-    <div class="modal-overlay" id="renameBoardOverlay"></div>
-    <div class="modal-content" role="dialog" aria-modal="true">
+    <!-- Rename Board Modal -->
+    <div class="modal" id="renameBoardModal" aria-hidden="true">
+      <div class="modal-overlay" id="renameBoardOverlay"></div>
+      <div class="modal-content" role="dialog" aria-modal="true">
         <h2>Rename Board</h2>
         <form id="renameBoardForm">
-            <input type="text" id="renameBoardName" class="column-input" placeholder="Board Name" required />
-            <div class="button-group">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" class="btn btn-secondary" id="cancelRenameBoard">Cancel</button>
-            </div>
+          <input
+            type="text"
+            id="renameBoardName"
+            class="column-input"
+            placeholder="Board Name"
+            required
+          />
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelRenameBoard"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<!-- Delete Board Modal -->
-<div class="modal" id="deleteBoardModal" aria-hidden="true">
-    <div class="modal-overlay" id="deleteBoardOverlay"></div>
-    <div class="modal-content" role="dialog" aria-modal="true">
+    <!-- Delete Board Modal -->
+    <div class="modal" id="deleteBoardModal" aria-hidden="true">
+      <div class="modal-overlay" id="deleteBoardOverlay"></div>
+      <div class="modal-content" role="dialog" aria-modal="true">
         <h2>Delete Board</h2>
-        <p style="margin-top: 0;">
-            This will permanently delete <strong id="deleteBoardName"></strong> and all its columns/cards.
+        <p style="margin-top: 0">
+          This will permanently delete
+          <strong id="deleteBoardName"></strong> and all its columns/cards.
         </p>
         <div class="button-group">
-            <button type="button" class="btn btn-primary" id="confirmDeleteBoard">Delete</button>
-            <button type="button" class="btn btn-secondary" id="cancelDeleteBoard">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmDeleteBoard">
+            Delete
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="cancelDeleteBoard"
+          >
+            Cancel
+          </button>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- Add Column Modal -->
-<div class="modal" id="addColumnModal" aria-hidden="true">
-    <div class="modal-overlay" id="modalOverlay"></div>
-    <div class="modal-content" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+    <!-- Add Column Modal -->
+    <div class="modal" id="addColumnModal" aria-hidden="true">
+      <div class="modal-overlay" id="modalOverlay"></div>
+      <div
+        class="modal-content"
+        role="dialog"
+        aria-labelledby="modalTitle"
+        aria-modal="true"
+      >
         <h2 id="modalTitle">Add New Column</h2>
         <form id="addColumnForm">
-            <input
-                    type="text"
-                    id="columnTitleInput"
-                    class="column-input"
-                    placeholder="Column Title"
-                    required
-            />
-            <div class="button-group">
-                <button type="submit" class="btn btn-primary">Add Column</button>
-                <button type="button" class="btn btn-secondary" id="cancelAddColumn">Cancel</button>
-            </div>
+          <input
+            type="text"
+            id="columnTitleInput"
+            class="column-input"
+            placeholder="Column Title"
+            required
+          />
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Add Column</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelAddColumn"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<!-- Card Detail Modal -->
-<div class="modal" id="cardDetailModal" aria-hidden="true">
-    <div class="modal-overlay" id="cardDetailOverlay"></div>
-    <div class="modal-content card-detail-content" role="dialog" aria-labelledby="cardDetailTitle" aria-modal="true">
+    <!-- Card Detail Modal -->
+    <div class="modal" id="cardDetailModal" aria-hidden="true">
+      <div class="modal-overlay" id="cardDetailOverlay"></div>
+      <div
+        class="modal-content card-detail-content"
+        role="dialog"
+        aria-labelledby="cardDetailTitle"
+        aria-modal="true"
+      >
         <button class="modal-close-btn" id="cardDetailCloseBtn">&times;</button>
         <form id="cardDetailForm">
-            <div class="card-detail-header">
-                <label class="completion-toggle">
-                    <input type="checkbox" id="cardCompletedInput" class="completion-checkbox"/>
-                    <span class="completion-checkmark"></span>
-                </label>
-                <input
-                        type="text"
-                        id="cardTitleInput"
-                        class="card-title-input"
-                        placeholder="Card Title"
-                        required
-                />
-            </div>
+          <div class="card-detail-header">
+            <label class="completion-toggle">
+              <input
+                type="checkbox"
+                id="cardCompletedInput"
+                class="completion-checkbox"
+              />
+              <span class="completion-checkmark"></span>
+            </label>
+            <input
+              type="text"
+              id="cardTitleInput"
+              class="card-title-input"
+              placeholder="Card Title"
+              required
+            />
+            <button id="copyCardDetailsBtn">Copy</button>
+          </div>
 
-            <div class="card-detail-section">
-                <label class="card-detail-label">
-                    <span class="card-detail-icon">🏷️</span>
-                    Labels
-                </label>
-                <div class="labels-selector" id="labelsSelector"></div>
-            </div>
+          <div class="card-detail-section">
+            <label class="card-detail-label">
+              <span class="card-detail-icon">🏷️</span>
+              Labels
+            </label>
+            <div class="labels-selector" id="labelsSelector"></div>
+          </div>
 
-            <div class="card-detail-row">
-                <div class="card-detail-field">
-                    <label for="cardStartDateInput" class="card-detail-label">
-                        <span class="card-detail-icon">🟢️</span>
-                        Start Date
-                    </label>
-                    <input
-                            type="date"
-                            id="cardStartDateInput"
-                            class="date-input"
-                    />
-                </div>
-                <div class="card-detail-field">
-                    <label for="cardDueDateInput" class="card-detail-label">
-                        <span class="card-detail-icon">🔴</span>
-                        Due Date
-                    </label>
-                    <input
-                            type="date"
-                            id="cardDueDateInput"
-                            class="date-input"
-                    />
-                </div>
+          <div class="card-detail-row">
+            <div class="card-detail-field">
+              <label for="cardStartDateInput" class="card-detail-label">
+                <span class="card-detail-icon">🟢️</span>
+                Start Date
+              </label>
+              <input type="date" id="cardStartDateInput" class="date-input" />
             </div>
+            <div class="card-detail-field">
+              <label for="cardDueDateInput" class="card-detail-label">
+                <span class="card-detail-icon">🔴</span>
+                Due Date
+              </label>
+              <input type="date" id="cardDueDateInput" class="date-input" />
+            </div>
+          </div>
 
-            <div class="card-detail-section">
-                <label for="cardPriorityInput" class="card-detail-label">
-                    <span class="card-detail-icon">🚩</span>
-                    Priority
-                </label>
-                <select id="cardPriorityInput" class="priority-select">
-                    <option value="none">None</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
+          <div class="card-detail-section">
+            <label for="cardPriorityInput" class="card-detail-label">
+              <span class="card-detail-icon">🚩</span>
+              Priority
+            </label>
+            <select id="cardPriorityInput" class="priority-select">
+              <option value="none">None</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
 
-            <div class="card-detail-section">
-                <label for="cardDescriptionInput" class="card-detail-label">
-                    <span class="card-detail-icon">📝</span>
-                    Description
-                </label>
-                <textarea
-                        id="cardDescriptionInput"
-                        class="card-description-input"
-                        placeholder="Add a more detailed description..."
-                        rows="4"
-                ></textarea>
-            </div>
+          <div class="card-detail-section">
+            <label for="cardDescriptionInput" class="card-detail-label">
+              <span class="card-detail-icon">📝</span>
+              Description
+            </label>
+            <textarea
+              id="cardDescriptionInput"
+              class="card-description-input"
+              placeholder="Add a more detailed description..."
+              rows="4"
+            ></textarea>
+          </div>
 
-            <div class="button-group">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" class="btn btn-secondary" id="cancelCardDetail">Cancel</button>
-            </div>
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelCardDetail"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<!-- Manage Labels Modal -->
-<div class="modal" id="manageLabelModal" aria-hidden="true">
-    <div class="modal-overlay" id="manageLabelOverlay"></div>
-    <div class="modal-content" role="dialog" aria-labelledby="manageLabelTitle" aria-modal="true">
-        <button class="modal-close-btn" id="manageLabelCloseBtn">&times;</button>
+    <!-- Manage Labels Modal -->
+    <div class="modal" id="manageLabelModal" aria-hidden="true">
+      <div class="modal-overlay" id="manageLabelOverlay"></div>
+      <div
+        class="modal-content"
+        role="dialog"
+        aria-labelledby="manageLabelTitle"
+        aria-modal="true"
+      >
+        <button class="modal-close-btn" id="manageLabelCloseBtn">
+          &times;
+        </button>
         <h2 id="manageLabelTitle">Manage Labels</h2>
         <div class="labels-list" id="labelsList"></div>
         <div class="add-label-form">
-            <input type="text" id="newLabelName" class="label-name-input" placeholder="Label name"/>
-            <input type="color" id="newLabelColor" class="label-color-input" value="#5e6c84"/>
-            <button type="button" class="btn btn-primary" id="addLabelBtn">Add</button>
+          <input
+            type="text"
+            id="newLabelName"
+            class="label-name-input"
+            placeholder="Label name"
+          />
+          <input
+            type="color"
+            id="newLabelColor"
+            class="label-color-input"
+            value="#5e6c84"
+          />
+          <button type="button" class="btn btn-primary" id="addLabelBtn">
+            Add
+          </button>
         </div>
+      </div>
     </div>
-</div>
 
-<template id="columnTemplate">
-    <div class="column" draggable="true">
+    <template id="columnTemplate">
+      <div class="column" draggable="true">
         <div class="column-header">
-            <div class="column-title-container">
-                <h2 class="column-title-text" title="Click to edit"></h2>
-                <input type="text" class="column-title-input" style="display: none;">
-            </div>
-            <button data-action="delete-column">&times;</button>
+          <div class="column-title-container">
+            <h2 class="column-title-text" title="Click to edit"></h2>
+            <input
+              type="text"
+              class="column-title-input"
+              style="display: none"
+            />
+          </div>
+          <button data-action="delete-column">&times;</button>
         </div>
         <div class="cards"></div>
         <button class="add-card-btn">+ Add a card</button>
         <div class="add-card-form">
-            <textarea class="card-input" rows="3" placeholder="Enter card title..."></textarea>
-            <div class="button-group">
-                <button class="btn btn-primary" data-action="confirm-add-card">Add Card</button>
-                <button class="btn btn-secondary" data-action="cancel-add-card">Cancel</button>
-            </div>
+          <textarea
+            class="card-input"
+            rows="3"
+            placeholder="Enter card title..."
+          ></textarea>
+          <div class="button-group">
+            <button class="btn btn-primary" data-action="confirm-add-card">
+              Add Card
+            </button>
+            <button class="btn btn-secondary" data-action="cancel-add-card">
+              Cancel
+            </button>
+          </div>
         </div>
-    </div>
-</template>
+      </div>
+    </template>
 
-<template id="cardTemplate">
-    <div class="card" draggable="true">
+    <template id="cardTemplate">
+      <div class="card" draggable="true">
         <div class="card-labels"></div>
         <div class="card-content">
-            <label class="card-complete-toggle" onclick="event.stopPropagation()">
-                <input type="checkbox" class="card-complete-checkbox"/>
-                <span class="card-complete-checkmark"></span>
-            </label>
-            <span class="card-text"></span>
+          <label class="card-complete-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" class="card-complete-checkbox" />
+            <span class="card-complete-checkmark"></span>
+          </label>
+          <span class="card-text"></span>
         </div>
         <div class="card-meta"></div>
         <span class="card-has-description" title="Has description">📝</span>
         <div class="card-actions">
-            <button class="card-action-btn" data-action="edit">✏️</button>
-            <button class="card-action-btn" data-action="delete">🗑</button>
+          <button class="card-action-btn" data-action="edit">✏️</button>
+          <button class="card-action-btn" data-action="delete">🗑</button>
         </div>
-    </div>
-</template>
-</body>
+      </div>
+    </template>
+  </body>
 </html>
