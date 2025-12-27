@@ -1,15 +1,15 @@
-import js from "@eslint/js";
-import prettier from "eslint-plugin-prettier";
-import prettierConfig from "eslint-config-prettier";
+import js from '@eslint/js';
+import prettier from 'eslint-plugin-prettier';
+import prettierConfig from 'eslint-config-prettier';
 
 export default [
   {
-    files: ["**/*.js"],
-    ignores: ["node_modules/**", "dist/**"],
+    files: ['**/*.js'],
+    ignores: ['node_modules/**', 'dist/**'],
 
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
+      ecmaVersion: 'latest',
+      sourceType: 'module',
     },
 
     plugins: {
@@ -20,7 +20,7 @@ export default [
       ...js.configs.recommended.rules,
       ...prettierConfig.rules,
 
-      "prettier/prettier": "error",
+      'prettier/prettier': 'error',
     },
   },
 ];
