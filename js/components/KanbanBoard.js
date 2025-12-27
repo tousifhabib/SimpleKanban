@@ -433,6 +433,23 @@ export default class KanbanBoard {
     this.cardDetailCloseBtn.addEventListener('click', () =>
       this.closeModal(this.modals.cardDetail)
     );
+
+    this.copyCardDetailsBtn.addEventListener('click', () => {
+      const contents = [
+        `Title: ${this.cardTitleInput.value}`,
+        `Description: ${this.cardDescriptionInput.value}`,
+        `Date: ${this.cardStartDateInput.value} - ${this.cardDueDateInput.value}`,
+      ];
+      navigator.clipboard.writeText(contents.join('\n')).then(
+        () => {
+          alert('Copied 👍');
+        },
+        () => {
+          alert('Failed 😭');
+        }
+      );
+    });
+
     this.cancelCardDetail.addEventListener('click', () =>
       this.closeModal(this.modals.cardDetail)
     );

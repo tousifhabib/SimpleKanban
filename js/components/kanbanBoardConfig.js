@@ -43,6 +43,7 @@ export const CONFIG = {
     cardTitleInput: 'cardTitleInput',
     cardDescriptionInput: 'cardDescriptionInput',
     cardDetailCloseBtn: 'cardDetailCloseBtn',
+    copyCardDetailsBtn: 'copyCardDetailsBtn',
     cancelCardDetail: 'cancelCardDetail',
     cardStartDateInput: 'cardStartDateInput',
     cardDueDateInput: 'cardDueDateInput',
