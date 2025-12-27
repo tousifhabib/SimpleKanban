@@ -1,5 +1,6 @@
 {
   "name": "kanban-board",
+  "type": "module",
   "scripts": {
     "build": "webpack --mode production",
     "lint": "eslint .",
