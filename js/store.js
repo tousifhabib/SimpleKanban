@@ -1,10 +1,6 @@
-import {
-  loadFromLocalStorage,
-  saveToLocalStorage,
-} from './services/localStorageService.js';
+import Repository from './infrastructure/Repository.js';
+import CardEntity from './core/entities/CardEntity.js';
 import { generateId } from './utils/id.js';
-
-const STORAGE_KEY = 'flexibleKanbanState';
 
 const DEFAULT_LABELS = [
   { id: 'label-1', name: 'Bug', color: '#e53935' },
@@ -20,56 +16,52 @@ const TEMPLATES = {
   empty: [],
 };
 
-const newCard = (text) => {
-  const now = new Date().toISOString();
-  return {
-    id: generateId('card'),
-    text,
-    description: '',
-    startDate: null,
-    dueDate: null,
-    completed: false,
-    priority: 'none',
-    labels: [],
-    logs: [],
-    createdAt: now,
-    updatedAt: now,
-  };
-};
-
 class Store {
   constructor() {
-    const savedData = loadFromLocalStorage(STORAGE_KEY);
+    this.repository = new Repository();
     this.listeners = [];
+    this.state = this.loadInitialState();
 
+    this.subscribe((state) => this.repository.save(state));
+  }
+
+  loadInitialState() {
+    const savedData = this.repository.load();
     if (savedData && Array.isArray(savedData.columns)) {
-      const defaultId = generateId('board');
-      this.state = {
-        activeBoardId: defaultId,
-        boards: [
+      const hydratedBoards = (
+        savedData.boards || [
           {
-            id: defaultId,
+            id: generateId('board'),
             name: 'My Board',
             columns: savedData.columns,
             labels: savedData.labels || DEFAULT_LABELS,
           },
-        ],
+        ]
+      ).map((board) => ({
+        ...board,
+        columns: board.columns.map((col) => ({
+          ...col,
+          cards: col.cards.map((c) => new CardEntity(c)),
+        })),
+      }));
+
+      return {
+        activeBoardId: savedData.activeBoardId || hydratedBoards[0].id,
+        boards: hydratedBoards,
       };
-      this.state.boards[0].columns.forEach((col) => {
-        col.cards.forEach((card) => {
-          if (!card.createdAt) card.createdAt = new Date().toISOString();
-          if (!card.updatedAt) card.updatedAt = new Date().toISOString();
-          if (!card.logs) card.logs = [];
+    } else if (savedData && savedData.boards) {
+      savedData.boards.forEach((board) => {
+        board.columns.forEach((col) => {
+          col.cards = col.cards.map((c) => new CardEntity(c));
         });
       });
+      return savedData;
     } else {
-      this.state = savedData || this.createInitialState();
+      return this.createDefaultState();
     }
-
-    this.subscribe((state) => saveToLocalStorage(STORAGE_KEY, state));
   }
 
-  createInitialState() {
+  createDefaultState() {
     const boardId = generateId('board');
     return {
       activeBoardId: boardId,
@@ -84,16 +76,50 @@ class Store {
     };
   }
 
-  getBoards() {
-    return this.state.boards.map((b) => ({ id: b.id, name: b.name }));
+  getState() {
+    return this.getActiveBoard();
+  }
+
+  getActiveBoard() {
+    return this.state.boards.find((b) => b.id === this.state.activeBoardId);
   }
 
   getActiveBoardId() {
     return this.state.activeBoardId;
   }
 
-  getActiveBoard() {
-    return this.state.boards.find((b) => b.id === this.state.activeBoardId);
+  getBoards() {
+    return this.state.boards.map((b) => ({ id: b.id, name: b.name }));
+  }
+
+  getLabels() {
+    return this.getState().labels || [];
+  }
+
+  getCard(cardId) {
+    for (const col of this.getState().columns) {
+      const card = col.cards.find((c) => c.id === cardId);
+      if (card) return { card, columnId: col.id };
+    }
+    return null;
+  }
+
+  col(columnId) {
+    return this.getState().columns.find((c) => c.id === columnId);
+  }
+
+  card(columnId, cardId) {
+    return this.col(columnId)?.cards.find((c) => c.id === cardId);
+  }
+
+  subscribe(listener) {
+    this.listeners.push(listener);
+    return () =>
+      (this.listeners = this.listeners.filter((l) => l !== listener));
+  }
+
+  notify() {
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   setActiveBoard(boardId) {
@@ -112,43 +138,31 @@ class Store {
         cards: [],
       })
     );
-
-    const newBoard = {
+    this.state.boards.push({
       id: newId,
       name: name || 'New Board',
       columns,
       labels: structuredClone(DEFAULT_LABELS),
-    };
-
-    this.state.boards.push(newBoard);
+    });
     this.state.activeBoardId = newId;
     this.notify();
   }
 
   renameBoard(boardId, name) {
     const board = this.state.boards.find((b) => b.id === boardId);
-    if (!board) return false;
-
-    const newName = (name || '').trim();
-    if (!newName) return false;
-
-    board.name = newName;
+    if (!board) return;
+    board.name = name.trim();
     this.notify();
-    return true;
   }
 
   deleteBoard(boardId) {
+    if (this.state.boards.length <= 1) return false;
     const idx = this.state.boards.findIndex((b) => b.id === boardId);
     if (idx === -1) return false;
-    if (this.state.boards.length <= 1) return false;
 
-    const deletingActive = this.state.activeBoardId === boardId;
-
+    const isActive = this.state.activeBoardId === boardId;
     this.state.boards.splice(idx, 1);
-
-    if (deletingActive) {
-      this.state.activeBoardId = this.state.boards[0]?.id || null;
-    }
+    if (isActive) this.state.activeBoardId = this.state.boards[0].id;
 
     this.notify();
     return true;
@@ -157,60 +171,26 @@ class Store {
   importData(jsonData) {
     try {
       const data = JSON.parse(jsonData);
-      if (!data.boards || !Array.isArray(data.boards))
-        throw new Error('Invalid format');
-
-      this.state = data;
-      if (!this.state.boards.find((b) => b.id === this.state.activeBoardId)) {
-        this.state.activeBoardId = this.state.boards[0]?.id;
-      }
-      this.notify();
+      this.repository.save(data);
+      window.location.reload();
       return true;
-    } catch (e) {
-      console.error('Import failed', e);
+    } catch {
       return false;
     }
   }
 
-  getState() {
-    return this.getActiveBoard();
-  }
-
-  subscribe(listener) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
-    };
-  }
-
-  notify() {
-    this.listeners.forEach((listener) => listener(this.state));
-  }
-
-  col(columnId) {
-    return this.getState().columns.find((c) => c.id === columnId);
-  }
-
-  card(columnId, cardId) {
-    return this.col(columnId)?.cards.find((c) => c.id === cardId);
-  }
-
-  getLabels() {
-    return this.getState().labels || [];
-  }
-
   addLabel(name, color) {
-    const newLabel = { id: generateId('label'), name, color };
-    this.getState().labels.push(newLabel);
+    this.getState().labels.push({ id: generateId('label'), name, color });
     this.notify();
   }
 
   updateLabel(labelId, name, color) {
     const label = this.getLabels().find((l) => l.id === labelId);
-    if (!label) return;
-    label.name = name;
-    label.color = color;
-    this.notify();
+    if (label) {
+      label.name = name;
+      label.color = color;
+      this.notify();
+    }
   }
 
   removeLabel(labelId) {
@@ -218,8 +198,7 @@ class Store {
     board.labels = board.labels.filter((l) => l.id !== labelId);
     board.columns.forEach((col) => {
       col.cards.forEach((card) => {
-        if (card.labels)
-          card.labels = card.labels.filter((id) => id !== labelId);
+        card.labels = card.labels.filter((id) => id !== labelId);
       });
     });
     this.notify();
@@ -242,114 +221,87 @@ class Store {
 
   updateColumnTitle(columnId, newTitle) {
     const col = this.col(columnId);
-    if (!col) return;
-    col.title = newTitle;
-    this.notify();
+    if (col) {
+      col.title = newTitle;
+      this.notify();
+    }
   }
 
   addCard(columnId, text) {
     const col = this.col(columnId);
-    if (!col) return;
-    col.cards.push(newCard(text));
-    this.notify();
+    if (col) {
+      col.cards.push(new CardEntity({ text }));
+      this.notify();
+    }
   }
 
   updateCardDetails(columnId, cardId, updates) {
     const card = this.card(columnId, cardId);
-    if (!card) return;
-    Object.assign(card, updates);
-    card.updatedAt = new Date().toISOString();
-    this.notify();
+    if (card) {
+      card.update(updates);
+      this.notify();
+    }
   }
 
   toggleCardComplete(columnId, cardId) {
     const card = this.card(columnId, cardId);
-    if (!card) return;
-    card.completed = !card.completed;
-    card.updatedAt = new Date().toISOString();
-    this.notify();
-  }
-
-  getCard(cardId) {
-    for (const col of this.getState().columns) {
-      const card = col.cards.find((c) => c.id === cardId);
-      if (card) return { card, columnId: col.id };
+    if (card) {
+      card.toggleComplete();
+      this.notify();
     }
-    return null;
   }
 
   removeCard(columnId, cardId) {
     const col = this.col(columnId);
-    if (!col) return;
-    col.cards = col.cards.filter((c) => c.id !== cardId);
-    this.notify();
+    if (col) {
+      col.cards = col.cards.filter((c) => c.id !== cardId);
+      this.notify();
+    }
   }
 
   addCardLog(columnId, cardId, text) {
     const card = this.card(columnId, cardId);
-    const column = this.col(columnId);
-    if (!card) return;
-
-    if (!card.logs) card.logs = [];
-
-    card.logs.push({
-      id: generateId('log'),
-      text,
-      columnTitle: column ? column.title : null,
-      createdAt: new Date().toISOString(),
-    });
-
-    card.updatedAt = new Date().toISOString();
-    this.notify();
+    const col = this.col(columnId);
+    if (card) {
+      card.addLog(text, col ? col.title : null);
+      this.notify();
+    }
   }
 
-  reorderColumns(columnOrder) {
+  reorderColumns(columnIdList) {
     const board = this.getState();
-    board.columns = columnOrder.map((id) =>
+    board.columns = columnIdList.map((id) =>
       board.columns.find((c) => c.id === id)
     );
     this.notify();
   }
 
-  reorderCards(columnId, cardOrder) {
+  reorderCards(columnId, cardIdList) {
     const col = this.col(columnId);
-    if (!col) return;
-
-    const newCards = cardOrder
-      .map((id) => col.cards.find((card) => card.id === id))
-      .filter(Boolean);
-    const missingCards = col.cards.filter(
-      (card) => !cardOrder.includes(card.id)
-    );
-    col.cards = [...newCards, ...missingCards];
-
-    this.notify();
+    if (col) {
+      const cardMap = new Map(col.cards.map((c) => [c.id, c]));
+      col.cards = cardIdList.map((id) => cardMap.get(id)).filter(Boolean);
+      this.notify();
+    }
   }
 
   moveCard(cardId, oldColumnId, newColumnId, newCardOrder) {
-    let cardData;
-
     const oldCol = this.col(oldColumnId);
-    if (oldCol) {
-      const idx = oldCol.cards.findIndex((c) => c.id === cardId);
-      if (idx !== -1) cardData = oldCol.cards.splice(idx, 1)[0];
-    }
-
     const newCol = this.col(newColumnId);
-    if (newCol && cardData) {
-      cardData.updatedAt = new Date().toISOString();
 
-      if (!newCol.cards.some((c) => c.id === cardId))
-        newCol.cards.push(cardData);
+    if (!oldCol || !newCol) return;
 
-      const orderedCards = newCardOrder
-        .map((id) => newCol.cards.find((c) => c.id === id))
-        .filter(Boolean);
-      const remainingCards = newCol.cards.filter(
-        (card) => !newCardOrder.includes(card.id)
-      );
-      newCol.cards = [...orderedCards, ...remainingCards];
-    }
+    const cardIndex = oldCol.cards.findIndex((c) => c.id === cardId);
+    if (cardIndex === -1) return;
+
+    const [card] = oldCol.cards.splice(cardIndex, 1);
+
+    card.touch();
+
+    if (!newCol.cards.includes(card)) newCol.cards.push(card);
+
+    const cardMap = new Map(newCol.cards.map((c) => [c.id, c]));
+    newCol.cards = newCardOrder.map((id) => cardMap.get(id)).filter(Boolean);
 
     this.notify();
   }

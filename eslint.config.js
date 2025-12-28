@@ -4,7 +4,6 @@ import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
-  // Browser code
   {
     files: ['**/*.js'],
     ignores: ['node_modules/**', 'dist/**'],
@@ -28,7 +27,6 @@ export default [
     },
   },
 
-  // Node/CommonJS config files (e.g., webpack config)
   {
     files: ['**/*.cjs'],
     languageOptions: {

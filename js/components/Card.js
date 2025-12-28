@@ -1,31 +1,30 @@
 import { store } from '../store.js';
 
 export default class Card {
-  constructor(cardData) {
-    this.cardData = cardData;
+  constructor(cardEntity) {
+    this.card = cardEntity;
   }
 
   render() {
     const template = document.getElementById('cardTemplate');
     const cardEl = template.content.firstElementChild.cloneNode(true);
 
-    cardEl.dataset.cardId = this.cardData.id;
+    cardEl.dataset.cardId = this.card.id;
 
-    if (this.cardData.priority && this.cardData.priority !== 'none') {
-      cardEl.classList.add(`priority-${this.cardData.priority}`);
+    if (this.card.priority && this.card.priority !== 'none') {
+      cardEl.classList.add(`priority-${this.card.priority}`);
     }
 
-    if (this.cardData.completed) {
+    if (this.card.completed) {
       cardEl.classList.add('completed');
     }
 
     this.applyAgingStyles(cardEl);
 
     const labelsContainer = cardEl.querySelector('.card-labels');
-    const labels = this.cardData.labels || [];
-    if (labelsContainer && labels.length > 0) {
+    if (this.card.labels && this.card.labels.length > 0) {
       const allLabels = store.getLabels();
-      labels.forEach((labelId) => {
+      this.card.labels.forEach((labelId) => {
         const label = allLabels.find((l) => l.id === labelId);
         if (!label) return;
         const labelEl = document.createElement('span');
@@ -36,92 +35,59 @@ export default class Card {
       });
     }
 
-    cardEl.querySelector('.card-text').textContent = this.cardData.text;
+    cardEl.querySelector('.card-text').textContent = this.card.text;
 
-    const hasDesc =
-      this.cardData.description && this.cardData.description.trim();
-    const hasLogs = this.cardData.logs && this.cardData.logs.length > 0;
-
-    if (hasDesc || hasLogs) {
+    if (
+      (this.card.description && this.card.description.trim()) ||
+      (this.card.logs && this.card.logs.length > 0)
+    ) {
       cardEl.classList.add('has-description');
     }
 
     const metaContainer = cardEl.querySelector('.card-meta');
     if (metaContainer) {
-      if (this.cardData.startDate) {
+      if (this.card.startDate) {
         metaContainer.appendChild(
           this.metaChip(
             'card-start-date',
             '🟢',
-            this.formatDate(this.cardData.startDate)
+            this.formatDate(this.card.startDate)
           )
         );
       }
 
-      if (this.cardData.dueDate) {
+      if (this.card.dueDate) {
+        const statusClass = this.card.getDueDateStatus();
         metaContainer.appendChild(
           this.metaChip(
-            `card-due-date ${this.getDueDateClass()}`,
+            `card-due-date ${statusClass}`,
             '🔴',
-            this.formatDate(this.cardData.dueDate)
+            this.formatDate(this.card.dueDate)
           )
         );
       }
 
-      if (this.cardData.updatedAt) {
+      if (this.card.updatedAt) {
         const activityDiv = document.createElement('div');
         activityDiv.className = 'card-last-activity';
-        activityDiv.textContent = `Updated ${this.getTimeAgo(this.cardData.updatedAt)}`;
+        activityDiv.textContent = `Updated ${this.getTimeAgo(this.card.updatedAt)}`;
         metaContainer.appendChild(activityDiv);
       }
     }
 
     const completeCheckbox = cardEl.querySelector('.card-complete-checkbox');
     if (completeCheckbox) {
-      completeCheckbox.checked = this.cardData.completed || false;
+      completeCheckbox.checked = this.card.completed || false;
     }
 
     return cardEl;
   }
 
-  getDaysOld() {
-    if (!this.cardData.updatedAt) return 0;
-    const msPerDay = 24 * 60 * 60 * 1000;
-    return Math.floor(
-      (new Date() - new Date(this.cardData.updatedAt)) / msPerDay
-    );
-  }
-
-  getTimeAgo(dateStr) {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-
-    if (seconds < 60) return 'just now';
-
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-    });
-  }
-
   applyAgingStyles(cardEl) {
-    if (this.cardData.completed) return;
-
-    const days = this.getDaysOld();
-    if (days >= 14) cardEl.classList.add('card-aged-3');
-    else if (days >= 7) cardEl.classList.add('card-aged-2');
-    else if (days >= 3) cardEl.classList.add('card-aged-1');
+    const ageLevel = this.card.getAgingStatus();
+    if (ageLevel > 0) {
+      cardEl.classList.add(`card-aged-${ageLevel}`);
+    }
   }
 
   metaChip(className, icon, text) {
@@ -140,19 +106,23 @@ export default class Card {
     });
   }
 
-  getDueDateClass() {
-    if (!this.cardData.dueDate || this.cardData.completed) return '';
-
+  getTimeAgo(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const dueDate = new Date(this.cardData.dueDate);
-    dueDate.setHours(0, 0, 0, 0);
+    const seconds = Math.floor((now - date) / 1000);
 
-    const diffDays = Math.ceil((dueDate - now) / 86400000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
 
-    if (diffDays < 0) return 'overdue';
-    if (diffDays === 0) return 'due-today';
-    if (diffDays <= 2) return 'due-soon';
-    return '';
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
   }
 }
