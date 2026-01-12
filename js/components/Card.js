@@ -67,6 +67,20 @@ export default class Card {
         );
       }
 
+      if (this.card.effort > 0) {
+        let effortClass = 'card-effort';
+        const val = this.card.effort;
+        if (val < 4) {
+          effortClass += ' effort-low';
+        } else if (val < 8) {
+          effortClass += ' effort-medium';
+        } else {
+          effortClass += ' effort-high';
+        }
+
+        metaContainer.appendChild(this.metaChip(effortClass, '⏱️', `${val}h`));
+      }
+
       if (this.card.updatedAt) {
         const activityDiv = document.createElement('div');
         activityDiv.className = 'card-last-activity';

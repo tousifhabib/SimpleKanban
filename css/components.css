@@ -1,6 +1,5 @@
 @import 'buttons.css';
 
-/* Columns */
 .column {
   background: var(--card-color);
   width: var(--column-width);
@@ -217,7 +216,8 @@
 }
 
 .card-due-date,
-.card-start-date {
+.card-start-date,
+.card-effort {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -227,7 +227,8 @@
   color: #5e6c84;
 }
 .card-due-date .meta-icon,
-.card-start-date .meta-icon {
+.card-start-date .meta-icon,
+.card-effort .meta-icon {
   font-size: 0.65rem;
 }
 .card-due-date.overdue {
@@ -241,6 +242,19 @@
 .card-due-date.due-soon {
   background: #fff8e1;
   color: #f57f17;
+}
+
+.card-effort.effort-low {
+  background-color: #e3fcef;
+  color: #006644;
+}
+.card-effort.effort-medium {
+  background-color: #fff8e1;
+  color: #f57f17;
+}
+.card-effort.effort-high {
+  background-color: #ffebee;
+  color: #c62828;
 }
 
 .card-actions {

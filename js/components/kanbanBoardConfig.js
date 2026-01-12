@@ -46,6 +46,7 @@ export const CONFIG = {
     cancelCardDetail: 'cancelCardDetail',
     cardStartDateInput: 'cardStartDateInput',
     cardDueDateInput: 'cardDueDateInput',
+    cardEffortInput: 'cardEffortInput',
     cardCompletedInput: 'cardCompletedInput',
     cardPriorityInput: 'cardPriorityInput',
     labelsSelector: 'labelsSelector',
