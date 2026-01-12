@@ -35,6 +35,7 @@ export default class KanbanBoard {
     this.cardDescriptionInput = document.getElementById(s.cardDescriptionInput);
     this.cardStartDateInput = document.getElementById(s.cardStartDateInput);
     this.cardDueDateInput = document.getElementById(s.cardDueDateInput);
+    this.cardEffortInput = document.getElementById(s.cardEffortInput);
     this.cardCompletedInput = document.getElementById(s.cardCompletedInput);
     this.cardPriorityInput = document.getElementById(s.cardPriorityInput);
     this.labelsSelector = document.getElementById(s.labelsSelector);
@@ -314,6 +315,7 @@ export default class KanbanBoard {
         description: this.cardDescriptionInput.value,
         startDate: this.cardStartDateInput.value || null,
         dueDate: this.cardDueDateInput.value || null,
+        effort: Number(this.cardEffortInput.value) || 0,
         completed: this.cardCompletedInput.checked,
         priority: this.cardPriorityInput.value,
         labels: this.selectedLabels,
@@ -383,6 +385,7 @@ export default class KanbanBoard {
 
   resetCardDetail() {
     this.cardDetailForm.reset();
+    this.cardEffortInput.value = '';
     this.currentCardId = null;
     this.currentColumnId = null;
     this.selectedLabels = [];
@@ -402,6 +405,7 @@ export default class KanbanBoard {
     this.cardDescriptionInput.value = card.description || '';
     this.cardStartDateInput.value = card.startDate || '';
     this.cardDueDateInput.value = card.dueDate || '';
+    this.cardEffortInput.value = card.effort || '';
     this.cardCompletedInput.checked = card.completed || false;
     this.cardPriorityInput.value = card.priority || 'none';
 

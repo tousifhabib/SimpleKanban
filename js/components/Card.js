@@ -46,6 +46,12 @@ export default class Card {
 
     const metaContainer = cardEl.querySelector('.card-meta');
     if (metaContainer) {
+      if (this.card.effort > 0) {
+        metaContainer.appendChild(
+          this.metaChip('card-effort', '⏱️', `${this.card.effort}h`)
+        );
+      }
+
       if (this.card.startDate) {
         metaContainer.appendChild(
           this.metaChip(

@@ -9,6 +9,7 @@ export default class CardEntity {
     this.dueDate = data.dueDate || null;
     this.completed = data.completed || false;
     this.priority = data.priority || 'none';
+    this.effort = data.effort !== undefined ? Number(data.effort) : 0;
     this.labels = data.labels || [];
     this.logs = data.logs || [];
     this.createdAt = data.createdAt || new Date().toISOString();

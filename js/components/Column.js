@@ -12,7 +12,22 @@ export default class Column {
     colEl.dataset.columnId = this.columnData.id;
 
     const headerTitle = colEl.querySelector('.column-title-text');
+    const totalEffort = this.columnData.cards.reduce(
+      (sum, card) => sum + (Number(card.effort) || 0),
+      0
+    );
+
     headerTitle.textContent = this.columnData.title;
+
+    if (totalEffort > 0) {
+      const summarySpan = document.createElement('span');
+      summarySpan.style.fontSize = '0.85rem';
+      summarySpan.style.fontWeight = 'normal';
+      summarySpan.style.opacity = '0.7';
+      summarySpan.style.marginLeft = '8px';
+      summarySpan.textContent = `(⏱️ ${totalEffort}h)`;
+      headerTitle.appendChild(summarySpan);
+    }
 
     const headerInput = colEl.querySelector('.column-title-input');
     headerInput.value = this.columnData.title;
