@@ -46,12 +46,6 @@ export default class Card {
 
     const metaContainer = cardEl.querySelector('.card-meta');
     if (metaContainer) {
-      if (this.card.effort > 0) {
-        metaContainer.appendChild(
-          this.metaChip('card-effort', '⏱️', `${this.card.effort}h`)
-        );
-      }
-
       if (this.card.startDate) {
         metaContainer.appendChild(
           this.metaChip(
@@ -71,6 +65,20 @@ export default class Card {
             this.formatDate(this.card.dueDate)
           )
         );
+      }
+
+      if (this.card.effort > 0) {
+        let effortClass = 'card-effort';
+        const val = this.card.effort;
+        if (val < 4) {
+          effortClass += ' effort-low';
+        } else if (val < 8) {
+          effortClass += ' effort-medium';
+        } else {
+          effortClass += ' effort-high';
+        }
+
+        metaContainer.appendChild(this.metaChip(effortClass, '⏱️', `${val}h`));
       }
 
       if (this.card.updatedAt) {
