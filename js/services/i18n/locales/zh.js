@@ -1,0 +1,151 @@
+export default {
+  header: {
+    title: '动态看板',
+    import: '📥 导入',
+    export: '📤 导出',
+    labels: '🏷️ 标签',
+    addColumn: '+ 添加列',
+    titles: {
+      addBoard: '创建新看板',
+      renameBoard: '重命名看板',
+      deleteBoard: '删除看板',
+    },
+  },
+  board: {
+    selectPlaceholder: '选择看板...',
+    confirmDeleteColumn: '删除此列及其所有卡片？',
+    confirmDeleteCard: '删除？',
+    confirmDeleteLabel: '删除标签？',
+    promptLabelName: '输入新的标签名称：',
+    promptLabelColor: '输入新的颜色（hex）：',
+  },
+  card: {
+    addTitle: '输入卡片标题...',
+    btnAdd: '添加卡片',
+    btnCancel: '取消',
+    addBtnText: '+ 添加卡片',
+    meta: {
+      updated: '更新于 {time}',
+      justNow: '刚刚',
+      minsAgo: '{m} 分钟前',
+      hoursAgo: '{h} 小时前',
+      daysAgo: '{d} 天前',
+    },
+    detail: {
+      placeholderTitle: '卡片标题',
+      placeholderDesc: '添加更详细的描述...',
+      placeholderLog: '添加进度更新...',
+      labels: '标签',
+      startDate: '开始日期',
+      dueDate: '截止日期',
+      effort: '工时 (h)',
+      priority: '优先级',
+      workLog: '工作日志',
+      addEntry: '添加记录',
+      save: '保存',
+      cancel: '取消',
+    },
+    priorities: {
+      none: '无',
+      low: '低',
+      medium: '中',
+      high: '高',
+    },
+    dueStatus: {
+      overdue: '已逾期',
+      today: '今天到期',
+      soon: '即将到期',
+    },
+  },
+  modals: {
+    createBoard: {
+      title: '创建新看板',
+      placeholder: '看板名称',
+      templateLabel: '模板',
+      btnCreate: '创建',
+      btnCancel: '取消',
+      templates: {
+        empty: '空看板',
+        basic: '基础看板（待办、进行中、完成）',
+        software: '软件开发',
+        sales: '销售漏斗',
+      },
+    },
+    renameBoard: {
+      title: '重命名看板',
+      placeholder: '看板名称',
+      btnSave: '保存',
+      btnCancel: '取消',
+    },
+    deleteBoard: {
+      title: '删除看板',
+      warning: '将永久删除“{boardName}”及其所有列/卡片。',
+      btnDelete: '删除',
+      btnCancel: '取消',
+    },
+    addColumn: {
+      title: '添加新列',
+      placeholder: '列标题',
+      btnAdd: '添加列',
+      btnCancel: '取消',
+    },
+    manageLabels: {
+      title: '管理标签',
+      placeholderName: '标签名称',
+      btnAdd: '添加',
+    },
+  },
+  templates: {
+    empty: {
+      labels: {
+        important: '重要',
+        optional: '可选',
+      },
+    },
+    basic: {
+      columns: {
+        todo: '待办',
+        doing: '进行中',
+        done: '完成',
+      },
+      labels: {
+        highPriority: '高优先级',
+        blocked: '阻塞',
+        waiting: '等待',
+        quickWin: '快速完成',
+      },
+    },
+    software: {
+      columns: {
+        backlog: '待整理',
+        ready: '就绪',
+        inProgress: '进行中',
+        review: '审核',
+        done: '完成',
+      },
+      labels: {
+        bug: '缺陷',
+        feature: '功能',
+        techDebt: '技术债',
+        blocked: '阻塞',
+        needsReview: '需要审核',
+        documentation: '文档',
+      },
+    },
+    sales: {
+      columns: {
+        lead: '线索',
+        contacted: '已联系',
+        proposal: '方案',
+        closed: '已成交',
+      },
+      labels: {
+        hotLead: '热线索',
+        followUp: '跟进',
+        qualified: '合格',
+        budgetConfirmed: '预算确认',
+        stalled: '停滞',
+      },
+    },
+  },
+};
