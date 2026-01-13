@@ -1,20 +1,10 @@
 import Repository from './infrastructure/Repository.js';
 import CardEntity from './core/entities/CardEntity.js';
 import { generateId } from './utils/id.js';
-
-const DEFAULT_LABELS = [
-  { id: 'label-1', name: 'Bug', color: '#e53935' },
-  { id: 'label-2', name: 'Feature', color: '#43a047' },
-  { id: 'label-3', name: 'Urgent', color: '#ff9800' },
-  { id: 'label-4', name: 'Review', color: '#8e24aa' },
-];
-
-const TEMPLATES = {
-  basic: ['To Do', 'Doing', 'Done'],
-  software: ['Backlog', 'Ready', 'In Progress', 'Review', 'Done'],
-  sales: ['Lead', 'Contacted', 'Proposal', 'Closed'],
-  empty: [],
-};
+import {
+  createBoardFromTemplate,
+  DEFAULT_TEMPLATE,
+} from './config/boardTemplates.js';
 
 class Store {
   constructor() {
@@ -28,13 +18,14 @@ class Store {
   loadInitialState() {
     const savedData = this.repository.load();
     if (savedData && Array.isArray(savedData.columns)) {
+      const { labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
       const hydratedBoards = (
         savedData.boards || [
           {
             id: generateId('board'),
             name: 'My Board',
             columns: savedData.columns,
-            labels: savedData.labels || DEFAULT_LABELS,
+            labels: savedData.labels || labels,
           },
         ]
       ).map((board) => ({
@@ -63,14 +54,16 @@ class Store {
 
   createDefaultState() {
     const boardId = generateId('board');
+    const { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
+
     return {
       activeBoardId: boardId,
       boards: [
         {
           id: boardId,
           name: 'My First Board',
-          columns: [],
-          labels: structuredClone(DEFAULT_LABELS),
+          columns,
+          labels,
         },
       ],
     };
@@ -129,20 +122,15 @@ class Store {
     }
   }
 
-  createBoard(name, templateType = 'basic') {
+  createBoard(name, templateType = DEFAULT_TEMPLATE) {
     const newId = generateId('board');
-    const columns = (TEMPLATES[templateType] || TEMPLATES.basic).map(
-      (title) => ({
-        id: generateId('column'),
-        title,
-        cards: [],
-      })
-    );
+    const { columns, labels } = createBoardFromTemplate(templateType);
+
     this.state.boards.push({
       id: newId,
       name: name || 'New Board',
       columns,
-      labels: structuredClone(DEFAULT_LABELS),
+      labels,
     });
     this.state.activeBoardId = newId;
     this.notify();
