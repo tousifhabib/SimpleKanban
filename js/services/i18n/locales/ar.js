@@ -40,6 +40,7 @@ export default {
       dueDate: 'تاريخ الاستحقاق',
       effort: 'الجهد (h)',
       priority: 'الأولوية',
+      description: 'الوصف',
       workLog: 'سجل العمل',
       addEntry: 'إضافة إدخال',
       save: 'حفظ',

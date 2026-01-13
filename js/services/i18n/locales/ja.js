@@ -40,6 +40,7 @@ export default {
       dueDate: '締切日',
       effort: '工数 (h)',
       priority: '優先度',
+      description: '説明',
       workLog: '作業ログ',
       addEntry: 'ログを追加',
       save: '保存',

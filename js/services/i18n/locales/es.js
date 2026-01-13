@@ -40,6 +40,7 @@ export default {
       dueDate: 'Fecha límite',
       effort: 'Esfuerzo (h)',
       priority: 'Prioridad',
+      description: 'Descripción',
       workLog: 'Registro de trabajo',
       addEntry: 'Añadir entrada',
       save: 'Guardar',

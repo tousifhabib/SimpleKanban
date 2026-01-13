@@ -40,6 +40,7 @@ export default {
       dueDate: 'Fälligkeit',
       effort: 'Aufwand (h)',
       priority: 'Priorität',
+      description: 'Beschreibung',
       workLog: 'Arbeitsprotokoll',
       addEntry: 'Eintrag hinzufügen',
       save: 'Speichern',

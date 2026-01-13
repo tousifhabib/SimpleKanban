@@ -40,6 +40,7 @@ export default {
       dueDate: 'अंतिम तिथि',
       effort: 'प्रयास (h)',
       priority: 'प्राथमिकता',
+      description: 'विवरण',
       workLog: 'वर्क लॉग',
       addEntry: 'एंट्री जोड़ें',
       save: 'सेव',

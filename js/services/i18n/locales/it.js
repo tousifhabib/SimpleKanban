@@ -40,6 +40,7 @@ export default {
       dueDate: 'Scadenza',
       effort: 'Impegno (h)',
       priority: 'Priorità',
+      description: 'Descrizione',
       workLog: 'Registro di lavoro',
       addEntry: 'Aggiungi voce',
       save: 'Salva',

@@ -40,6 +40,7 @@ export default {
       dueDate: '截止日期',
       effort: '工时 (h)',
       priority: '优先级',
+      description: '描述',
       workLog: '工作日志',
       addEntry: '添加记录',
       save: '保存',

@@ -40,6 +40,7 @@ export default {
       dueDate: 'Срок',
       effort: 'Трудозатраты (ч)',
       priority: 'Приоритет',
+      description: 'Описание',
       workLog: 'Журнал работ',
       addEntry: 'Добавить запись',
       save: 'Сохранить',
