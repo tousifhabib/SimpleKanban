@@ -28,6 +28,11 @@ export const CONFIG = {
     confirmDeleteBoard: 'confirmDeleteBoard',
     cancelDeleteBoard: 'cancelDeleteBoard',
 
+    searchInput: 'searchInput',
+    filterLabel: 'filterLabel',
+    filterPriority: 'filterPriority',
+    clearFilters: 'clearFilters',
+    filterBar: 'filterBar',
     importBtn: 'importBtn',
     exportBtn: 'exportBtn',
     importFileInput: 'importFileInput',

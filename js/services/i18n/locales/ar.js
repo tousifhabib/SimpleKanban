@@ -1,6 +1,7 @@
 export default {
   header: {
     title: 'كانبان ديناميكي',
+    search: 'بحث...',
     import: '📥 استيراد',
     export: '📤 تصدير',
     labels: '🏷️ ملصقات',
@@ -57,6 +58,12 @@ export default {
       today: 'مستحق اليوم',
       soon: 'قريباً',
     },
+  },
+  filters: {
+    label: 'تصفية حسب:',
+    allLabels: 'جميع الملصقات',
+    allPriorities: 'جميع الأولويات',
+    clear: 'مسح',
   },
   modals: {
     createBoard: {

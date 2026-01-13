@@ -2,6 +2,8 @@ import { store } from '../store.js';
 import Column from './Column.js';
 import DragDropManager from '../managers/DragDropManager.js';
 import ModalManager from '../managers/ModalManager.js';
+import FilterManager from '../managers/FilterManager.js';
+import FilterPanel from './FilterPanel.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
 import { i18n } from '../services/i18n/i18nService.js';
@@ -20,6 +22,9 @@ export default class KanbanBoard {
     this.addBoardBtn = document.getElementById(s.addBoardBtn);
     this.renameBoardBtn = document.getElementById(s.renameBoardBtn);
     this.deleteBoardBtn = document.getElementById(s.deleteBoardBtn);
+
+    this.filterBarContainer = document.getElementById(s.filterBar);
+
     this.importBtn = document.getElementById(s.importBtn);
     this.exportBtn = document.getElementById(s.exportBtn);
     this.importFileInput = document.getElementById(s.importFileInput);
@@ -62,6 +67,10 @@ export default class KanbanBoard {
     this.currentColumnId = null;
     this.selectedLabels = [];
 
+    // Initialize the advanced filter system
+    this.filterManager = new FilterManager();
+    this.initializeFilterPanel();
+
     this.modalManager = new ModalManager();
     this.registerModals();
 
@@ -80,6 +89,7 @@ export default class KanbanBoard {
 
     store.subscribe(() => {
       this.updateBoardSelector();
+      this.updateFilterPanelLabels();
       this.render();
     });
 
@@ -88,6 +98,27 @@ export default class KanbanBoard {
       this.render();
       this.updateBoardSelector();
     });
+  }
+
+  initializeFilterPanel() {
+    if (this.filterBarContainer) {
+      this.filterBarContainer.innerHTML = '';
+      this.filterBarContainer.className = '';
+
+      this.filterPanel = new FilterPanel(this.filterBarContainer, {
+        filterManager: this.filterManager,
+        labels: store.getLabels(),
+        columns: store.getState()?.columns || [],
+        onFilterChange: () => this.render(),
+      });
+    }
+  }
+
+  updateFilterPanelLabels() {
+    if (this.filterPanel) {
+      this.filterPanel.setLabels(store.getLabels());
+      this.filterPanel.setColumns(store.getState()?.columns || []);
+    }
   }
 
   populateLanguageSelector() {
@@ -150,7 +181,13 @@ export default class KanbanBoard {
     });
   }
 
+  isFilterActive() {
+    return this.filterManager.isActive();
+  }
+
   handleCardDrop(cardId, newColumnId, newOrder) {
+    if (this.isFilterActive()) return;
+
     const state = store.getState();
     let oldColumnId;
     for (const c of state.columns) {
@@ -170,11 +207,47 @@ export default class KanbanBoard {
   render() {
     this.kanbanContainer.innerHTML = '';
     const boardState = store.getState();
+    const allLabels = store.getLabels();
+
+    if (this.isFilterActive()) {
+      this.kanbanContainer.classList.add('filters-active');
+    } else {
+      this.kanbanContainer.classList.remove('filters-active');
+    }
+
     if (boardState && boardState.columns) {
       boardState.columns.forEach((colData) => {
-        this.kanbanContainer.appendChild(new Column(colData).render());
+        const cardsToRender = this.filterManager.applyFilters(
+          colData.cards,
+          allLabels
+        );
+
+        this.kanbanContainer.appendChild(
+          new Column({ ...colData, cards: cardsToRender }).render()
+        );
       });
     }
+
+    this.updateFilterResultCount(boardState, allLabels);
+  }
+
+  updateFilterResultCount(boardState, allLabels) {
+    if (!boardState || !this.isFilterActive()) return;
+
+    let totalCards = 0;
+    let filteredCards = 0;
+
+    boardState.columns.forEach((col) => {
+      totalCards += col.cards.length;
+      filteredCards += this.filterManager.applyFilters(
+        col.cards,
+        allLabels
+      ).length;
+    });
+
+    console.debug(
+      `Filtering active: Showing ${filteredCards} of ${totalCards} total cards.`
+    );
   }
 
   updateBoardSelector() {
