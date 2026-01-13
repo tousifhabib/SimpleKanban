@@ -5,6 +5,11 @@ import ModalManager from '../managers/ModalManager.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
 import { i18n } from '../services/i18n/i18nService.js';
+import {
+  supportedLanguages,
+  languageMeta,
+} from '../services/i18n/locales/index.js';
+
 export default class KanbanBoard {
   constructor() {
     const s = CONFIG.selectors;
@@ -66,7 +71,7 @@ export default class KanbanBoard {
       onDropColumn: (newOrder) => store.reorderColumns(newOrder),
     });
 
-    this.langSelector.value = i18n.getLanguage();
+    this.populateLanguageSelector();
     i18n.updatePage();
 
     this.setupEventListeners();
@@ -79,9 +84,34 @@ export default class KanbanBoard {
     });
 
     i18n.subscribe(() => {
+      this.populateLanguageSelector();
       this.render();
       this.updateBoardSelector();
     });
+  }
+
+  populateLanguageSelector() {
+    const current = i18n.getLanguage();
+    const sorted = [...supportedLanguages].sort((a, b) => a.localeCompare(b));
+    const langs = [current, ...sorted.filter((l) => l !== current)];
+
+    this.langSelector.innerHTML = '';
+
+    langs.forEach((lang) => {
+      const meta = languageMeta[lang] || {};
+      const option = document.createElement('option');
+      option.value = lang;
+
+      const short = meta.short || lang.toUpperCase();
+      const flag = meta.flag ? `${meta.flag} ` : '';
+      option.textContent = `${flag}${short}`;
+
+      if (meta.name) option.title = meta.name;
+
+      this.langSelector.appendChild(option);
+    });
+
+    this.langSelector.value = current;
   }
 
   registerModals() {
