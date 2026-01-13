@@ -9,6 +9,7 @@ module.exports = {
       './js/index.js',
       './css/variables.css',
       './css/buttons.css',
+      './css/filterPanel.css',
       './css/base.css',
       './css/layout.css',
       './css/components.css',

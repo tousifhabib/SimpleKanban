@@ -245,8 +245,9 @@ export default class KanbanBoard {
       ).length;
     });
 
-    // Could add a results count indicator here if desired
-    // console.log(`Showing ${filteredCards} of ${totalCards} cards`);
+    console.debug(
+      `Filtering active: Showing ${filteredCards} of ${totalCards} total cards.`
+    );
   }
 
   updateBoardSelector() {
