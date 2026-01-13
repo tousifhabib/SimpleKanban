@@ -1,0 +1,151 @@
+export default {
+  header: {
+    title: 'Dynamisches Kanban',
+    import: '📥 Importieren',
+    export: '📤 Exportieren',
+    labels: '🏷️ Labels',
+    addColumn: '+ Spalte hinzufügen',
+    titles: {
+      addBoard: 'Neues Board erstellen',
+      renameBoard: 'Board umbenennen',
+      deleteBoard: 'Board löschen',
+    },
+  },
+  board: {
+    selectPlaceholder: 'Board auswählen...',
+    confirmDeleteColumn: 'Diese Spalte und alle Karten löschen?',
+    confirmDeleteCard: 'Löschen?',
+    confirmDeleteLabel: 'Label löschen?',
+    promptLabelName: 'Neuer Label-Name:',
+    promptLabelColor: 'Neuer Farbcode (hex):',
+  },
+  card: {
+    addTitle: 'Kartentitel eingeben...',
+    btnAdd: 'Karte hinzufügen',
+    btnCancel: 'Abbrechen',
+    addBtnText: '+ Karte hinzufügen',
+    meta: {
+      updated: 'Aktualisiert: {time}',
+      justNow: 'gerade eben',
+      minsAgo: 'vor {m}m',
+      hoursAgo: 'vor {h}h',
+      daysAgo: 'vor {d}t',
+    },
+    detail: {
+      placeholderTitle: 'Kartentitel',
+      placeholderDesc: 'Detaillierte Beschreibung hinzufügen...',
+      placeholderLog: 'Fortschritt notieren...',
+      labels: 'Labels',
+      startDate: 'Startdatum',
+      dueDate: 'Fälligkeit',
+      effort: 'Aufwand (h)',
+      priority: 'Priorität',
+      workLog: 'Arbeitsprotokoll',
+      addEntry: 'Eintrag hinzufügen',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+    },
+    priorities: {
+      none: 'Keine',
+      low: 'Niedrig',
+      medium: 'Mittel',
+      high: 'Hoch',
+    },
+    dueStatus: {
+      overdue: 'Überfällig',
+      today: 'Heute fällig',
+      soon: 'Bald fällig',
+    },
+  },
+  modals: {
+    createBoard: {
+      title: 'Neues Board erstellen',
+      placeholder: 'Board-Name',
+      templateLabel: 'Vorlage',
+      btnCreate: 'Erstellen',
+      btnCancel: 'Abbrechen',
+      templates: {
+        empty: 'Leeres Board',
+        basic: 'Basis Kanban (Zu tun, In Arbeit, Fertig)',
+        software: 'Softwareentwicklung',
+        sales: 'Vertriebspipeline',
+      },
+    },
+    renameBoard: {
+      title: 'Board umbenennen',
+      placeholder: 'Board-Name',
+      btnSave: 'Speichern',
+      btnCancel: 'Abbrechen',
+    },
+    deleteBoard: {
+      title: 'Board löschen',
+      warning: 'Dies wird "{boardName}" und alle Inhalte dauerhaft löschen.',
+      btnDelete: 'Löschen',
+      btnCancel: 'Abbrechen',
+    },
+    addColumn: {
+      title: 'Neue Spalte',
+      placeholder: 'Spaltentitel',
+      btnAdd: 'Hinzufügen',
+      btnCancel: 'Abbrechen',
+    },
+    manageLabels: {
+      title: 'Labels verwalten',
+      placeholderName: 'Label-Name',
+      btnAdd: 'Hinzufügen',
+    },
+  },
+  templates: {
+    empty: {
+      labels: {
+        important: 'Wichtig',
+        optional: 'Optional',
+      },
+    },
+    basic: {
+      columns: {
+        todo: 'Zu tun',
+        doing: 'In Arbeit',
+        done: 'Fertig',
+      },
+      labels: {
+        highPriority: 'Hohe Priorität',
+        blocked: 'Blockiert',
+        waiting: 'Wartend',
+        quickWin: 'Schneller Erfolg',
+      },
+    },
+    software: {
+      columns: {
+        backlog: 'Backlog',
+        ready: 'Bereit',
+        inProgress: 'In Bearbeitung',
+        review: 'Review',
+        done: 'Fertig',
+      },
+      labels: {
+        bug: 'Fehler',
+        feature: 'Feature',
+        techDebt: 'Technische Schulden',
+        blocked: 'Blockiert',
+        needsReview: 'Review benötigt',
+        documentation: 'Dokumentation',
+      },
+    },
+    sales: {
+      columns: {
+        lead: 'Lead',
+        contacted: 'Kontaktiert',
+        proposal: 'Angebot',
+        closed: 'Abgeschlossen',
+      },
+      labels: {
+        hotLead: 'Heißer Lead',
+        followUp: 'Nachfassen',
+        qualified: 'Qualifiziert',
+        budgetConfirmed: 'Budget bestätigt',
+        stalled: 'Stockend',
+      },
+    },
+  },
+};

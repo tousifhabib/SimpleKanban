@@ -1,6 +1,7 @@
 export const CONFIG = {
   selectors: {
     kanbanContainer: 'kanbanContainer',
+    langSelector: 'langSelector',
 
     boardSelector: 'boardSelector',
     addBoardBtn: 'addBoardBtn',
@@ -23,6 +24,7 @@ export const CONFIG = {
     deleteBoardModal: 'deleteBoardModal',
     deleteBoardOverlay: 'deleteBoardOverlay',
     deleteBoardName: 'deleteBoardName',
+    deleteBoardMessage: 'deleteBoardMessage',
     confirmDeleteBoard: 'confirmDeleteBoard',
     cancelDeleteBoard: 'cancelDeleteBoard',
 

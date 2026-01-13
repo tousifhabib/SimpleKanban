@@ -1,44 +1,45 @@
 import { generateId } from '../utils/id.js';
+import { i18n } from '../services/i18n/i18nService.js';
 
-const BOARD_TEMPLATES = {
+const TEMPLATE_DEFINITIONS = {
   empty: {
     columns: [],
     labels: [
-      { name: 'Important', color: '#e53935' },
-      { name: 'Optional', color: '#43a047' },
+      { key: 'important', color: '#e53935' },
+      { key: 'optional', color: '#43a047' },
     ],
   },
 
   basic: {
-    columns: ['To Do', 'Doing', 'Done'],
+    columns: ['todo', 'doing', 'done'],
     labels: [
-      { name: 'High Priority', color: '#e53935' },
-      { name: 'Blocked', color: '#ff9800' },
-      { name: 'Waiting', color: '#8e24aa' },
-      { name: 'Quick Win', color: '#43a047' },
+      { key: 'highPriority', color: '#e53935' },
+      { key: 'blocked', color: '#ff9800' },
+      { key: 'waiting', color: '#8e24aa' },
+      { key: 'quickWin', color: '#43a047' },
     ],
   },
 
   software: {
-    columns: ['Backlog', 'Ready', 'In Progress', 'Review', 'Done'],
+    columns: ['backlog', 'ready', 'inProgress', 'review', 'done'],
     labels: [
-      { name: 'Bug', color: '#e53935' },
-      { name: 'Feature', color: '#43a047' },
-      { name: 'Tech Debt', color: '#ff9800' },
-      { name: 'Blocked', color: '#d32f2f' },
-      { name: 'Needs Review', color: '#8e24aa' },
-      { name: 'Documentation', color: '#1976d2' },
+      { key: 'bug', color: '#e53935' },
+      { key: 'feature', color: '#43a047' },
+      { key: 'techDebt', color: '#ff9800' },
+      { key: 'blocked', color: '#d32f2f' },
+      { key: 'needsReview', color: '#8e24aa' },
+      { key: 'documentation', color: '#1976d2' },
     ],
   },
 
   sales: {
-    columns: ['Lead', 'Contacted', 'Proposal', 'Closed'],
+    columns: ['lead', 'contacted', 'proposal', 'closed'],
     labels: [
-      { name: 'Hot Lead', color: '#e53935' },
-      { name: 'Follow-up', color: '#ff9800' },
-      { name: 'Qualified', color: '#43a047' },
-      { name: 'Budget Confirmed', color: '#1976d2' },
-      { name: 'Stalled', color: '#8e24aa' },
+      { key: 'hotLead', color: '#e53935' },
+      { key: 'followUp', color: '#ff9800' },
+      { key: 'qualified', color: '#43a047' },
+      { key: 'budgetConfirmed', color: '#1976d2' },
+      { key: 'stalled', color: '#8e24aa' },
     ],
   },
 };
@@ -47,17 +48,22 @@ export const DEFAULT_TEMPLATE = 'basic';
 
 export function createBoardFromTemplate(templateType = DEFAULT_TEMPLATE) {
   const template =
-    BOARD_TEMPLATES[templateType] || BOARD_TEMPLATES[DEFAULT_TEMPLATE];
+    TEMPLATE_DEFINITIONS[templateType] ||
+    TEMPLATE_DEFINITIONS[DEFAULT_TEMPLATE];
 
-  const columns = template.columns.map((title) => ({
+  const locale = i18n.getLocale();
+  const templateLocale =
+    locale.templates[templateType] || locale.templates[DEFAULT_TEMPLATE];
+
+  const columns = template.columns.map((columnKey) => ({
     id: generateId('column'),
-    title,
+    title: templateLocale?.columns?.[columnKey] || columnKey,
     cards: [],
   }));
 
   const labels = template.labels.map((label) => ({
     id: generateId('label'),
-    name: label.name,
+    name: templateLocale?.labels?.[label.key] || label.key,
     color: label.color,
   }));
 
@@ -65,5 +71,5 @@ export function createBoardFromTemplate(templateType = DEFAULT_TEMPLATE) {
 }
 
 export function getTemplateKeys() {
-  return Object.keys(BOARD_TEMPLATES);
+  return Object.keys(TEMPLATE_DEFINITIONS);
 }

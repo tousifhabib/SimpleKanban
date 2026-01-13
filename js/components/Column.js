@@ -1,4 +1,5 @@
 import Card from './Card.js';
+import { i18n } from '../services/i18n/i18nService.js';
 
 export default class Column {
   constructor(columnData) {
@@ -36,6 +37,18 @@ export default class Column {
     this.columnData.cards.forEach((cardData) => {
       cardsContainer.appendChild(new Card(cardData).render());
     });
+
+    const addCardBtn = colEl.querySelector('.add-card-btn');
+    addCardBtn.textContent = i18n.t('card.addBtnText');
+
+    const cardInput = colEl.querySelector('.card-input');
+    cardInput.placeholder = i18n.t('card.addTitle');
+
+    const confirmBtn = colEl.querySelector('[data-action="confirm-add-card"]');
+    confirmBtn.textContent = i18n.t('card.btnAdd');
+
+    const cancelBtn = colEl.querySelector('[data-action="cancel-add-card"]');
+    cancelBtn.textContent = i18n.t('card.btnCancel');
 
     return colEl;
   }

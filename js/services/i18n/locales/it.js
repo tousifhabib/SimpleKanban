@@ -1,0 +1,152 @@
+export default {
+  header: {
+    title: 'Kanban dinamico',
+    import: '📥 Importa',
+    export: '📤 Esporta',
+    labels: '🏷️ Etichette',
+    addColumn: '+ Aggiungi colonna',
+    titles: {
+      addBoard: 'Crea nuova bacheca',
+      renameBoard: 'Rinomina bacheca',
+      deleteBoard: 'Elimina bacheca',
+    },
+  },
+  board: {
+    selectPlaceholder: 'Seleziona bacheca...',
+    confirmDeleteColumn: 'Eliminare questa colonna e tutte le sue schede?',
+    confirmDeleteCard: 'Eliminare?',
+    confirmDeleteLabel: 'Eliminare etichetta?',
+    promptLabelName: 'Inserisci il nuovo nome dell’etichetta:',
+    promptLabelColor: 'Inserisci il nuovo colore (hex):',
+  },
+  card: {
+    addTitle: 'Inserisci il titolo della scheda...',
+    btnAdd: 'Aggiungi scheda',
+    btnCancel: 'Annulla',
+    addBtnText: '+ Aggiungi una scheda',
+    meta: {
+      updated: 'Aggiornato {time}',
+      justNow: 'proprio ora',
+      minsAgo: '{m} min fa',
+      hoursAgo: '{h} h fa',
+      daysAgo: '{d} g fa',
+    },
+    detail: {
+      placeholderTitle: 'Titolo della scheda',
+      placeholderDesc: 'Aggiungi una descrizione più dettagliata...',
+      placeholderLog: 'Aggiungi un aggiornamento di avanzamento...',
+      labels: 'Etichette',
+      startDate: 'Data di inizio',
+      dueDate: 'Scadenza',
+      effort: 'Impegno (h)',
+      priority: 'Priorità',
+      workLog: 'Registro di lavoro',
+      addEntry: 'Aggiungi voce',
+      save: 'Salva',
+      cancel: 'Annulla',
+    },
+    priorities: {
+      none: 'Nessuna',
+      low: 'Bassa',
+      medium: 'Media',
+      high: 'Alta',
+    },
+    dueStatus: {
+      overdue: 'In ritardo',
+      today: 'Scade oggi',
+      soon: 'Scade a breve',
+    },
+  },
+  modals: {
+    createBoard: {
+      title: 'Crea nuova bacheca',
+      placeholder: 'Nome bacheca',
+      templateLabel: 'Modello',
+      btnCreate: 'Crea',
+      btnCancel: 'Annulla',
+      templates: {
+        empty: 'Bacheca vuota',
+        basic: 'Kanban base (To Do, Doing, Done)',
+        software: 'Sviluppo software',
+        sales: 'Pipeline vendite',
+      },
+    },
+    renameBoard: {
+      title: 'Rinomina bacheca',
+      placeholder: 'Nome bacheca',
+      btnSave: 'Salva',
+      btnCancel: 'Annulla',
+    },
+    deleteBoard: {
+      title: 'Elimina bacheca',
+      warning:
+        'Questo eliminerà definitivamente "{boardName}" e tutte le sue colonne/schede.',
+      btnDelete: 'Elimina',
+      btnCancel: 'Annulla',
+    },
+    addColumn: {
+      title: 'Aggiungi nuova colonna',
+      placeholder: 'Titolo colonna',
+      btnAdd: 'Aggiungi colonna',
+      btnCancel: 'Annulla',
+    },
+    manageLabels: {
+      title: 'Gestisci etichette',
+      placeholderName: 'Nome etichetta',
+      btnAdd: 'Aggiungi',
+    },
+  },
+  templates: {
+    empty: {
+      labels: {
+        important: 'Importante',
+        optional: 'Opzionale',
+      },
+    },
+    basic: {
+      columns: {
+        todo: 'Da fare',
+        doing: 'In corso',
+        done: 'Fatto',
+      },
+      labels: {
+        highPriority: 'Alta priorità',
+        blocked: 'Bloccato',
+        waiting: 'In attesa',
+        quickWin: 'Risultato rapido',
+      },
+    },
+    software: {
+      columns: {
+        backlog: 'Backlog',
+        ready: 'Pronto',
+        inProgress: 'In corso',
+        review: 'Revisione',
+        done: 'Fatto',
+      },
+      labels: {
+        bug: 'Bug',
+        feature: 'Funzionalità',
+        techDebt: 'Debito tecnico',
+        blocked: 'Bloccato',
+        needsReview: 'Da revisionare',
+        documentation: 'Documentazione',
+      },
+    },
+    sales: {
+      columns: {
+        lead: 'Lead',
+        contacted: 'Contattato',
+        proposal: 'Proposta',
+        closed: 'Chiuso',
+      },
+      labels: {
+        hotLead: 'Lead caldo',
+        followUp: 'Follow-up',
+        qualified: 'Qualificato',
+        budgetConfirmed: 'Budget confermato',
+        stalled: 'In stallo',
+      },
+    },
+  },
+};

@@ -1,4 +1,5 @@
 import { store } from '../store.js';
+import { i18n } from '../services/i18n/i18nService.js';
 
 export default class Card {
   constructor(cardEntity) {
@@ -58,12 +59,20 @@ export default class Card {
 
       if (this.card.dueDate) {
         const statusClass = this.card.getDueDateStatus();
+        let statusText = '';
+        if (statusClass === 'overdue')
+          statusText = i18n.t('card.dueStatus.overdue');
+        else if (statusClass === 'due-today')
+          statusText = i18n.t('card.dueStatus.today');
+        else if (statusClass === 'due-soon')
+          statusText = i18n.t('card.dueStatus.soon');
+
+        const dateText =
+          this.formatDate(this.card.dueDate) +
+          (statusText ? ` (${statusText})` : '');
+
         metaContainer.appendChild(
-          this.metaChip(
-            `card-due-date ${statusClass}`,
-            '🔴',
-            this.formatDate(this.card.dueDate)
-          )
+          this.metaChip(`card-due-date ${statusClass}`, '🔴', dateText)
         );
       }
 
@@ -84,7 +93,9 @@ export default class Card {
       if (this.card.updatedAt) {
         const activityDiv = document.createElement('div');
         activityDiv.className = 'card-last-activity';
-        activityDiv.textContent = `Updated ${this.getTimeAgo(this.card.updatedAt)}`;
+        activityDiv.textContent = i18n.t('card.meta.updated', {
+          time: this.getTimeAgo(this.card.updatedAt),
+        });
         metaContainer.appendChild(activityDiv);
       }
     }
@@ -114,7 +125,7 @@ export default class Card {
   formatDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(i18n.getLanguage(), {
       month: 'short',
       day: 'numeric',
     });
@@ -126,15 +137,15 @@ export default class Card {
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
 
-    if (seconds < 60) return 'just now';
+    if (seconds < 60) return i18n.t('card.meta.justNow');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return i18n.t('card.meta.minsAgo', { m: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return i18n.t('card.meta.hoursAgo', { h: hours });
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return i18n.t('card.meta.daysAgo', { d: days });
 
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(i18n.getLanguage(), {
       month: 'short',
       day: 'numeric',
     });
