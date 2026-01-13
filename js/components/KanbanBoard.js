@@ -4,12 +4,13 @@ import DragDropManager from '../managers/DragDropManager.js';
 import ModalManager from '../managers/ModalManager.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
-
+import { i18n } from '../services/i18n/i18nService.js';
 export default class KanbanBoard {
   constructor() {
     const s = CONFIG.selectors;
     this.kanbanContainer = document.getElementById(s.kanbanContainer);
     this.boardSelector = document.getElementById(s.boardSelector);
+    this.langSelector = document.getElementById(s.langSelector);
 
     this.addBoardBtn = document.getElementById(s.addBoardBtn);
     this.renameBoardBtn = document.getElementById(s.renameBoardBtn);
@@ -26,6 +27,7 @@ export default class KanbanBoard {
     this.renameBoardName = document.getElementById(s.renameBoardName);
     this.renameBoardForm = document.getElementById(s.renameBoardForm);
     this.deleteBoardName = document.getElementById(s.deleteBoardName);
+    this.deleteBoardMessage = document.getElementById(s.deleteBoardMessage);
     this.confirmDeleteBoard = document.getElementById(s.confirmDeleteBoard);
 
     this.columnTitleInput = document.getElementById(s.columnTitleInput);
@@ -64,6 +66,9 @@ export default class KanbanBoard {
       onDropColumn: (newOrder) => store.reorderColumns(newOrder),
     });
 
+    this.langSelector.value = i18n.getLanguage();
+    i18n.updatePage();
+
     this.setupEventListeners();
     this.updateBoardSelector();
     this.render();
@@ -71,6 +76,11 @@ export default class KanbanBoard {
     store.subscribe(() => {
       this.updateBoardSelector();
       this.render();
+    });
+
+    i18n.subscribe(() => {
+      this.render();
+      this.updateBoardSelector();
     });
   }
 
@@ -152,8 +162,12 @@ export default class KanbanBoard {
   }
 
   setupEventListeners() {
+    this.langSelector.addEventListener('change', (e) => {
+      i18n.setLanguage(e.target.value);
+    });
+
     this.boardSelector.addEventListener('change', (e) => {
-      const select = /** @type {HTMLSelectElement} */ (e.target);
+      const select = e.target;
       store.setActiveBoard(select.value);
     });
     this.addBoardBtn.addEventListener('click', () => {
@@ -183,7 +197,10 @@ export default class KanbanBoard {
     this.deleteBoardBtn.addEventListener('click', () => {
       const active = store.getActiveBoard();
       if (active) {
-        this.deleteBoardName.textContent = active.name;
+        this.deleteBoardMessage.textContent = i18n.t(
+          'modals.deleteBoard.warning',
+          { boardName: active.name }
+        );
         this.modalManager.open('deleteBoard');
       }
     });
@@ -223,7 +240,7 @@ export default class KanbanBoard {
       (e, btn) => {
         const colEl = btn.closest('.column');
         if (!colEl) return;
-        if (confirm('Delete this column and all its cards?')) {
+        if (confirm(i18n.t('board.confirmDeleteColumn'))) {
           store.removeColumn(colEl.dataset.columnId);
         }
       }
@@ -257,7 +274,7 @@ export default class KanbanBoard {
       const colId = btn.closest('.column').dataset.columnId;
       const cardId = btn.closest('.card').dataset.cardId;
       if (action === 'edit') this.openCardDetailModal(cardId, colId);
-      if (action === 'delete' && confirm('Delete?'))
+      if (action === 'delete' && confirm(i18n.t('board.confirmDeleteCard')))
         store.removeCard(colId, cardId);
     });
 
@@ -345,10 +362,10 @@ export default class KanbanBoard {
     );
     this.addLabelBtn.addEventListener('click', () => this.addNewLabel());
     this.labelsSelector.addEventListener('change', (e) => {
-      const maybeInput = /** @type {HTMLElement} */ (e.target).closest('input');
+      const maybeInput = e.target.closest('input');
       if (!maybeInput) return;
 
-      const input = /** @type {HTMLInputElement} */ (maybeInput);
+      const input = maybeInput;
       const id = input.value;
 
       if (input.checked) {
@@ -370,13 +387,13 @@ export default class KanbanBoard {
       this.importFileInput.click()
     );
     this.importFileInput.addEventListener('change', (e) => {
-      const input = /** @type {HTMLInputElement} */ (e.target);
+      const input = e.target;
       const file = input.files && input.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const text = /** @type {string} */ (evt.target.result);
+        const text = evt.target.result;
         store.importData(text);
       };
       reader.readAsText(file);
@@ -426,7 +443,7 @@ export default class KanbanBoard {
     [...logs]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .forEach((log) => {
-        const d = new Date(log.createdAt).toLocaleString();
+        const d = new Date(log.createdAt).toLocaleString(i18n.getLanguage());
         const div = document.createElement('div');
         div.className = 'log-entry';
         div.innerHTML = `<div class="log-header"><span class="log-timestamp">${d}</span></div><div class="log-text">${log.text}</div>`;
@@ -461,14 +478,16 @@ export default class KanbanBoard {
           `;
 
       div.querySelector('.label-delete-btn').onclick = () => {
-        if (confirm('Delete label?')) store.removeLabel(l.id);
+        if (confirm(i18n.t('board.confirmDeleteLabel')))
+          store.removeLabel(l.id);
         this.renderLabelsList();
       };
 
       div.querySelector('.label-edit-btn').onclick = () => {
-        const newName = prompt('Enter new label name:', l.name);
+        const newName = prompt(i18n.t('board.promptLabelName'), l.name);
         if (!newName || !newName.trim()) return;
-        const newColor = prompt('Enter new color (hex):', l.color) || l.color;
+        const newColor =
+          prompt(i18n.t('board.promptLabelColor'), l.color) || l.color;
         store.updateLabel(l.id, newName.trim(), newColor);
         this.renderLabelsList();
       };

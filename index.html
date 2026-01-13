@@ -8,27 +8,39 @@
   <body>
     <header>
       <div class="header-section">
-        <h1>Dynamic Kanban</h1>
+        <h1 data-i18n="header.title">Dynamic Kanban</h1>
+        <select
+          id="langSelector"
+          class="board-select"
+          style="margin-left: 10px; width: auto"
+        >
+          <option value="en">🇺🇸 EN</option>
+          <option value="de">🇩🇪 DE</option>
+          <option value="ja">🇯🇵 JP</option>
+        </select>
         <div class="board-selector-wrapper">
           <select id="boardSelector" class="board-select"></select>
           <button
             class="header-btn-icon"
             id="addBoardBtn"
-            title="Create New Board"
+            data-i18n="header.titles.addBoard"
+            data-i18n-attr="title"
           >
             +
           </button>
           <button
             class="header-btn-icon"
             id="renameBoardBtn"
-            title="Rename Board"
+            data-i18n="header.titles.renameBoard"
+            data-i18n-attr="title"
           >
             ✏️
           </button>
           <button
             class="header-btn-icon danger"
             id="deleteBoardBtn"
-            title="Delete Board"
+            data-i18n="header.titles.deleteBoard"
+            data-i18n-attr="title"
           >
             🗑
           </button>
@@ -36,11 +48,27 @@
       </div>
       <div class="header-actions">
         <input type="file" id="importFileInput" hidden accept=".json" />
-        <button class="header-btn" id="importBtn">📥 Import</button>
-        <button class="header-btn" id="exportBtn">📤 Export</button>
+        <button class="header-btn" id="importBtn" data-i18n="header.import">
+          📥 Import
+        </button>
+        <button class="header-btn" id="exportBtn" data-i18n="header.export">
+          📤 Export
+        </button>
         <div class="divider"></div>
-        <button class="header-btn" id="manageLabelBtn">🏷️ Labels</button>
-        <button class="add-column-btn" id="addColumnBtn">+ Add Column</button>
+        <button
+          class="header-btn"
+          id="manageLabelBtn"
+          data-i18n="header.labels"
+        >
+          🏷️ Labels
+        </button>
+        <button
+          class="add-column-btn"
+          id="addColumnBtn"
+          data-i18n="header.addColumn"
+        >
+          + Add Column
+        </button>
       </div>
     </header>
 
@@ -49,38 +77,65 @@
     <div class="modal" id="createBoardModal" aria-hidden="true">
       <div class="modal-overlay" id="createBoardOverlay"></div>
       <div class="modal-content" role="dialog" aria-modal="true">
-        <h2>Create New Board</h2>
+        <h2 data-i18n="modals.createBoard.title">Create New Board</h2>
         <form id="createBoardForm">
           <input
             type="text"
             id="newBoardName"
             class="column-input"
-            placeholder="Board Name"
+            data-i18n="modals.createBoard.placeholder"
+            data-i18n-attr="placeholder"
             required
           />
-          <label class="card-detail-label">Template</label>
+          <label
+            class="card-detail-label"
+            data-i18n="modals.createBoard.templateLabel"
+            >Template</label
+          >
           <select
             id="newBoardTemplate"
             class="priority-select"
             style="margin-bottom: 16px"
           >
-            <option value="empty">Empty Board</option>
-            <option value="basic" selected>
+            <option
+              value="empty"
+              data-i18n="modals.createBoard.templates.empty"
+            >
+              Empty Board
+            </option>
+            <option
+              value="basic"
+              selected
+              data-i18n="modals.createBoard.templates.basic"
+            >
               Basic Kanban (To Do, Doing, Done)
             </option>
-            <option value="software">
+            <option
+              value="software"
+              data-i18n="modals.createBoard.templates.software"
+            >
               Software Dev (Backlog, Ready, In Progress, Review, Done)
             </option>
-            <option value="sales">
+            <option
+              value="sales"
+              data-i18n="modals.createBoard.templates.sales"
+            >
               Sales Pipeline (Lead, Contacted, Proposal, Closed)
             </option>
           </select>
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">Create</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-i18n="modals.createBoard.btnCreate"
+            >
+              Create
+            </button>
             <button
               type="button"
               class="btn btn-secondary"
               id="cancelCreateBoard"
+              data-i18n="modals.createBoard.btnCancel"
             >
               Cancel
             </button>
@@ -92,21 +147,29 @@
     <div class="modal" id="renameBoardModal" aria-hidden="true">
       <div class="modal-overlay" id="renameBoardOverlay"></div>
       <div class="modal-content" role="dialog" aria-modal="true">
-        <h2>Rename Board</h2>
+        <h2 data-i18n="modals.renameBoard.title">Rename Board</h2>
         <form id="renameBoardForm">
           <input
             type="text"
             id="renameBoardName"
             class="column-input"
-            placeholder="Board Name"
+            data-i18n="modals.renameBoard.placeholder"
+            data-i18n-attr="placeholder"
             required
           />
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-i18n="modals.renameBoard.btnSave"
+            >
+              Save
+            </button>
             <button
               type="button"
               class="btn btn-secondary"
               id="cancelRenameBoard"
+              data-i18n="modals.renameBoard.btnCancel"
             >
               Cancel
             </button>
@@ -118,19 +181,22 @@
     <div class="modal" id="deleteBoardModal" aria-hidden="true">
       <div class="modal-overlay" id="deleteBoardOverlay"></div>
       <div class="modal-content" role="dialog" aria-modal="true">
-        <h2>Delete Board</h2>
-        <p style="margin-top: 0">
-          This will permanently delete
-          <strong id="deleteBoardName"></strong> and all its columns/cards.
-        </p>
+        <h2 data-i18n="modals.deleteBoard.title">Delete Board</h2>
+        <p style="margin-top: 0" id="deleteBoardMessage"></p>
         <div class="button-group">
-          <button type="button" class="btn btn-primary" id="confirmDeleteBoard">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="confirmDeleteBoard"
+            data-i18n="modals.deleteBoard.btnDelete"
+          >
             Delete
           </button>
           <button
             type="button"
             class="btn btn-secondary"
             id="cancelDeleteBoard"
+            data-i18n="modals.deleteBoard.btnCancel"
           >
             Cancel
           </button>
@@ -146,21 +212,31 @@
         aria-labelledby="modalTitle"
         aria-modal="true"
       >
-        <h2 id="modalTitle">Add New Column</h2>
+        <h2 id="modalTitle" data-i18n="modals.addColumn.title">
+          Add New Column
+        </h2>
         <form id="addColumnForm">
           <input
             type="text"
             id="columnTitleInput"
             class="column-input"
-            placeholder="Column Title"
+            data-i18n="modals.addColumn.placeholder"
+            data-i18n-attr="placeholder"
             required
           />
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">Add Column</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-i18n="modals.addColumn.btnAdd"
+            >
+              Add Column
+            </button>
             <button
               type="button"
               class="btn btn-secondary"
               id="cancelAddColumn"
+              data-i18n="modals.addColumn.btnCancel"
             >
               Cancel
             </button>
@@ -192,7 +268,8 @@
               type="text"
               id="cardTitleInput"
               class="card-title-input"
-              placeholder="Card Title"
+              data-i18n="card.detail.placeholderTitle"
+              data-i18n-attr="placeholder"
               required
             />
           </div>
@@ -200,7 +277,7 @@
           <div class="card-detail-section">
             <label class="card-detail-label">
               <span class="card-detail-icon">🏷️</span>
-              Labels
+              <span data-i18n="card.detail.labels">Labels</span>
             </label>
             <div class="labels-selector" id="labelsSelector"></div>
           </div>
@@ -209,21 +286,21 @@
             <div class="card-detail-field">
               <label for="cardStartDateInput" class="card-detail-label">
                 <span class="card-detail-icon">🟢️</span>
-                Start Date
+                <span data-i18n="card.detail.startDate">Start Date</span>
               </label>
               <input type="date" id="cardStartDateInput" class="date-input" />
             </div>
             <div class="card-detail-field">
               <label for="cardDueDateInput" class="card-detail-label">
                 <span class="card-detail-icon">🔴</span>
-                Due Date
+                <span data-i18n="card.detail.dueDate">Due Date</span>
               </label>
               <input type="date" id="cardDueDateInput" class="date-input" />
             </div>
             <div class="card-detail-field">
               <label for="cardEffortInput" class="card-detail-label">
                 <span class="card-detail-icon">⏱️</span>
-                Effort (h)
+                <span data-i18n="card.detail.effort">Effort (h)</span>
               </label>
               <input
                 type="number"
@@ -239,25 +316,32 @@
           <div class="card-detail-section">
             <label for="cardPriorityInput" class="card-detail-label">
               <span class="card-detail-icon">🚩</span>
-              Priority
+              <span data-i18n="card.detail.priority">Priority</span>
             </label>
             <select id="cardPriorityInput" class="priority-select">
-              <option value="none">None</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="none" data-i18n="card.priorities.none">
+                None
+              </option>
+              <option value="low" data-i18n="card.priorities.low">Low</option>
+              <option value="medium" data-i18n="card.priorities.medium">
+                Medium
+              </option>
+              <option value="high" data-i18n="card.priorities.high">
+                High
+              </option>
             </select>
           </div>
 
           <div class="card-detail-section">
             <label for="cardDescriptionInput" class="card-detail-label">
               <span class="card-detail-icon">📝</span>
-              Description
+              <span data-i18n="card.detail.description">Description</span>
             </label>
             <textarea
               id="cardDescriptionInput"
               class="card-description-input"
-              placeholder="Add a more detailed description..."
+              data-i18n="card.detail.placeholderDesc"
+              data-i18n-attr="placeholder"
               rows="4"
             ></textarea>
           </div>
@@ -265,14 +349,15 @@
           <div class="card-detail-section">
             <label class="card-detail-label">
               <span class="card-detail-icon">📋</span>
-              Work Log
+              <span data-i18n="card.detail.workLog">Work Log</span>
             </label>
             <div id="cardLogList" class="card-log-list"></div>
             <div class="card-log-input-container">
               <textarea
                 id="newLogInput"
                 class="card-description-input"
-                placeholder="Add a progress update..."
+                data-i18n="card.detail.placeholderLog"
+                data-i18n-attr="placeholder"
                 rows="2"
                 style="min-height: 60px; margin-bottom: 8px"
               ></textarea>
@@ -281,6 +366,7 @@
                 class="btn btn-secondary"
                 id="addLogBtn"
                 style="font-size: 0.85rem"
+                data-i18n="card.detail.addEntry"
               >
                 Add Entry
               </button>
@@ -288,11 +374,18 @@
           </div>
 
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-i18n="card.detail.save"
+            >
+              Save
+            </button>
             <button
               type="button"
               class="btn btn-secondary"
               id="cancelCardDetail"
+              data-i18n="card.detail.cancel"
             >
               Cancel
             </button>
@@ -312,14 +405,17 @@
         <button class="modal-close-btn" id="manageLabelCloseBtn">
           &times;
         </button>
-        <h2 id="manageLabelTitle">Manage Labels</h2>
+        <h2 id="manageLabelTitle" data-i18n="modals.manageLabels.title">
+          Manage Labels
+        </h2>
         <div class="labels-list" id="labelsList"></div>
         <div class="add-label-form">
           <input
             type="text"
             id="newLabelName"
             class="label-name-input"
-            placeholder="Label name"
+            data-i18n="modals.manageLabels.placeholderName"
+            data-i18n-attr="placeholder"
           />
           <input
             type="color"
@@ -327,7 +423,12 @@
             class="label-color-input"
             value="#5e6c84"
           />
-          <button type="button" class="btn btn-primary" id="addLabelBtn">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="addLabelBtn"
+            data-i18n="modals.manageLabels.btnAdd"
+          >
             Add
           </button>
         </div>
