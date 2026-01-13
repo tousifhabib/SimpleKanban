@@ -2,10 +2,11 @@ import { store } from '../store.js';
 import Column from './Column.js';
 import DragDropManager from '../managers/DragDropManager.js';
 import ModalManager from '../managers/ModalManager.js';
+import FilterManager from '../managers/FilterManager.js';
+import FilterPanel from './FilterPanel.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
 import { i18n } from '../services/i18n/i18nService.js';
-import { debounce } from '../utils/debounce.js';
 import {
   supportedLanguages,
   languageMeta,
@@ -21,11 +22,8 @@ export default class KanbanBoard {
     this.addBoardBtn = document.getElementById(s.addBoardBtn);
     this.renameBoardBtn = document.getElementById(s.renameBoardBtn);
     this.deleteBoardBtn = document.getElementById(s.deleteBoardBtn);
-    this.searchInput = document.getElementById(s.searchInput);
 
-    this.filterLabelSelect = document.getElementById(s.filterLabel);
-    this.filterPrioritySelect = document.getElementById(s.filterPriority);
-    this.clearFiltersBtn = document.getElementById(s.clearFilters);
+    this.filterBarContainer = document.getElementById(s.filterBar);
 
     this.importBtn = document.getElementById(s.importBtn);
     this.exportBtn = document.getElementById(s.exportBtn);
@@ -68,11 +66,10 @@ export default class KanbanBoard {
     this.currentCardId = null;
     this.currentColumnId = null;
     this.selectedLabels = [];
-    this.searchTerm = '';
-    this.activeFilters = {
-      label: 'all',
-      priority: 'all',
-    };
+
+    // Initialize the advanced filter system
+    this.filterManager = new FilterManager();
+    this.initializeFilterPanel();
 
     this.modalManager = new ModalManager();
     this.registerModals();
@@ -87,13 +84,12 @@ export default class KanbanBoard {
     i18n.updatePage();
 
     this.setupEventListeners();
-    this.setupSearchListener();
-    this.setupFilterListeners();
     this.updateBoardSelector();
     this.render();
 
     store.subscribe(() => {
       this.updateBoardSelector();
+      this.updateFilterPanelLabels();
       this.render();
     });
 
@@ -102,6 +98,27 @@ export default class KanbanBoard {
       this.render();
       this.updateBoardSelector();
     });
+  }
+
+  initializeFilterPanel() {
+    if (this.filterBarContainer) {
+      this.filterBarContainer.innerHTML = '';
+      this.filterBarContainer.className = '';
+
+      this.filterPanel = new FilterPanel(this.filterBarContainer, {
+        filterManager: this.filterManager,
+        labels: store.getLabels(),
+        columns: store.getState()?.columns || [],
+        onFilterChange: () => this.render(),
+      });
+    }
+  }
+
+  updateFilterPanelLabels() {
+    if (this.filterPanel) {
+      this.filterPanel.setLabels(store.getLabels());
+      this.filterPanel.setColumns(store.getState()?.columns || []);
+    }
   }
 
   populateLanguageSelector() {
@@ -165,11 +182,7 @@ export default class KanbanBoard {
   }
 
   isFilterActive() {
-    return (
-      this.searchTerm.length > 0 ||
-      this.activeFilters.label !== 'all' ||
-      this.activeFilters.priority !== 'all'
-    );
+    return this.filterManager.isActive();
   }
 
   handleCardDrop(cardId, newColumnId, newOrder) {
@@ -196,15 +209,6 @@ export default class KanbanBoard {
     const boardState = store.getState();
     const allLabels = store.getLabels();
 
-    this.filterLabelSelect.innerHTML = `<option value="all">${i18n.t('filters.allLabels')}</option>`;
-    allLabels.forEach((l) => {
-      const opt = document.createElement('option');
-      opt.value = l.id;
-      opt.textContent = l.name;
-      if (l.id === this.activeFilters.label) opt.selected = true;
-      this.filterLabelSelect.appendChild(opt);
-    });
-
     if (this.isFilterActive()) {
       this.kanbanContainer.classList.add('filters-active');
     } else {
@@ -213,33 +217,36 @@ export default class KanbanBoard {
 
     if (boardState && boardState.columns) {
       boardState.columns.forEach((colData) => {
-        const cardsToRender = colData.cards.filter((card) => {
-          const term = this.searchTerm.toLowerCase();
-          const matchesSearch =
-            !this.searchTerm ||
-            (card.text || '').toLowerCase().includes(term) ||
-            (card.description || '').toLowerCase().includes(term) ||
-            (card.labels || []).some((labelId) => {
-              const l = allLabels.find((def) => def.id === labelId);
-              return l && l.name.toLowerCase().includes(term);
-            });
-
-          const matchesLabel =
-            this.activeFilters.label === 'all' ||
-            (card.labels || []).includes(this.activeFilters.label);
-
-          const matchesPriority =
-            this.activeFilters.priority === 'all' ||
-            card.priority === this.activeFilters.priority;
-
-          return matchesSearch && matchesLabel && matchesPriority;
-        });
+        const cardsToRender = this.filterManager.applyFilters(
+          colData.cards,
+          allLabels
+        );
 
         this.kanbanContainer.appendChild(
           new Column({ ...colData, cards: cardsToRender }).render()
         );
       });
     }
+
+    this.updateFilterResultCount(boardState, allLabels);
+  }
+
+  updateFilterResultCount(boardState, allLabels) {
+    if (!boardState || !this.isFilterActive()) return;
+
+    let totalCards = 0;
+    let filteredCards = 0;
+
+    boardState.columns.forEach((col) => {
+      totalCards += col.cards.length;
+      filteredCards += this.filterManager.applyFilters(
+        col.cards,
+        allLabels
+      ).length;
+    });
+
+    // Could add a results count indicator here if desired
+    // console.log(`Showing ${filteredCards} of ${totalCards} cards`);
   }
 
   updateBoardSelector() {
@@ -254,54 +261,6 @@ export default class KanbanBoard {
       this.boardSelector.appendChild(option);
     });
     if (this.deleteBoardBtn) this.deleteBoardBtn.disabled = boards.length <= 1;
-  }
-
-  setupSearchListener() {
-    if (!this.searchInput) return;
-
-    this.searchInput.addEventListener(
-      'input',
-      debounce((e) => {
-        const val = e.target.value.trim().toLowerCase();
-        if (this.searchTerm !== val) {
-          this.searchTerm = val;
-          this.render();
-        }
-      }, 300)
-    );
-
-    this.searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        this.searchInput.value = '';
-        this.searchTerm = '';
-        this.searchInput.blur();
-        this.render();
-      }
-    });
-  }
-
-  setupFilterListeners() {
-    this.filterLabelSelect.addEventListener('change', (e) => {
-      this.activeFilters.label = e.target.value;
-      this.render();
-    });
-
-    this.filterPrioritySelect.addEventListener('change', (e) => {
-      this.activeFilters.priority = e.target.value;
-      this.render();
-    });
-
-    this.clearFiltersBtn.addEventListener('click', () => {
-      this.activeFilters.label = 'all';
-      this.activeFilters.priority = 'all';
-      this.searchTerm = '';
-
-      this.filterLabelSelect.value = 'all';
-      this.filterPrioritySelect.value = 'all';
-      if (this.searchInput) this.searchInput.value = '';
-
-      this.render();
-    });
   }
 
   setupEventListeners() {
