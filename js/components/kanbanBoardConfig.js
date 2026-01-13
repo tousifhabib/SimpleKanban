@@ -28,6 +28,7 @@ export const CONFIG = {
     confirmDeleteBoard: 'confirmDeleteBoard',
     cancelDeleteBoard: 'cancelDeleteBoard',
 
+    searchInput: 'searchInput',
     importBtn: 'importBtn',
     exportBtn: 'exportBtn',
     importFileInput: 'importFileInput',

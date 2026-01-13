@@ -1,6 +1,7 @@
 export default {
   header: {
     title: 'Dynamic Kanban',
+    search: 'Search...',
     import: '📥 Import',
     export: '📤 Export',
     labels: '🏷️ Labels',

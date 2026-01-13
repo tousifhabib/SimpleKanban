@@ -1,6 +1,7 @@
 export default {
   header: {
     title: '动态看板',
+    search: '搜索...',
     import: '📥 导入',
     export: '📤 导出',
     labels: '🏷️ 标签',

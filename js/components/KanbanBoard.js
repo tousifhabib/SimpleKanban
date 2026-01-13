@@ -5,6 +5,7 @@ import ModalManager from '../managers/ModalManager.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
 import { i18n } from '../services/i18n/i18nService.js';
+import { debounce } from '../utils/debounce.js';
 import {
   supportedLanguages,
   languageMeta,
@@ -20,6 +21,7 @@ export default class KanbanBoard {
     this.addBoardBtn = document.getElementById(s.addBoardBtn);
     this.renameBoardBtn = document.getElementById(s.renameBoardBtn);
     this.deleteBoardBtn = document.getElementById(s.deleteBoardBtn);
+    this.searchInput = document.getElementById(s.searchInput);
     this.importBtn = document.getElementById(s.importBtn);
     this.exportBtn = document.getElementById(s.exportBtn);
     this.importFileInput = document.getElementById(s.importFileInput);
@@ -61,6 +63,7 @@ export default class KanbanBoard {
     this.currentCardId = null;
     this.currentColumnId = null;
     this.selectedLabels = [];
+    this.searchTerm = '';
 
     this.modalManager = new ModalManager();
     this.registerModals();
@@ -75,6 +78,7 @@ export default class KanbanBoard {
     i18n.updatePage();
 
     this.setupEventListeners();
+    this.setupSearchListener();
     this.updateBoardSelector();
     this.render();
 
@@ -150,7 +154,13 @@ export default class KanbanBoard {
     });
   }
 
+  isSearchActive() {
+    return this.searchTerm.length > 0;
+  }
+
   handleCardDrop(cardId, newColumnId, newOrder) {
+    if (this.isSearchActive()) return;
+
     const state = store.getState();
     let oldColumnId;
     for (const c of state.columns) {
@@ -170,9 +180,43 @@ export default class KanbanBoard {
   render() {
     this.kanbanContainer.innerHTML = '';
     const boardState = store.getState();
+    const allLabels = store.getLabels();
+
+    if (this.isSearchActive()) {
+      this.kanbanContainer.classList.add('search-active');
+    } else {
+      this.kanbanContainer.classList.remove('search-active');
+    }
+
     if (boardState && boardState.columns) {
       boardState.columns.forEach((colData) => {
-        this.kanbanContainer.appendChild(new Column(colData).render());
+        let cardsToRender = colData.cards;
+
+        if (this.isSearchActive()) {
+          const term = this.searchTerm;
+          cardsToRender = colData.cards.filter((card) => {
+            const textMatch = (card.text || '').toLowerCase().includes(term);
+            const descMatch = (card.description || '')
+              .toLowerCase()
+              .includes(term);
+
+            const labelMatch = (card.labels || []).some((labelId) => {
+              const labelDef = allLabels.find((l) => l.id === labelId);
+              return labelDef && labelDef.name.toLowerCase().includes(term);
+            });
+
+            return textMatch || descMatch || labelMatch;
+          });
+        }
+
+        const filteredColumnData = {
+          ...colData,
+          cards: cardsToRender,
+        };
+
+        this.kanbanContainer.appendChild(
+          new Column(filteredColumnData).render()
+        );
       });
     }
   }
@@ -189,6 +233,30 @@ export default class KanbanBoard {
       this.boardSelector.appendChild(option);
     });
     if (this.deleteBoardBtn) this.deleteBoardBtn.disabled = boards.length <= 1;
+  }
+
+  setupSearchListener() {
+    if (!this.searchInput) return;
+
+    this.searchInput.addEventListener(
+      'input',
+      debounce((e) => {
+        const val = e.target.value.trim().toLowerCase();
+        if (this.searchTerm !== val) {
+          this.searchTerm = val;
+          this.render();
+        }
+      }, 300)
+    );
+
+    this.searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.searchInput.value = '';
+        this.searchTerm = '';
+        this.searchInput.blur();
+        this.render();
+      }
+    });
   }
 
   setupEventListeners() {

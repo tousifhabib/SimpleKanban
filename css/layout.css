@@ -109,3 +109,51 @@ header h1 {
   gap: calc(var(--spacing-unit) * 2);
   padding: calc(var(--spacing-unit) * 2);
 }
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: calc(var(--spacing-unit) * 1);
+}
+
+.search-input {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px 12px 6px 32px;
+  color: white;
+  font-size: 0.9rem;
+  width: 180px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  width: 240px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.kanban-container.search-active .column {
+  border: 2px solid var(--primary-color);
+}
+
+.kanban-container.search-active .column,
+.kanban-container.search-active .card {
+  cursor: default;
+}
