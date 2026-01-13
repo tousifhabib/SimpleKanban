@@ -59,6 +59,12 @@ export default {
       soon: 'Скоро срок',
     },
   },
+  filters: {
+    label: 'Фильтр по:',
+    allLabels: 'Все метки',
+    allPriorities: 'Все приоритеты',
+    clear: 'Очистить',
+  },
   modals: {
     createBoard: {
       title: 'Создать новую доску',

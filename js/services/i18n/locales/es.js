@@ -59,6 +59,12 @@ export default {
       soon: 'Vence pronto',
     },
   },
+  filters: {
+    label: 'Filtrar por:',
+    allLabels: 'Todas las etiquetas',
+    allPriorities: 'Todas las prioridades',
+    clear: 'Limpiar',
+  },
   modals: {
     createBoard: {
       title: 'Crear nuevo tablero',

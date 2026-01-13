@@ -59,6 +59,12 @@ export default {
       soon: 'Vence em breve',
     },
   },
+  filters: {
+    label: 'Filtrar por:',
+    allLabels: 'Todas as etiquetas',
+    allPriorities: 'Todas as prioridades',
+    clear: 'Limpar',
+  },
   modals: {
     createBoard: {
       title: 'Criar novo quadro',

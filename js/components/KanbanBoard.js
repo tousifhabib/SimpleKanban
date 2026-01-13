@@ -22,6 +22,11 @@ export default class KanbanBoard {
     this.renameBoardBtn = document.getElementById(s.renameBoardBtn);
     this.deleteBoardBtn = document.getElementById(s.deleteBoardBtn);
     this.searchInput = document.getElementById(s.searchInput);
+
+    this.filterLabelSelect = document.getElementById(s.filterLabel);
+    this.filterPrioritySelect = document.getElementById(s.filterPriority);
+    this.clearFiltersBtn = document.getElementById(s.clearFilters);
+
     this.importBtn = document.getElementById(s.importBtn);
     this.exportBtn = document.getElementById(s.exportBtn);
     this.importFileInput = document.getElementById(s.importFileInput);
@@ -64,6 +69,10 @@ export default class KanbanBoard {
     this.currentColumnId = null;
     this.selectedLabels = [];
     this.searchTerm = '';
+    this.activeFilters = {
+      label: 'all',
+      priority: 'all',
+    };
 
     this.modalManager = new ModalManager();
     this.registerModals();
@@ -79,6 +88,7 @@ export default class KanbanBoard {
 
     this.setupEventListeners();
     this.setupSearchListener();
+    this.setupFilterListeners();
     this.updateBoardSelector();
     this.render();
 
@@ -154,12 +164,16 @@ export default class KanbanBoard {
     });
   }
 
-  isSearchActive() {
-    return this.searchTerm.length > 0;
+  isFilterActive() {
+    return (
+      this.searchTerm.length > 0 ||
+      this.activeFilters.label !== 'all' ||
+      this.activeFilters.priority !== 'all'
+    );
   }
 
   handleCardDrop(cardId, newColumnId, newOrder) {
-    if (this.isSearchActive()) return;
+    if (this.isFilterActive()) return;
 
     const state = store.getState();
     let oldColumnId;
@@ -182,40 +196,47 @@ export default class KanbanBoard {
     const boardState = store.getState();
     const allLabels = store.getLabels();
 
-    if (this.isSearchActive()) {
-      this.kanbanContainer.classList.add('search-active');
+    this.filterLabelSelect.innerHTML = `<option value="all">${i18n.t('filters.allLabels')}</option>`;
+    allLabels.forEach((l) => {
+      const opt = document.createElement('option');
+      opt.value = l.id;
+      opt.textContent = l.name;
+      if (l.id === this.activeFilters.label) opt.selected = true;
+      this.filterLabelSelect.appendChild(opt);
+    });
+
+    if (this.isFilterActive()) {
+      this.kanbanContainer.classList.add('filters-active');
     } else {
-      this.kanbanContainer.classList.remove('search-active');
+      this.kanbanContainer.classList.remove('filters-active');
     }
 
     if (boardState && boardState.columns) {
       boardState.columns.forEach((colData) => {
-        let cardsToRender = colData.cards;
-
-        if (this.isSearchActive()) {
-          const term = this.searchTerm;
-          cardsToRender = colData.cards.filter((card) => {
-            const textMatch = (card.text || '').toLowerCase().includes(term);
-            const descMatch = (card.description || '')
-              .toLowerCase()
-              .includes(term);
-
-            const labelMatch = (card.labels || []).some((labelId) => {
-              const labelDef = allLabels.find((l) => l.id === labelId);
-              return labelDef && labelDef.name.toLowerCase().includes(term);
+        const cardsToRender = colData.cards.filter((card) => {
+          const term = this.searchTerm.toLowerCase();
+          const matchesSearch =
+            !this.searchTerm ||
+            (card.text || '').toLowerCase().includes(term) ||
+            (card.description || '').toLowerCase().includes(term) ||
+            (card.labels || []).some((labelId) => {
+              const l = allLabels.find((def) => def.id === labelId);
+              return l && l.name.toLowerCase().includes(term);
             });
 
-            return textMatch || descMatch || labelMatch;
-          });
-        }
+          const matchesLabel =
+            this.activeFilters.label === 'all' ||
+            (card.labels || []).includes(this.activeFilters.label);
 
-        const filteredColumnData = {
-          ...colData,
-          cards: cardsToRender,
-        };
+          const matchesPriority =
+            this.activeFilters.priority === 'all' ||
+            card.priority === this.activeFilters.priority;
+
+          return matchesSearch && matchesLabel && matchesPriority;
+        });
 
         this.kanbanContainer.appendChild(
-          new Column(filteredColumnData).render()
+          new Column({ ...colData, cards: cardsToRender }).render()
         );
       });
     }
@@ -256,6 +277,30 @@ export default class KanbanBoard {
         this.searchInput.blur();
         this.render();
       }
+    });
+  }
+
+  setupFilterListeners() {
+    this.filterLabelSelect.addEventListener('change', (e) => {
+      this.activeFilters.label = e.target.value;
+      this.render();
+    });
+
+    this.filterPrioritySelect.addEventListener('change', (e) => {
+      this.activeFilters.priority = e.target.value;
+      this.render();
+    });
+
+    this.clearFiltersBtn.addEventListener('click', () => {
+      this.activeFilters.label = 'all';
+      this.activeFilters.priority = 'all';
+      this.searchTerm = '';
+
+      this.filterLabelSelect.value = 'all';
+      this.filterPrioritySelect.value = 'all';
+      if (this.searchInput) this.searchInput.value = '';
+
+      this.render();
     });
   }
 

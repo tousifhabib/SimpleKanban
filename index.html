@@ -79,6 +79,33 @@
       </div>
     </header>
 
+    <div class="filter-bar" id="filterBar">
+      <div class="filter-group">
+        <span class="filter-label" data-i18n="filters.label">Filter by:</span>
+        <select id="filterLabel" class="filter-select">
+          <option value="all" data-i18n="filters.allLabels">All Labels</option>
+        </select>
+        <select id="filterPriority" class="filter-select">
+          <option value="all" data-i18n="filters.allPriorities">
+            All Priorities
+          </option>
+          <option value="high" data-i18n="card.priorities.high">High</option>
+          <option value="medium" data-i18n="card.priorities.medium">
+            Medium
+          </option>
+          <option value="low" data-i18n="card.priorities.low">Low</option>
+          <option value="none" data-i18n="card.priorities.none">None</option>
+        </select>
+        <button
+          id="clearFilters"
+          class="btn-clear-filters"
+          data-i18n="filters.clear"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+
     <div class="kanban-container" id="kanbanContainer"></div>
 
     <div class="modal" id="createBoardModal" aria-hidden="true">

@@ -59,6 +59,12 @@ export default {
       soon: 'जल्द देय',
     },
   },
+  filters: {
+    label: 'इसके द्वारा फ़िल्टर करें:',
+    allLabels: 'सभी लेबल',
+    allPriorities: 'सभी प्राथमिकताएँ',
+    clear: 'साफ़ करें',
+  },
   modals: {
     createBoard: {
       title: 'नया बोर्ड बनाएँ',
@@ -112,7 +118,7 @@ export default {
       },
       labels: {
         highPriority: 'उच्च प्राथमिकता',
-        blocked: 'ब्लॉक्ड',
+        blocked: 'ब्लॉक्ড',
         waiting: 'प्रतीक्षा',
         quickWin: 'त्वरित जीत',
       },
@@ -129,7 +135,7 @@ export default {
         bug: 'बग',
         feature: 'फीचर',
         techDebt: 'टेक डेब्ट',
-        blocked: 'ब्लॉक्ड',
+        blocked: 'ब्लॉक्ড',
         needsReview: 'रिव्यू चाहिए',
         documentation: 'डॉक्यूमेंटेशन',
       },

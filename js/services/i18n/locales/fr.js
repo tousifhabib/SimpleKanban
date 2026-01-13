@@ -59,6 +59,12 @@ export default {
       soon: 'Bientôt',
     },
   },
+  filters: {
+    label: 'Filtrer par :',
+    allLabels: 'Toutes les étiquettes',
+    allPriorities: 'Toutes les priorités',
+    clear: 'Effacer',
+  },
   modals: {
     createBoard: {
       title: 'Créer un nouveau tableau',

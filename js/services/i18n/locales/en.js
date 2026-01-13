@@ -59,6 +59,12 @@ export default {
       soon: 'Due Soon',
     },
   },
+  filters: {
+    label: 'Filter by:',
+    allLabels: 'All Labels',
+    allPriorities: 'All Priorities',
+    clear: 'Clear',
+  },
   modals: {
     createBoard: {
       title: 'Create New Board',

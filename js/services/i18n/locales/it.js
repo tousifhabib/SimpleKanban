@@ -59,6 +59,12 @@ export default {
       soon: 'Scade a breve',
     },
   },
+  filters: {
+    label: 'Filtra per:',
+    allLabels: 'Tutte le etichette',
+    allPriorities: 'Tutte le priorità',
+    clear: 'Cancella',
+  },
   modals: {
     createBoard: {
       title: 'Crea nuova bacheca',

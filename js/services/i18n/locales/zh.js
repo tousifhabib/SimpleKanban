@@ -59,6 +59,12 @@ export default {
       soon: '即将到期',
     },
   },
+  filters: {
+    label: '筛选:',
+    allLabels: '所有标签',
+    allPriorities: '所有优先级',
+    clear: '清除',
+  },
   modals: {
     createBoard: {
       title: '创建新看板',

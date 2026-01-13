@@ -59,6 +59,12 @@ export default {
       soon: 'قريباً',
     },
   },
+  filters: {
+    label: 'تصفية حسب:',
+    allLabels: 'جميع الملصقات',
+    allPriorities: 'جميع الأولويات',
+    clear: 'مسح',
+  },
   modals: {
     createBoard: {
       title: 'إنشاء لوحة جديدة',

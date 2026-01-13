@@ -59,6 +59,12 @@ export default {
       soon: 'শিগগিরই শেষ',
     },
   },
+  filters: {
+    label: 'ফিল্টার করুন:',
+    allLabels: 'সব লেবেল',
+    allPriorities: 'সব অগ্রাধিকার',
+    clear: 'মুছুন',
+  },
   modals: {
     createBoard: {
       title: 'নতুন বোর্ড তৈরি করুন',

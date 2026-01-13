@@ -59,6 +59,12 @@ export default {
       soon: '期限間近',
     },
   },
+  filters: {
+    label: 'フィルター:',
+    allLabels: 'すべてのラベル',
+    allPriorities: 'すべての優先度',
+    clear: 'クリア',
+  },
   modals: {
     createBoard: {
       title: '新しいボードを作成',

@@ -59,6 +59,12 @@ export default {
       soon: 'Bald fällig',
     },
   },
+  filters: {
+    label: 'Filtern nach:',
+    allLabels: 'Alle Labels',
+    allPriorities: 'Alle Prioritäten',
+    clear: 'Leeren',
+  },
   modals: {
     createBoard: {
       title: 'Neues Board erstellen',
