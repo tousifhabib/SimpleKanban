@@ -8,6 +8,7 @@ module.exports = {
     main: [
       './js/index.js',
       './css/variables.css',
+      './css/buttons.css',
       './css/base.css',
       './css/layout.css',
       './css/components.css',
@@ -25,6 +26,13 @@ module.exports = {
       {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'fonts/[name][ext][query]',
+        },
       },
     ],
   },
