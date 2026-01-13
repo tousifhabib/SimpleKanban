@@ -1,0 +1,152 @@
+export default {
+  header: {
+    title: 'Dynamic Kanban',
+    import: '📥 Import',
+    export: '📤 Export',
+    labels: '🏷️ Labels',
+    addColumn: '+ Add Column',
+    titles: {
+      addBoard: 'Create New Board',
+      renameBoard: 'Rename Board',
+      deleteBoard: 'Delete Board',
+    },
+  },
+  board: {
+    selectPlaceholder: 'Select Board...',
+    confirmDeleteColumn: 'Delete this column and all its cards?',
+    confirmDeleteCard: 'Delete?',
+    confirmDeleteLabel: 'Delete label?',
+    promptLabelName: 'Enter new label name:',
+    promptLabelColor: 'Enter new color (hex):',
+  },
+  card: {
+    addTitle: 'Enter card title...',
+    btnAdd: 'Add Card',
+    btnCancel: 'Cancel',
+    addBtnText: '+ Add a card',
+    meta: {
+      updated: 'Updated {time}',
+      justNow: 'just now',
+      minsAgo: '{m}m ago',
+      hoursAgo: '{h}h ago',
+      daysAgo: '{d}d ago',
+    },
+    detail: {
+      placeholderTitle: 'Card Title',
+      placeholderDesc: 'Add a more detailed description...',
+      placeholderLog: 'Add a progress update...',
+      labels: 'Labels',
+      startDate: 'Start Date',
+      dueDate: 'Due Date',
+      effort: 'Effort (h)',
+      priority: 'Priority',
+      workLog: 'Work Log',
+      addEntry: 'Add Entry',
+      save: 'Save',
+      cancel: 'Cancel',
+    },
+    priorities: {
+      none: 'None',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+    },
+    dueStatus: {
+      overdue: 'Overdue',
+      today: 'Due Today',
+      soon: 'Due Soon',
+    },
+  },
+  modals: {
+    createBoard: {
+      title: 'Create New Board',
+      placeholder: 'Board Name',
+      templateLabel: 'Template',
+      btnCreate: 'Create',
+      btnCancel: 'Cancel',
+      templates: {
+        empty: 'Empty Board',
+        basic: 'Basic Kanban (To Do, Doing, Done)',
+        software: 'Software Dev',
+        sales: 'Sales Pipeline',
+      },
+    },
+    renameBoard: {
+      title: 'Rename Board',
+      placeholder: 'Board Name',
+      btnSave: 'Save',
+      btnCancel: 'Cancel',
+    },
+    deleteBoard: {
+      title: 'Delete Board',
+      warning:
+        'This will permanently delete "{boardName}" and all its columns/cards.',
+      btnDelete: 'Delete',
+      btnCancel: 'Cancel',
+    },
+    addColumn: {
+      title: 'Add New Column',
+      placeholder: 'Column Title',
+      btnAdd: 'Add Column',
+      btnCancel: 'Cancel',
+    },
+    manageLabels: {
+      title: 'Manage Labels',
+      placeholderName: 'Label name',
+      btnAdd: 'Add',
+    },
+  },
+  templates: {
+    empty: {
+      labels: {
+        important: 'Important',
+        optional: 'Optional',
+      },
+    },
+    basic: {
+      columns: {
+        todo: 'To Do',
+        doing: 'Doing',
+        done: 'Done',
+      },
+      labels: {
+        highPriority: 'High Priority',
+        blocked: 'Blocked',
+        waiting: 'Waiting',
+        quickWin: 'Quick Win',
+      },
+    },
+    software: {
+      columns: {
+        backlog: 'Backlog',
+        ready: 'Ready',
+        inProgress: 'In Progress',
+        review: 'Review',
+        done: 'Done',
+      },
+      labels: {
+        bug: 'Bug',
+        feature: 'Feature',
+        techDebt: 'Tech Debt',
+        blocked: 'Blocked',
+        needsReview: 'Needs Review',
+        documentation: 'Documentation',
+      },
+    },
+    sales: {
+      columns: {
+        lead: 'Lead',
+        contacted: 'Contacted',
+        proposal: 'Proposal',
+        closed: 'Closed',
+      },
+      labels: {
+        hotLead: 'Hot Lead',
+        followUp: 'Follow-up',
+        qualified: 'Qualified',
+        budgetConfirmed: 'Budget Confirmed',
+        stalled: 'Stalled',
+      },
+    },
+  },
+};

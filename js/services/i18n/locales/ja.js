@@ -1,0 +1,151 @@
+export default {
+  header: {
+    title: 'ダイナミックかんばん',
+    import: '📥 インポート',
+    export: '📤 エクスポート',
+    labels: '🏷️ ラベル',
+    addColumn: '+ 列を追加',
+    titles: {
+      addBoard: '新しいボードを作成',
+      renameBoard: 'ボード名を変更',
+      deleteBoard: 'ボードを削除',
+    },
+  },
+  board: {
+    selectPlaceholder: 'ボードを選択...',
+    confirmDeleteColumn: 'この列とすべてのカードを削除しますか？',
+    confirmDeleteCard: '削除しますか？',
+    confirmDeleteLabel: 'ラベルを削除しますか？',
+    promptLabelName: '新しいラベル名を入力:',
+    promptLabelColor: '新しい色を入力 (hex):',
+  },
+  card: {
+    addTitle: 'カードのタイトル...',
+    btnAdd: 'カードを追加',
+    btnCancel: 'キャンセル',
+    addBtnText: '+ カードを追加',
+    meta: {
+      updated: '更新: {time}',
+      justNow: 'たった今',
+      minsAgo: '{m}分前',
+      hoursAgo: '{h}時間前',
+      daysAgo: '{d}日前',
+    },
+    detail: {
+      placeholderTitle: 'カードタイトル',
+      placeholderDesc: '詳細な説明を追加...',
+      placeholderLog: '進捗状況を記録...',
+      labels: 'ラベル',
+      startDate: '開始日',
+      dueDate: '締切日',
+      effort: '工数 (h)',
+      priority: '優先度',
+      workLog: '作業ログ',
+      addEntry: 'ログを追加',
+      save: '保存',
+      cancel: 'キャンセル',
+    },
+    priorities: {
+      none: 'なし',
+      low: '低',
+      medium: '中',
+      high: '高',
+    },
+    dueStatus: {
+      overdue: '期限切れ',
+      today: '今日が期限',
+      soon: '期限間近',
+    },
+  },
+  modals: {
+    createBoard: {
+      title: '新しいボードを作成',
+      placeholder: 'ボード名',
+      templateLabel: 'テンプレート',
+      btnCreate: '作成',
+      btnCancel: 'キャンセル',
+      templates: {
+        empty: '空のボード',
+        basic: '基本かんばん (やること, 作業中, 完了)',
+        software: 'ソフトウェア開発',
+        sales: '営業パイプライン',
+      },
+    },
+    renameBoard: {
+      title: 'ボード名を変更',
+      placeholder: 'ボード名',
+      btnSave: '保存',
+      btnCancel: 'キャンセル',
+    },
+    deleteBoard: {
+      title: 'ボードを削除',
+      warning: '"{boardName}" とその内容が完全に削除されます。',
+      btnDelete: '削除',
+      btnCancel: 'キャンセル',
+    },
+    addColumn: {
+      title: '新しい列を追加',
+      placeholder: '列のタイトル',
+      btnAdd: '追加',
+      btnCancel: 'キャンセル',
+    },
+    manageLabels: {
+      title: 'ラベル管理',
+      placeholderName: 'ラベル名',
+      btnAdd: '追加',
+    },
+  },
+  templates: {
+    empty: {
+      labels: {
+        important: '重要',
+        optional: '任意',
+      },
+    },
+    basic: {
+      columns: {
+        todo: 'やること',
+        doing: '作業中',
+        done: '完了',
+      },
+      labels: {
+        highPriority: '優先度高',
+        blocked: 'ブロック中',
+        waiting: '待機中',
+        quickWin: 'すぐできる',
+      },
+    },
+    software: {
+      columns: {
+        backlog: 'バックログ',
+        ready: '準備完了',
+        inProgress: '進行中',
+        review: 'レビュー',
+        done: '完了',
+      },
+      labels: {
+        bug: 'バグ',
+        feature: '機能',
+        techDebt: '技術的負債',
+        blocked: 'ブロック中',
+        needsReview: 'レビュー必要',
+        documentation: 'ドキュメント',
+      },
+    },
+    sales: {
+      columns: {
+        lead: 'リード',
+        contacted: 'コンタクト済',
+        proposal: '提案中',
+        closed: '成約',
+      },
+      labels: {
+        hotLead: 'ホットリード',
+        followUp: 'フォローアップ',
+        qualified: '適格',
+        budgetConfirmed: '予算確認済',
+        stalled: '停滞中',
+      },
+    },
+  },
+};

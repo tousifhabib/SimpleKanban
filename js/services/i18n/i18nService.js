@@ -1,4 +1,4 @@
-import { locales } from './locales.js';
+import { locales } from './locales/index.js';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -23,6 +23,10 @@ class I18nService {
 
   getLanguage() {
     return this.currentLang;
+  }
+
+  getLocale() {
+    return locales[this.currentLang] || locales['en'];
   }
 
   t(key, params = {}) {
@@ -58,7 +62,7 @@ class I18nService {
   updatePage() {
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
-      const attr = el.getAttribute('data-i18n-attr'); // e.g., "placeholder" or "title"
+      const attr = el.getAttribute('data-i18n-attr');
 
       if (attr) {
         el.setAttribute(attr, this.t(key));
