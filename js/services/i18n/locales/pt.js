@@ -40,6 +40,7 @@ export default {
       dueDate: 'Data de entrega',
       effort: 'Esforço (h)',
       priority: 'Prioridade',
+      description: 'Descrição',
       workLog: 'Registro de trabalho',
       addEntry: 'Adicionar entrada',
       save: 'Salvar',

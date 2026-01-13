@@ -40,6 +40,7 @@ export default {
       dueDate: 'Due Date',
       effort: 'Effort (h)',
       priority: 'Priority',
+      description: 'Description',
       workLog: 'Work Log',
       addEntry: 'Add Entry',
       save: 'Save',
