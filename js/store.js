@@ -247,6 +247,31 @@ class Store {
     }
   }
 
+  duplicateCard(columnId, cardId) {
+    const col = this.col(columnId);
+    const originalCard = this.card(columnId, cardId);
+
+    if (!col || !originalCard) return null;
+
+    const duplicatedCard = new CardEntity({
+      text: originalCard.text,
+      description: originalCard.description,
+      startDate: originalCard.startDate,
+      dueDate: originalCard.dueDate,
+      priority: originalCard.priority,
+      effort: originalCard.effort,
+      labels: [...(originalCard.labels || [])],
+      completed: false,
+      logs: [],
+    });
+
+    const originalIndex = col.cards.findIndex((c) => c.id === cardId);
+    col.cards.splice(originalIndex + 1, 0, duplicatedCard);
+
+    this.notify();
+    return duplicatedCard;
+  }
+
   addCardLog(columnId, cardId, text) {
     const card = this.card(columnId, cardId);
     const col = this.col(columnId);

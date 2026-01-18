@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'ダイナミックかんばん',
+    title: 'シンプルかんばん',
     import: '📥 インポート',
     export: '📤 エクスポート',
     labels: '🏷️ ラベル',
     addColumn: '+ 列を追加',
+    pickForMe: '🎲 代わりに選ぶ',
     titles: {
       addBoard: '新しいボードを作成',
       renameBoard: 'ボード名を変更',
       deleteBoard: 'ボードを削除',
+      options: '設定',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'ラベルを削除しますか？',
     promptLabelName: '新しいラベル名を入力:',
     promptLabelColor: '新しい色を入力 (hex):',
+    cardDuplicated: 'カードを複製しました',
   },
   card: {
     addTitle: 'カードのタイトル...',
     btnAdd: 'カードを追加',
     btnCancel: 'キャンセル',
     addBtnText: '+ カードを追加',
+    duplicate: '複製',
     meta: {
       updated: '更新 {time}',
       justNow: 'たった今',
@@ -174,6 +178,33 @@ export default {
       title: 'ラベル管理',
       placeholderName: 'ラベル名',
       btnAdd: '追加',
+    },
+    options: {
+      title: '設定',
+      btnSave: '保存',
+      btnReset: '初期設定に戻す',
+      randomizer: {
+        title: '🎲 ランダムピッカーの設定',
+        description:
+          '「代わりに選ぶ」がどのように次のタスクを選択するか設定します。',
+        factorPriority: '優先度を考慮する',
+        factorPriorityHint: '優先度の高いカードが選ばれやすくなります',
+        factorDueDate: '締切日を考慮する',
+        factorDueDateHint: '期限が近いカードが選ばれやすくなります',
+        factorAging: '経過日数を考慮する',
+        factorAgingHint: '放置されている古いタスクを優先して選ぶようにします',
+        excludeCompleted: '完了したカードを除外する',
+        includeColumns: '対象の列を選択（空欄の場合はすべての列）:',
+      },
+    },
+    randomPicker: {
+      title: 'あなたの次のタスク',
+      noCards:
+        '対象のカードが見つかりませんでした。すべてのタスクが完了している可能性があります。',
+      inColumn: '現在の列:',
+      goToCard: 'カードを開く',
+      pickAgain: '🎲 もう一度選ぶ',
+      stats: '候補 {total} 件中 {eligible} 件が対象です',
     },
   },
   templates: {

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dynamic Kanban Board</title>
+    <title>Simple Kanban Board</title>
   </head>
   <body>
     <header>
       <div class="header-section">
-        <h1 data-i18n="header.title">Dynamic Kanban</h1>
+        <h1 data-i18n="header.title">Simple Kanban</h1>
         <select
           id="langSelector"
           class="board-select"
@@ -43,6 +43,22 @@
         </div>
       </div>
       <div class="header-actions">
+        <button
+          class="header-btn randomizer-btn"
+          id="randomPickerBtn"
+          data-i18n="header.pickForMe"
+        >
+          🎲 Pick for me
+        </button>
+        <button
+          class="header-btn-icon"
+          id="optionsBtn"
+          data-i18n="header.titles.options"
+          data-i18n-attr="title"
+        >
+          ⚙️
+        </button>
+        <div class="divider"></div>
         <input type="file" id="importFileInput" hidden accept=".json" />
         <button class="header-btn" id="importBtn" data-i18n="header.import">
           📥 Import
@@ -458,6 +474,171 @@
       </div>
     </div>
 
+    <div class="modal" id="optionsModal" aria-hidden="true">
+      <div class="modal-overlay" id="optionsOverlay"></div>
+      <div
+        class="modal-content"
+        role="dialog"
+        aria-labelledby="optionsTitle"
+        aria-modal="true"
+      >
+        <button class="modal-close-btn" id="optionsCloseBtn">&times;</button>
+        <h2 id="optionsTitle" data-i18n="modals.options.title">Options</h2>
+
+        <div class="options-section">
+          <h3 data-i18n="modals.options.randomizer.title">
+            🎲 Random Picker Settings
+          </h3>
+          <p
+            class="options-description"
+            data-i18n="modals.options.randomizer.description"
+          >
+            Configure how "Pick for me" selects your next task.
+          </p>
+
+          <div class="options-group">
+            <label class="options-checkbox">
+              <input type="checkbox" id="optFactorPriority" checked />
+              <span data-i18n="modals.options.randomizer.factorPriority"
+                >Weight by priority</span
+              >
+            </label>
+            <span
+              class="options-hint"
+              data-i18n="modals.options.randomizer.factorPriorityHint"
+            >
+              High priority cards are more likely to be picked
+            </span>
+          </div>
+
+          <div class="options-group">
+            <label class="options-checkbox">
+              <input type="checkbox" id="optFactorDueDate" checked />
+              <span data-i18n="modals.options.randomizer.factorDueDate"
+                >Weight by due date</span
+              >
+            </label>
+            <span
+              class="options-hint"
+              data-i18n="modals.options.randomizer.factorDueDateHint"
+            >
+              Cards due sooner are more likely to be picked
+            </span>
+          </div>
+
+          <div class="options-group">
+            <label class="options-checkbox">
+              <input type="checkbox" id="optFactorAging" checked />
+              <span data-i18n="modals.options.randomizer.factorAging"
+                >Weight by age</span
+              >
+            </label>
+            <span
+              class="options-hint"
+              data-i18n="modals.options.randomizer.factorAgingHint"
+            >
+              Older cards are more likely to be picked to prevent neglect
+            </span>
+          </div>
+
+          <div class="options-group">
+            <label class="options-checkbox">
+              <input type="checkbox" id="optExcludeCompleted" checked />
+              <span data-i18n="modals.options.randomizer.excludeCompleted"
+                >Exclude completed cards</span
+              >
+            </label>
+          </div>
+
+          <div class="options-group">
+            <label
+              class="card-detail-label"
+              data-i18n="modals.options.randomizer.includeColumns"
+            >
+              Include only these columns (leave empty for all):
+            </label>
+            <div class="options-columns-list" id="optColumnsSelector"></div>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 24px">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="saveOptionsBtn"
+            data-i18n="modals.options.btnSave"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="resetOptionsBtn"
+            data-i18n="modals.options.btnReset"
+          >
+            Reset to Defaults
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="randomPickerModal" aria-hidden="true">
+      <div class="modal-overlay" id="randomPickerOverlay"></div>
+      <div
+        class="modal-content randomizer-result-content"
+        role="dialog"
+        aria-labelledby="randomPickerTitle"
+        aria-modal="true"
+      >
+        <button class="modal-close-btn" id="randomPickerCloseBtn">
+          &times;
+        </button>
+        <div class="randomizer-header">
+          <span class="randomizer-icon">🎲</span>
+          <h2 id="randomPickerTitle" data-i18n="modals.randomPicker.title">
+            Your Next Task
+          </h2>
+        </div>
+
+        <div class="randomizer-result" id="randomPickerResult">
+          <div class="randomizer-card-preview" id="randomPickerCard"></div>
+          <div class="randomizer-column-info" id="randomPickerColumnInfo"></div>
+        </div>
+
+        <div
+          class="randomizer-empty"
+          id="randomPickerEmpty"
+          style="display: none"
+        >
+          <span class="empty-icon">🎉</span>
+          <p data-i18n="modals.randomPicker.noCards">
+            No eligible cards found! You might be all caught up.
+          </p>
+        </div>
+
+        <div class="randomizer-stats" id="randomPickerStats"></div>
+
+        <div class="button-group">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="goToCardBtn"
+            data-i18n="modals.randomPicker.goToCard"
+          >
+            Open Card
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="pickAgainBtn"
+            data-i18n="modals.randomPicker.pickAgain"
+          >
+            🎲 Pick Again
+          </button>
+        </div>
+      </div>
+    </div>
+
     <template id="columnTemplate">
       <div class="column" draggable="true">
         <div class="column-header">
@@ -504,8 +685,19 @@
         <div class="card-meta"></div>
         <span class="card-has-description" title="Has notes">📝</span>
         <div class="card-actions">
-          <button class="card-action-btn" data-action="edit">✏️</button>
-          <button class="card-action-btn" data-action="delete">🗑</button>
+          <button class="card-action-btn" data-action="edit" title="Edit">
+            ✏️
+          </button>
+          <button
+            class="card-action-btn"
+            data-action="duplicate"
+            title="Duplicate"
+          >
+            📋
+          </button>
+          <button class="card-action-btn" data-action="delete" title="Delete">
+            🗑
+          </button>
         </div>
       </div>
     </template>
