@@ -10,61 +10,53 @@ export class Store {
   constructor() {
     this.repo = new Repository();
     this.listeners = new Set();
-
-    const handler = {
-      get: (target, prop, receiver) => {
-        const val = Reflect.get(target, prop, receiver);
-        return typeof val === 'object' && val !== null
-          ? new Proxy(val, handler)
-          : val;
-      },
-      set: (target, prop, val, receiver) => {
-        const res = Reflect.set(target, prop, val, receiver);
+    const h = {
+      get: (t, p) =>
+        typeof t[p] === 'object' && t[p] !== null ? new Proxy(t[p], h) : t[p],
+      set: (t, p, v) => {
+        t[p] = v;
         this.emit();
-        return res;
+        return true;
       },
-      deleteProperty: (target, prop) => {
-        const res = Reflect.deleteProperty(target, prop);
+      deleteProperty: (t, p) => {
+        delete t[p];
         this.emit();
-        return res;
+        return true;
       },
     };
-
-    this.state = new Proxy(this.loadState(), handler);
+    this.state = new Proxy(this.loadState(), h);
   }
 
   loadState() {
-    const data = this.repo.load();
-    if (!data) return this.createDefaultState();
-
-    const boards = (
-      Array.isArray(data.columns)
+    const d = this.repo.load();
+    if (!d) return this.createDefaultState();
+    const b = (
+      Array.isArray(d.columns)
         ? [
             {
               id: generateId('board'),
               name: 'My Board',
-              columns: data.columns,
-              labels: data.labels || createBoardFromTemplate().labels,
+              columns: d.columns,
+              labels: d.labels || createBoardFromTemplate().labels,
             },
           ]
-        : data.boards
-    ).map((b) => ({
-      ...b,
-      columns: b.columns.map((c) => ({
+        : d.boards
+    ).map((x) => ({
+      ...x,
+      columns: x.columns.map((c) => ({
         ...c,
-        cards: c.cards.map((card) => new CardEntity(card)),
+        cards: c.cards.map((k) => new CardEntity(k)),
       })),
     }));
-
-    return { activeBoardId: data.activeBoardId || boards[0].id, boards };
+    return { activeBoardId: d.activeBoardId || b[0].id, boards: b };
   }
 
   createDefaultState() {
-    const bId = generateId('board');
-    const { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
+    const id = generateId('board'),
+      { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
     return {
-      activeBoardId: bId,
-      boards: [{ id: bId, name: 'My First Board', columns, labels }],
+      activeBoardId: id,
+      boards: [{ id, name: 'My First Board', columns, labels }],
     };
   }
 
@@ -72,72 +64,66 @@ export class Store {
     this.repo.save(this.state);
     this.listeners.forEach((l) => l(this.state));
   }
-
-  subscribe(fn) {
-    this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
+  subscribe(f) {
+    this.listeners.add(f);
+    return () => this.listeners.delete(f);
   }
 
-  getState() {
-    return this.getActiveBoard();
-  }
-  getActiveBoard() {
+  get activeBoard() {
     return this.state.boards.find((b) => b.id === this.state.activeBoardId);
   }
-  getActiveBoardId() {
+  get activeBoardId() {
     return this.state.activeBoardId;
+  }
+  getState() {
+    return this.activeBoard;
   }
   getBoards() {
     return this.state.boards.map(({ id, name }) => ({ id, name }));
   }
   getLabels() {
-    return this.getState().labels || [];
+    return this.activeBoard.labels || [];
   }
 
   col(id) {
-    return this.getState().columns.find((c) => c.id === id);
+    return this.activeBoard.columns.find((c) => c.id === id);
   }
   getCard(id) {
-    for (const col of this.getState().columns) {
-      const card = col.cards.find((c) => c.id === id);
-      if (card) return { card, columnId: col.id };
+    for (const c of this.activeBoard.columns) {
+      const k = c.cards.find((x) => x.id === id);
+      if (k) return { card: k, columnId: c.id };
     }
-    return null;
   }
-  card(colId, cardId) {
-    return this.col(colId)?.cards.find((c) => c.id === cardId);
+  card(colId, id) {
+    return this.col(colId)?.cards.find((k) => k.id === id);
   }
 
   setActiveBoard(id) {
     if (this.state.boards.some((b) => b.id === id))
       this.state.activeBoardId = id;
   }
-
-  createBoard(name, type = DEFAULT_TEMPLATE) {
-    const id = generateId('board');
-    const { columns, labels } = createBoardFromTemplate(type);
-    this.state.boards.push({ id, name: name || 'New Board', columns, labels });
+  createBoard(n, t = DEFAULT_TEMPLATE) {
+    const id = generateId('board'),
+      { columns, labels } = createBoardFromTemplate(t);
+    this.state.boards.push({ id, name: n || 'New Board', columns, labels });
     this.state.activeBoardId = id;
   }
-
-  renameBoard(id, name) {
-    const b = this.state.boards.find((b) => b.id === id);
-    if (b) b.name = name.trim();
+  renameBoard(id, n) {
+    const b = this.state.boards.find((x) => x.id === id);
+    if (b) b.name = n.trim();
   }
-
   deleteBoard(id) {
-    if (this.state.boards.length <= 1) return false;
-    const idx = this.state.boards.findIndex((b) => b.id === id);
-    if (idx === -1) return false;
-    const isActive = this.state.activeBoardId === id;
-    this.state.boards.splice(idx, 1);
-    if (isActive) this.state.activeBoardId = this.state.boards[0].id;
+    const i = this.state.boards.findIndex((x) => x.id === id);
+    if (this.state.boards.length <= 1 || i === -1) return false;
+    const active = this.activeBoardId === id;
+    this.state.boards.splice(i, 1);
+    if (active) this.state.activeBoardId = this.state.boards[0].id;
     return true;
   }
 
-  importData(json) {
+  importData(j) {
     try {
-      this.repo.save(JSON.parse(json));
+      this.repo.save(JSON.parse(j));
       window.location.reload();
       return true;
     } catch {
@@ -145,108 +131,93 @@ export class Store {
     }
   }
 
-  addLabel(name, color) {
-    this.getLabels().push({ id: generateId('label'), name, color });
+  addLabel(n, c) {
+    this.getLabels().push({ id: generateId('label'), name: n, color: c });
   }
-
-  updateLabel(id, name, color) {
-    const l = this.getLabels().find((l) => l.id === id);
-    if (l) Object.assign(l, { name, color });
+  updateLabel(id, n, c) {
+    Object.assign(this.getLabels().find((l) => l.id === id) || {}, {
+      name: n,
+      color: c,
+    });
   }
-
   removeLabel(id) {
-    const b = this.getState();
-    b.labels = b.labels.filter((l) => l.id !== id);
-    b.columns.forEach((c) =>
-      c.cards.forEach(
-        (card) => (card.labels = card.labels.filter((l) => l !== id))
-      )
+    this.activeBoard.labels = this.activeBoard.labels.filter(
+      (l) => l.id !== id
+    );
+    this.activeBoard.columns.forEach((c) =>
+      c.cards.forEach((k) => (k.labels = k.labels.filter((l) => l !== id)))
     );
   }
 
-  addColumn(title) {
-    this.getState().columns.push({
+  addColumn(t) {
+    this.activeBoard.columns.push({
       id: generateId('column'),
-      title: title || 'New Column',
+      title: t || 'New Column',
       cards: [],
     });
   }
-
   removeColumn(id) {
-    const b = this.getState();
-    b.columns = b.columns.filter((c) => c.id !== id);
+    this.activeBoard.columns = this.activeBoard.columns.filter(
+      (c) => c.id !== id
+    );
   }
-
-  updateColumnTitle(id, title) {
+  updateColumnTitle(id, t) {
     const c = this.col(id);
-    if (c) c.title = title;
+    if (c) c.title = t;
   }
 
-  addCard(colId, text) {
-    this.col(colId)?.cards.push(new CardEntity({ text }));
+  addCard(colId, t) {
+    this.col(colId)?.cards.push(new CardEntity({ text: t }));
   }
-
-  updateCardDetails(colId, cardId, updates) {
-    this.card(colId, cardId)?.update(updates);
+  updateCardDetails(colId, id, u) {
+    this.card(colId, id)?.update(u);
   }
-
-  toggleCardComplete(colId, cardId) {
-    this.card(colId, cardId)?.toggleComplete();
+  toggleCardComplete(colId, id) {
+    this.card(colId, id)?.toggleComplete();
   }
-
-  removeCard(colId, cardId) {
+  removeCard(colId, id) {
     const c = this.col(colId);
-    if (c) c.cards = c.cards.filter((x) => x.id !== cardId);
+    if (c) c.cards = c.cards.filter((k) => k.id !== id);
   }
-
-  duplicateCard(colId, cardId) {
-    const col = this.col(colId);
-    const origin = this.card(colId, cardId);
-    if (!col || !origin) return null;
-
-    const copy = new CardEntity({
-      ...origin,
+  duplicateCard(colId, id) {
+    const c = this.col(colId),
+      o = this.card(colId, id);
+    if (!c || !o) return null;
+    const k = new CardEntity({
+      ...o,
       id: undefined,
       logs: [],
       createdAt: undefined,
       updatedAt: undefined,
     });
-    col.cards.splice(col.cards.indexOf(origin) + 1, 0, copy);
-    return copy;
+    c.cards.splice(c.cards.indexOf(o) + 1, 0, k);
+    return k;
   }
-
-  addCardLog(colId, cardId, text) {
-    this.card(colId, cardId)?.addLog(text, this.col(colId)?.title);
+  addCardLog(colId, id, t) {
+    this.card(colId, id)?.addLog(t, this.col(colId)?.title);
   }
 
   reorderColumns(ids) {
-    const b = this.getState();
-    b.columns = ids.map((id) => b.columns.find((c) => c.id === id));
+    this.activeBoard.columns = ids.map((id) => this.col(id)).filter(Boolean);
   }
-
   reorderCards(colId, ids) {
-    const col = this.col(colId);
-    if (col) {
-      const map = new Map(col.cards.map((c) => [c.id, c]));
-      col.cards = ids.map((id) => map.get(id)).filter(Boolean);
+    const c = this.col(colId);
+    if (c)
+      c.cards = ids
+        .map((id) => c.cards.find((k) => k.id === id))
+        .filter(Boolean);
+  }
+  moveCard(id, oldId, newId, order) {
+    const oC = this.col(oldId),
+      nC = this.col(newId),
+      i = oC?.cards.findIndex((k) => k.id === id);
+    if (i > -1 && nC) {
+      const [k] = oC.cards.splice(i, 1);
+      k.touch();
+      nC.cards = order
+        .map((x) => (x === id ? k : nC.cards.find((y) => y.id === x)))
+        .filter(Boolean);
     }
   }
-
-  moveCard(cId, oldColId, newColId, newOrder) {
-    const oldCol = this.col(oldColId);
-    const newCol = this.col(newColId);
-    if (!oldCol || !newCol) return;
-
-    const idx = oldCol.cards.findIndex((c) => c.id === cId);
-    if (idx === -1) return;
-
-    const [card] = oldCol.cards.splice(idx, 1);
-    card.touch();
-    if (!newCol.cards.includes(card)) newCol.cards.push(card);
-
-    const map = new Map(newCol.cards.map((c) => [c.id, c]));
-    newCol.cards = newOrder.map((id) => map.get(id)).filter(Boolean);
-  }
 }
-
 export const store = new Store();

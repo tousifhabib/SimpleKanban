@@ -144,18 +144,18 @@ export default class KanbanBoard {
         this.ui.newBoardName.focus();
       },
       renameBoardBtn: () => {
-        this.ui.renameBoardName.value = store.getActiveBoard()?.name;
+        this.ui.renameBoardName.value = store.activeBoard?.name;
         this.modals.open('renameBoard');
       },
       deleteBoardBtn: () => {
         this.ui.deleteBoardMessage.textContent = i18n.t(
           'modals.deleteBoard.warning',
-          { boardName: store.getActiveBoard()?.name }
+          { boardName: store.activeBoard?.name }
         );
         this.modals.open('deleteBoard');
       },
       confirmDeleteBoard: () =>
-        store.deleteBoard(store.getActiveBoardId()) &&
+        store.deleteBoard(store.activeBoardId) &&
         this.modals.close('deleteBoard'),
       addColumnBtn: () => {
         this.modals.open('addColumn');
@@ -494,7 +494,7 @@ export default class KanbanBoard {
     this.ui.boardSelector.innerHTML = boards
       .map(
         (b) =>
-          `<option value="${b.id}" ${b.id === store.getActiveBoardId() ? 'selected' : ''}>${b.name}</option>`
+          `<option value="${b.id}" ${b.id === store.activeBoardId ? 'selected' : ''}>${b.name}</option>`
       )
       .join('');
     if (this.ui.deleteBoardBtn)
