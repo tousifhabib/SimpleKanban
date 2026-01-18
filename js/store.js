@@ -8,13 +8,17 @@ import {
 
 const createDeepProxy = (target, handler) => {
   if (target === null || typeof target !== 'object') return target;
-  if (target.constructor !== Object && !Array.isArray(target)) return target;
 
   const wrap = (v) => createDeepProxy(v, handler);
+
   if (Array.isArray(target)) {
-    target.forEach((v, i) => (target[i] = wrap(v)));
-  } else {
-    Object.keys(target).forEach((k) => (target[k] = wrap(target[k])));
+    target.forEach((v, i) => {
+      target[i] = wrap(v);
+    });
+  } else if (target.constructor === Object) {
+    Object.keys(target).forEach((k) => {
+      target[k] = wrap(target[k]);
+    });
   }
 
   return new Proxy(target, {
@@ -89,9 +93,6 @@ class Store {
 
   #col = (id) => this.#board()?.columns.find((c) => c.id === id);
 
-  #card = (colId, cardId) =>
-    this.#col(colId)?.cards.find((c) => c.id === cardId);
-
   #remove = (arr, id) => {
     const i = arr.findIndex((x) => x && x.id === id);
     return i > -1 ? arr.splice(i, 1)[0] : null;
@@ -102,8 +103,6 @@ class Store {
     arr.length = 0;
     ids.forEach((id) => m.has(id) && arr.push(m.get(id)));
   };
-
-  #touch = (card) => card && (card.updatedAt = new Date().toISOString());
 
   get state() {
     return this.#state;
@@ -133,7 +132,6 @@ class Store {
 
   getCard(id) {
     const board = this.#board();
-    if (!board) return null;
     for (const col of board.columns) {
       const card = col.cards.find((c) => c.id === id);
       if (card) return { card, columnId: col.id };
@@ -161,16 +159,11 @@ class Store {
 
   deleteBoard(id) {
     if (this.#state.boards.length <= 1) return false;
-
     if (this.#state.activeBoardId === id) {
       const fallback = this.#state.boards.find((b) => b && b.id !== id);
-      if (fallback) {
-        this.#state.activeBoardId = fallback.id;
-      }
+      this.#state.activeBoardId = fallback.id;
     }
-
-    const removed = this.#remove(this.#state.boards, id);
-    return !!removed;
+    return !!this.#remove(this.#state.boards, id);
   }
 
   importData(json) {
@@ -193,7 +186,6 @@ class Store {
 
   removeLabel(id) {
     const board = this.#board();
-    if (!board) return;
     this.#remove(board.labels, id);
     board.columns.forEach((c) =>
       c.cards.forEach((k) => {
@@ -203,16 +195,12 @@ class Store {
     );
   }
 
-  addColumn = (title) => {
-    const board = this.#board();
-    if (board) {
-      board.columns.push({
-        id: generateId('column'),
-        title: title || 'New Column',
-        cards: [],
-      });
-    }
-  };
+  addColumn = (title) =>
+    this.#board().columns.push({
+      id: generateId('column'),
+      title: title || 'New Column',
+      cards: [],
+    });
 
   removeColumn = (id) => this.#remove(this.#board()?.columns ?? [], id);
 
@@ -225,18 +213,24 @@ class Store {
     this.#col(colId)?.cards.push(new CardEntity({ text }));
 
   updateCardDetails(colId, id, updates) {
-    const card = this.#card(colId, id);
-    if (card) {
+    const col = this.#col(colId);
+    const idx = col?.cards.findIndex((c) => c.id === id);
+    if (idx !== -1 && idx !== undefined) {
+      const card = col.cards[idx];
       Object.assign(card, updates);
-      this.#touch(card);
+      card.updatedAt = new Date().toISOString();
+      col.cards[idx] = card;
     }
   }
 
   toggleCardComplete(colId, id) {
-    const card = this.#card(colId, id);
-    if (card) {
+    const col = this.#col(colId);
+    const idx = col?.cards.findIndex((c) => c.id === id);
+    if (idx !== -1 && idx !== undefined) {
+      const card = col.cards[idx];
       card.completed = !card.completed;
-      this.#touch(card);
+      card.updatedAt = new Date().toISOString();
+      col.cards[idx] = card;
     }
   }
 
@@ -258,20 +252,22 @@ class Store {
   }
 
   addCardLog(colId, id, text) {
-    const card = this.#card(colId, id);
     const col = this.#col(colId);
-    if (!card || !col) return;
-    card.logs.push({
-      id: generateId('log'),
-      text,
-      columnTitle: col.title,
-      createdAt: new Date().toISOString(),
-    });
-    this.#touch(card);
+    const idx = col?.cards.findIndex((c) => c.id === id);
+    if (idx !== -1 && idx !== undefined) {
+      const card = col.cards[idx];
+      card.logs.push({
+        id: generateId('log'),
+        text,
+        columnTitle: col.title,
+        createdAt: new Date().toISOString(),
+      });
+      card.updatedAt = new Date().toISOString();
+      col.cards[idx] = card;
+    }
   }
 
   reorderColumns = (ids) => this.#reorder(this.#board()?.columns ?? [], ids);
-
   reorderCards = (colId, ids) =>
     this.#reorder(this.#col(colId)?.cards ?? [], ids);
 
@@ -280,7 +276,7 @@ class Store {
     const newCol = this.#col(newColId);
     const card = this.#remove(oldCol?.cards ?? [], id);
     if (card && newCol) {
-      this.#touch(card);
+      card.updatedAt = new Date().toISOString();
       newCol.cards.push(card);
       this.#reorder(newCol.cards, order);
     }
