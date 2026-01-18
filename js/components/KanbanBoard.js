@@ -151,8 +151,9 @@ export default class KanbanBoard {
       randomPickerBtn: () => this.pickRandom(),
       goToCardBtn: () => {
         if (this.picked) {
+          const { card, column } = this.picked;
           this.modals.close('randomPicker');
-          this.openCard(this.picked.card.id, this.picked.column.id);
+          this.openCard(card.id, column.id);
         }
       },
       pickAgainBtn: () => this.pickRandom(),
