@@ -8,12 +8,26 @@ import {
 
 const createDeepProxy = (target, handler) => {
   if (target === null || typeof target !== 'object') return target;
+  if (target.constructor !== Object && !Array.isArray(target)) return target;
+
   const wrap = (v) => createDeepProxy(v, handler);
-  if (Array.isArray(target)) target.forEach((v, i) => (target[i] = wrap(v)));
-  else Object.keys(target).forEach((k) => (target[k] = wrap(target[k])));
+  if (Array.isArray(target)) {
+    target.forEach((v, i) => (target[i] = wrap(v)));
+  } else {
+    Object.keys(target).forEach((k) => (target[k] = wrap(target[k])));
+  }
+
   return new Proxy(target, {
-    set: (t, p, v) => ((t[p] = wrap(v)), handler(), true),
-    deleteProperty: (t, p) => (delete t[p], handler(), true),
+    set: (t, p, v) => {
+      t[p] = wrap(v);
+      handler();
+      return true;
+    },
+    deleteProperty: (t, p) => {
+      delete t[p];
+      handler();
+      return true;
+    },
   });
 };
 
@@ -61,24 +75,34 @@ class Store {
     };
   }
 
-  #emit = () => (
-    this.#repo.save(serialize(this.#state)),
-    this.#listeners.forEach((fn) => fn())
-  );
-  #board = () =>
-    this.#state.boards.find((b) => b.id === this.#state.activeBoardId);
+  #emit = () => {
+    this.#repo.save(serialize(this.#state));
+    this.#listeners.forEach((fn) => fn());
+  };
+
+  #board = () => {
+    const board = this.#state.boards.find(
+      (b) => b && b.id === this.#state.activeBoardId
+    );
+    return board || this.#state.boards[0];
+  };
+
   #col = (id) => this.#board()?.columns.find((c) => c.id === id);
+
   #card = (colId, cardId) =>
     this.#col(colId)?.cards.find((c) => c.id === cardId);
+
   #remove = (arr, id) => {
-    const i = arr.findIndex((x) => x.id === id);
+    const i = arr.findIndex((x) => x && x.id === id);
     return i > -1 ? arr.splice(i, 1)[0] : null;
   };
+
   #reorder = (arr, ids) => {
-    const m = new Map(arr.map((x) => [x.id, x]));
+    const m = new Map(arr.filter((x) => x).map((x) => [x.id, x]));
     arr.length = 0;
     ids.forEach((id) => m.has(id) && arr.push(m.get(id)));
   };
+
   #touch = (card) => card && (card.updatedAt = new Date().toISOString());
 
   get state() {
@@ -92,25 +116,36 @@ class Store {
   }
 
   getState = () => this.#board();
-  getBoards = () => this.#state.boards.map(({ id, name }) => ({ id, name }));
+
+  getBoards = () =>
+    this.#state.boards
+      .filter((b) => b && b.id)
+      .map(({ id, name }) => ({ id, name: name || 'Untitled Board' }));
+
   getLabels = () => this.#board()?.labels ?? [];
+
   getActiveBoardId = () => this.#state.activeBoardId;
-  subscribe = (fn) => (
-    this.#listeners.add(fn),
-    () => this.#listeners.delete(fn)
-  );
+
+  subscribe = (fn) => {
+    this.#listeners.add(fn);
+    return () => this.#listeners.delete(fn);
+  };
 
   getCard(id) {
-    for (const col of this.#board().columns) {
+    const board = this.#board();
+    if (!board) return null;
+    for (const col of board.columns) {
       const card = col.cards.find((c) => c.id === id);
       if (card) return { card, columnId: col.id };
     }
     return null;
   }
 
-  setActiveBoard = (id) =>
-    this.#state.boards.some((b) => b.id === id) &&
-    (this.#state.activeBoardId = id);
+  setActiveBoard = (id) => {
+    if (this.#state.boards.some((b) => b && b.id === id)) {
+      this.#state.activeBoardId = id;
+    }
+  };
 
   createBoard(name, type = DEFAULT_TEMPLATE) {
     const id = generateId('board');
@@ -120,7 +155,7 @@ class Store {
   }
 
   renameBoard(id, name) {
-    const board = this.#state.boards.find((b) => b.id === id);
+    const board = this.#state.boards.find((b) => b && b.id === id);
     if (board) board.name = name.trim();
   }
 
@@ -128,8 +163,10 @@ class Store {
     if (this.#state.boards.length <= 1) return false;
 
     if (this.#state.activeBoardId === id) {
-      const fallbackBoard = this.#state.boards.find((b) => b.id !== id);
-      this.#state.activeBoardId = fallbackBoard.id;
+      const fallback = this.#state.boards.find((b) => b && b.id !== id);
+      if (fallback) {
+        this.#state.activeBoardId = fallback.id;
+      }
     }
 
     const removed = this.#remove(this.#state.boards, id);
@@ -156,6 +193,7 @@ class Store {
 
   removeLabel(id) {
     const board = this.#board();
+    if (!board) return;
     this.#remove(board.labels, id);
     board.columns.forEach((c) =>
       c.cards.forEach((k) => {
@@ -165,13 +203,18 @@ class Store {
     );
   }
 
-  addColumn = (title) =>
-    this.#board().columns.push({
-      id: generateId('column'),
-      title: title || 'New Column',
-      cards: [],
-    });
-  removeColumn = (id) => this.#remove(this.#board().columns, id);
+  addColumn = (title) => {
+    const board = this.#board();
+    if (board) {
+      board.columns.push({
+        id: generateId('column'),
+        title: title || 'New Column',
+        cards: [],
+      });
+    }
+  };
+
+  removeColumn = (id) => this.#remove(this.#board()?.columns ?? [], id);
 
   updateColumnTitle(id, title) {
     const col = this.#col(id);
@@ -216,17 +259,19 @@ class Store {
 
   addCardLog(colId, id, text) {
     const card = this.#card(colId, id);
-    if (!card) return;
+    const col = this.#col(colId);
+    if (!card || !col) return;
     card.logs.push({
       id: generateId('log'),
       text,
-      columnTitle: this.#col(colId).title,
+      columnTitle: col.title,
       createdAt: new Date().toISOString(),
     });
     this.#touch(card);
   }
 
-  reorderColumns = (ids) => this.#reorder(this.#board().columns, ids);
+  reorderColumns = (ids) => this.#reorder(this.#board()?.columns ?? [], ids);
+
   reorderCards = (colId, ids) =>
     this.#reorder(this.#col(colId)?.cards ?? [], ids);
 
