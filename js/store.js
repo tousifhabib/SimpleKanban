@@ -10,9 +10,7 @@ export class Store {
   constructor() {
     this.repo = new Repository();
     this.listeners = new Set();
-    const h = {
-      get: (t, p) =>
-        typeof t[p] === 'object' && t[p] !== null ? new Proxy(t[p], h) : t[p],
+    this.state = new Proxy(this.loadState(), {
       set: (t, p, v) => {
         t[p] = v;
         this.emit();
@@ -23,14 +21,13 @@ export class Store {
         this.emit();
         return true;
       },
-    };
-    this.state = new Proxy(this.loadState(), h);
+    });
   }
 
   loadState() {
     const d = this.repo.load();
     if (!d) return this.createDefaultState();
-    const b = (
+    const boards = (
       Array.isArray(d.columns)
         ? [
             {
@@ -41,19 +38,19 @@ export class Store {
             },
           ]
         : d.boards
-    ).map((x) => ({
-      ...x,
-      columns: x.columns.map((c) => ({
+    ).map((b) => ({
+      ...b,
+      columns: b.columns.map((c) => ({
         ...c,
         cards: c.cards.map((k) => new CardEntity(k)),
       })),
     }));
-    return { activeBoardId: d.activeBoardId || b[0].id, boards: b };
+    return { activeBoardId: d.activeBoardId || boards[0].id, boards };
   }
 
   createDefaultState() {
-    const id = generateId('board'),
-      { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
+    const id = generateId('board');
+    const { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
     return {
       activeBoardId: id,
       boards: [{ id, name: 'My First Board', columns, labels }],
@@ -64,6 +61,7 @@ export class Store {
     this.repo.save(this.state);
     this.listeners.forEach((l) => l(this.state));
   }
+
   subscribe(f) {
     this.listeners.add(f);
     return () => this.listeners.delete(f);
@@ -88,42 +86,44 @@ export class Store {
   col(id) {
     return this.activeBoard.columns.find((c) => c.id === id);
   }
+
   getCard(id) {
     for (const c of this.activeBoard.columns) {
-      const k = c.cards.find((x) => x.id === id);
-      if (k) return { card: k, columnId: c.id };
+      const card = c.cards.find((x) => x.id === id);
+      if (card) return { card, columnId: c.id };
     }
-  }
-  card(colId, id) {
-    return this.col(colId)?.cards.find((k) => k.id === id);
   }
 
   setActiveBoard(id) {
     if (this.state.boards.some((b) => b.id === id))
       this.state.activeBoardId = id;
   }
-  createBoard(n, t = DEFAULT_TEMPLATE) {
-    const id = generateId('board'),
-      { columns, labels } = createBoardFromTemplate(t);
-    this.state.boards.push({ id, name: n || 'New Board', columns, labels });
+
+  createBoard(name, type = DEFAULT_TEMPLATE) {
+    const id = generateId('board');
+    const { columns, labels } = createBoardFromTemplate(type);
+    this.state.boards.push({ id, name: name || 'New Board', columns, labels });
     this.state.activeBoardId = id;
   }
-  renameBoard(id, n) {
+
+  renameBoard(id, name) {
     const b = this.state.boards.find((x) => x.id === id);
-    if (b) b.name = n.trim();
+    if (b) b.name = name.trim();
   }
+
   deleteBoard(id) {
-    const i = this.state.boards.findIndex((x) => x.id === id);
-    if (this.state.boards.length <= 1 || i === -1) return false;
+    if (this.state.boards.length <= 1) return false;
+    const idx = this.state.boards.findIndex((b) => b.id === id);
+    if (idx === -1) return false;
     const active = this.activeBoardId === id;
-    this.state.boards.splice(i, 1);
+    this.state.boards.splice(idx, 1);
     if (active) this.state.activeBoardId = this.state.boards[0].id;
     return true;
   }
 
-  importData(j) {
+  importData(json) {
     try {
-      this.repo.save(JSON.parse(j));
+      this.repo.save(JSON.parse(json));
       window.location.reload();
       return true;
     } catch {
@@ -131,93 +131,102 @@ export class Store {
     }
   }
 
-  addLabel(n, c) {
-    this.getLabels().push({ id: generateId('label'), name: n, color: c });
+  _update(arr, id, fn) {
+    const item = arr.find((x) => x.id === id);
+    if (item) fn(item);
   }
-  updateLabel(id, n, c) {
-    Object.assign(this.getLabels().find((l) => l.id === id) || {}, {
-      name: n,
-      color: c,
-    });
+  _remove(arr, id) {
+    const idx = arr.findIndex((x) => x.id === id);
+    if (idx > -1) arr.splice(idx, 1);
+  }
+
+  addLabel(name, color) {
+    this.getLabels().push({ id: generateId('label'), name, color });
+  }
+  updateLabel(id, name, color) {
+    this._update(this.getLabels(), id, (l) =>
+      Object.assign(l, { name, color })
+    );
   }
   removeLabel(id) {
-    this.activeBoard.labels = this.activeBoard.labels.filter(
-      (l) => l.id !== id
-    );
+    this._remove(this.activeBoard.labels, id);
     this.activeBoard.columns.forEach((c) =>
       c.cards.forEach((k) => (k.labels = k.labels.filter((l) => l !== id)))
     );
   }
 
-  addColumn(t) {
+  addColumn(title) {
     this.activeBoard.columns.push({
       id: generateId('column'),
-      title: t || 'New Column',
+      title: title || 'New Column',
       cards: [],
     });
   }
   removeColumn(id) {
-    this.activeBoard.columns = this.activeBoard.columns.filter(
-      (c) => c.id !== id
-    );
+    this._remove(this.activeBoard.columns, id);
   }
-  updateColumnTitle(id, t) {
-    const c = this.col(id);
-    if (c) c.title = t;
+  updateColumnTitle(id, title) {
+    this._update(this.activeBoard.columns, id, (c) => (c.title = title));
   }
 
-  addCard(colId, t) {
-    this.col(colId)?.cards.push(new CardEntity({ text: t }));
+  addCard(colId, text) {
+    this.col(colId)?.cards.push(new CardEntity({ text }));
   }
-  updateCardDetails(colId, id, u) {
-    this.card(colId, id)?.update(u);
+  updateCardDetails(colId, id, updates) {
+    this._update(this.col(colId)?.cards || [], id, (c) => c.update(updates));
   }
   toggleCardComplete(colId, id) {
-    this.card(colId, id)?.toggleComplete();
+    this._update(this.col(colId)?.cards || [], id, (c) => c.toggleComplete());
   }
   removeCard(colId, id) {
     const c = this.col(colId);
     if (c) c.cards = c.cards.filter((k) => k.id !== id);
   }
+
   duplicateCard(colId, id) {
     const c = this.col(colId),
-      o = this.card(colId, id);
-    if (!c || !o) return null;
-    const k = new CardEntity({
-      ...o,
+      original = c?.cards.find((k) => k.id === id);
+    if (!original) return null;
+    const clone = new CardEntity({
+      ...original,
       id: undefined,
       logs: [],
       createdAt: undefined,
       updatedAt: undefined,
     });
-    c.cards.splice(c.cards.indexOf(o) + 1, 0, k);
-    return k;
+    c.cards.splice(c.cards.indexOf(original) + 1, 0, clone);
+    return clone;
   }
-  addCardLog(colId, id, t) {
-    this.card(colId, id)?.addLog(t, this.col(colId)?.title);
+
+  addCardLog(colId, id, text) {
+    this._update(this.col(colId)?.cards || [], id, (c) =>
+      c.addLog(text, this.col(colId)?.title)
+    );
   }
 
   reorderColumns(ids) {
-    this.activeBoard.columns = ids.map((id) => this.col(id)).filter(Boolean);
+    const map = new Map(this.activeBoard.columns.map((c) => [c.id, c]));
+    this.activeBoard.columns = ids.map((id) => map.get(id)).filter(Boolean);
   }
+
   reorderCards(colId, ids) {
     const c = this.col(colId);
-    if (c)
-      c.cards = ids
-        .map((id) => c.cards.find((k) => k.id === id))
-        .filter(Boolean);
+    if (!c) return;
+    const map = new Map(c.cards.map((k) => [k.id, k]));
+    c.cards = ids.map((id) => map.get(id)).filter(Boolean);
   }
+
   moveCard(id, oldId, newId, order) {
     const oC = this.col(oldId),
-      nC = this.col(newId),
-      i = oC?.cards.findIndex((k) => k.id === id);
-    if (i > -1 && nC) {
-      const [k] = oC.cards.splice(i, 1);
-      k.touch();
-      nC.cards = order
-        .map((x) => (x === id ? k : nC.cards.find((y) => y.id === x)))
-        .filter(Boolean);
+      nC = this.col(newId);
+    const idx = oC?.cards.findIndex((k) => k.id === id);
+    if (idx > -1 && nC) {
+      const [card] = oC.cards.splice(idx, 1);
+      card.touch();
+      const map = new Map(nC.cards.concat(card).map((k) => [k.id, k]));
+      nC.cards = order.map((x) => map.get(x)).filter(Boolean);
     }
   }
 }
+
 export const store = new Store();
