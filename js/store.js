@@ -126,11 +126,14 @@ class Store {
 
   deleteBoard(id) {
     if (this.#state.boards.length <= 1) return false;
+
+    if (this.#state.activeBoardId === id) {
+      const fallbackBoard = this.#state.boards.find((b) => b.id !== id);
+      this.#state.activeBoardId = fallbackBoard.id;
+    }
+
     const removed = this.#remove(this.#state.boards, id);
-    if (!removed) return false;
-    if (this.#state.activeBoardId === id)
-      this.#state.activeBoardId = this.#state.boards[0].id;
-    return true;
+    return !!removed;
   }
 
   importData(json) {
