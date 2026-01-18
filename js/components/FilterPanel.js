@@ -1,520 +1,371 @@
-import FilterManager, {
+import {
+  SEARCH_OPERATORS,
   LABEL_MATCH_MODE,
   DUE_STATUS,
   COMPLETION_STATUS,
   AGING_OPTIONS,
-  SEARCH_OPERATORS,
 } from '../managers/FilterManager.js';
 import { i18n } from '../services/i18n/i18nService.js';
 
 export default class FilterPanel {
-  constructor(container, options = {}) {
+  constructor(
+    container,
+    { filterManager, labels = [], onFilterChange = () => {} }
+  ) {
     this.container = container;
-    this.filterManager = options.filterManager || new FilterManager();
-    this.labels = options.labels || [];
-    this.columns = options.columns || [];
-    this.onFilterChange = options.onFilterChange || (() => {});
-    this.isExpanded = false;
+    this.fm = filterManager;
+    this.labels = labels;
+    this.onFilterChange = onFilterChange;
+    this.state = { expanded: false, activeDropdown: null };
 
-    this.render();
-
-    i18n.subscribe(() => {
-      this.render();
-    });
-
-    this.filterManager.subscribe(() => {
-      this.renderActiveChips();
-      this.updateFilterIndicator();
-      this.onFilterChange(this.filterManager.getFilters());
-    });
+    this.init();
   }
 
   setLabels(labels) {
     this.labels = labels;
-    this.renderLabelFilter();
+    this.renderAdvanced();
   }
 
-  setColumns(columns) {
-    this.columns = columns;
-  }
+  setColumns() {}
 
-  render() {
-    const currentSearch =
-      this.container.querySelector('.filter-search-input')?.value || '';
-
-    this.container.innerHTML = '';
+  init() {
     this.container.className = 'advanced-filter-panel';
+    this.renderFrame();
 
-    const quickBar = document.createElement('div');
-    quickBar.className = 'filter-quick-bar';
-    quickBar.innerHTML = `
-      <div class="filter-search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="filter-search-input" placeholder="${i18n.t('filters.searchPlaceholder')}" value="${currentSearch}" />
-        <button class="search-options-btn" title="${i18n.t('filters.search.matchType')}">⚙️</button>
-      </div>
-      <div class="filter-quick-actions">
-        <button class="filter-toggle-btn ${this.isExpanded ? 'active' : ''}" title="${i18n.t('filters.advancedFilters')}">
-          <span class="filter-icon">🎛️</span>
-          <span class="filter-count-badge" style="display: none;">0</span>
-        </button>
-        <button class="filter-presets-btn" title="${i18n.t('filters.presets')}">📋</button>
-        <button class="filter-clear-btn" title="${i18n.t('filters.clear')}" style="display: none;">✕ ${i18n.t('filters.clear')}</button>
-      </div>
-    `;
-    this.container.appendChild(quickBar);
+    this.fm.subscribe(() => {
+      this.syncUI();
+      this.renderChips();
+      this.updateBadge();
+      this.onFilterChange(this.fm.getFilters());
+    });
 
-    const searchOptions = document.createElement('div');
-    searchOptions.className = 'search-options-dropdown';
-    searchOptions.style.display = 'none';
-    searchOptions.innerHTML = `
-      <div class="search-option">
-        <label><input type="checkbox" name="searchField" value="text" checked /> ${i18n.t('filters.search.title')}</label>
-      </div>
-      <div class="search-option">
-        <label><input type="checkbox" name="searchField" value="description" checked /> ${i18n.t('filters.search.description')}</label>
-      </div>
-      <div class="search-option">
-        <label><input type="checkbox" name="searchField" value="labels" checked /> ${i18n.t('filters.search.labels')}</label>
-      </div>
-      <div class="search-option">
-        <label><input type="checkbox" name="searchField" value="logs" /> ${i18n.t('filters.search.logs')}</label>
-      </div>
-      <div class="search-option-divider"></div>
-      <div class="search-option">
-        <label>
-          ${i18n.t('filters.search.matchType')}:
-          <select name="searchOperator">
-            <option value="${SEARCH_OPERATORS.CONTAINS}">${i18n.t('filters.search.contains')}</option>
-            <option value="${SEARCH_OPERATORS.EXACT}">${i18n.t('filters.search.exact')}</option>
-            <option value="${SEARCH_OPERATORS.STARTS_WITH}">${i18n.t('filters.search.startsWith')}</option>
-            <option value="${SEARCH_OPERATORS.NOT_CONTAINS}">${i18n.t('filters.search.notContains')}</option>
-          </select>
-        </label>
-      </div>
-      <div class="search-option">
-        <label><input type="checkbox" name="caseSensitive" /> ${i18n.t('filters.search.caseSensitive')}</label>
-      </div>
-    `;
-    quickBar
-      .querySelector('.filter-search-container')
-      .appendChild(searchOptions);
+    i18n.subscribe(() => {
+      this.renderFrame();
+      this.syncUI();
+    });
 
-    const chipsContainer = document.createElement('div');
-    chipsContainer.className = 'filter-chips-container';
-    chipsContainer.style.display = 'none';
-    this.container.appendChild(chipsContainer);
-
-    const advancedPanel = document.createElement('div');
-    advancedPanel.className = 'filter-advanced-panel';
-    advancedPanel.style.display = this.isExpanded ? 'block' : 'none';
-    advancedPanel.innerHTML = `
-      <div class="filter-sections">
-        <div class="filter-section filter-section-labels">
-          <h4 class="filter-section-title">
-            <span>🏷️ ${i18n.t('filters.sections.labels')}</span>
-            <div class="label-match-mode">
-              <button data-mode="${LABEL_MATCH_MODE.ANY}">${i18n.t('filters.labelMatch.any')}</button>
-              <button data-mode="${LABEL_MATCH_MODE.ALL}">${i18n.t('filters.labelMatch.all')}</button>
-              <button data-mode="${LABEL_MATCH_MODE.NONE}">${i18n.t('filters.labelMatch.none')}</button>
-            </div>
-          </h4>
-          <div class="filter-labels-grid"></div>
-        </div>
-        
-        <div class="filter-section filter-section-priority">
-          <h4 class="filter-section-title">🚩 ${i18n.t('filters.sections.priority')}</h4>
-          <div class="filter-priority-options">
-            <label class="filter-checkbox priority-high"><input type="checkbox" value="high" /> ${i18n.t('card.priorities.high')}</label>
-            <label class="filter-checkbox priority-medium"><input type="checkbox" value="medium" /> ${i18n.t('card.priorities.medium')}</label>
-            <label class="filter-checkbox priority-low"><input type="checkbox" value="low" /> ${i18n.t('card.priorities.low')}</label>
-            <label class="filter-checkbox priority-none"><input type="checkbox" value="none" /> ${i18n.t('card.priorities.none')}</label>
-          </div>
-        </div>
-
-        <div class="filter-section filter-section-due">
-          <h4 class="filter-section-title">🔴 ${i18n.t('filters.sections.dueDate')}</h4>
-          <div class="filter-due-status">
-            <select class="filter-select filter-due-status-select">
-              <option value="${DUE_STATUS.ALL}">${i18n.t('filters.dueStatus.all')}</option>
-              <option value="${DUE_STATUS.OVERDUE}">${i18n.t('filters.dueStatus.overdue')}</option>
-              <option value="${DUE_STATUS.DUE_TODAY}">${i18n.t('filters.dueStatus.dueToday')}</option>
-              <option value="${DUE_STATUS.DUE_SOON}">${i18n.t('filters.dueStatus.dueSoon')}</option>
-              <option value="${DUE_STATUS.DUE_THIS_WEEK}">${i18n.t('filters.dueStatus.dueThisWeek')}</option>
-              <option value="${DUE_STATUS.HAS_DUE_DATE}">${i18n.t('filters.dueStatus.hasDueDate')}</option>
-              <option value="${DUE_STATUS.NO_DUE_DATE}">${i18n.t('filters.dueStatus.noDueDate')}</option>
-            </select>
-          </div>
-          <div class="filter-date-range">
-            <input type="date" class="filter-date-input filter-due-from" placeholder="${i18n.t('filters.range.from')}" />
-            <span class="date-range-separator">→</span>
-            <input type="date" class="filter-date-input filter-due-to" placeholder="${i18n.t('filters.range.to')}" />
-          </div>
-        </div>
-
-        <div class="filter-section filter-section-start">
-          <h4 class="filter-section-title">🟢 ${i18n.t('filters.sections.startDate')}</h4>
-          <div class="filter-date-range">
-            <input type="date" class="filter-date-input filter-start-from" placeholder="${i18n.t('filters.range.from')}" />
-            <span class="date-range-separator">→</span>
-            <input type="date" class="filter-date-input filter-start-to" placeholder="${i18n.t('filters.range.to')}" />
-          </div>
-        </div>
-
-        <div class="filter-section filter-section-status">
-          <h4 class="filter-section-title">✅ ${i18n.t('filters.sections.status')}</h4>
-          <div class="filter-status-options">
-            <label class="filter-radio"><input type="radio" name="completionStatus" value="${COMPLETION_STATUS.ALL}" /> ${i18n.t('filters.completion.all')}</label>
-            <label class="filter-radio"><input type="radio" name="completionStatus" value="${COMPLETION_STATUS.INCOMPLETE}" /> ${i18n.t('filters.completion.incomplete')}</label>
-            <label class="filter-radio"><input type="radio" name="completionStatus" value="${COMPLETION_STATUS.COMPLETED}" /> ${i18n.t('filters.completion.completed')}</label>
-          </div>
-        </div>
-
-        <div class="filter-section filter-section-effort">
-          <h4 class="filter-section-title">⏱️ ${i18n.t('filters.sections.effort')}</h4>
-          <div class="filter-effort-range">
-            <input type="number" class="filter-number-input filter-effort-min" placeholder="${i18n.t('filters.range.min')}" min="0" step="0.5" />
-            <span class="range-separator">-</span>
-            <input type="number" class="filter-number-input filter-effort-max" placeholder="${i18n.t('filters.range.max')}" min="0" step="0.5" />
-          </div>
-        </div>
-
-        <div class="filter-section filter-section-aging">
-          <h4 class="filter-section-title">📅 ${i18n.t('filters.sections.activity')}</h4>
-          <div class="filter-aging-options">
-            <select class="filter-select filter-aging-select">
-              <option value="${AGING_OPTIONS.ALL}">${i18n.t('filters.aging.all')}</option>
-              <option value="${AGING_OPTIONS.FRESH}">${i18n.t('filters.aging.fresh')}</option>
-              <option value="${AGING_OPTIONS.AGING}">${i18n.t('filters.aging.aging')}</option>
-              <option value="${AGING_OPTIONS.STALE}">${i18n.t('filters.aging.stale')}</option>
-              <option value="${AGING_OPTIONS.ABANDONED}">${i18n.t('filters.aging.abandoned')}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    `;
-    this.container.appendChild(advancedPanel);
-
-    const presetsDropdown = document.createElement('div');
-    presetsDropdown.className = 'filter-presets-dropdown';
-    presetsDropdown.style.display = 'none';
-    presetsDropdown.innerHTML = `
-      <div class="presets-header">
-        <span>${i18n.t('filters.presets')}</span>
-        <button class="preset-save-btn">💾 ${i18n.t('filters.savePreset')}</button>
-      </div>
-      <div class="presets-list"></div>
-    `;
-    this.container.appendChild(presetsDropdown);
-
-    this.setupEventListeners();
-    this.syncFormWithFilters();
-    this.renderLabelFilter();
-    this.updateFilterIndicator();
-    this.renderActiveChips();
+    this.bindEvents();
   }
 
-  setupEventListeners() {
-    const searchInput = this.container.querySelector('.filter-search-input');
-    let searchTimeout;
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        this.filterManager.setSearch(e.target.value.trim());
-      }, 300);
-    });
+  renderFrame() {
+    const t = (k, p) => i18n.t(k, p);
+    const f = this.fm.getFilters();
 
-    const searchOptionsBtn = this.container.querySelector(
-      '.search-options-btn'
-    );
-    const searchOptionsDropdown = this.container.querySelector(
-      '.search-options-dropdown'
-    );
-    searchOptionsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      searchOptionsDropdown.style.display =
-        searchOptionsDropdown.style.display === 'none' ? 'block' : 'none';
-    });
+    this.container.innerHTML = `
+      <div class="filter-quick-bar">
+        <div class="filter-search-container">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="filter-search-input" data-input="search" placeholder="${t('filters.searchPlaceholder')}" value="${f.search.term}">
+          <button class="search-options-btn" data-toggle="searchOpts" title="${t('filters.search.matchType')}">⚙️</button>
+          <div class="search-options-dropdown" id="dropdown-searchOpts" hidden>
+            ${['text', 'description', 'labels', 'logs']
+              .map(
+                (field) =>
+                  `<label><input type="checkbox" data-action="searchField" value="${field}" ${f.search.fields.includes(field) ? 'checked' : ''}> ${t(`filters.search.${field}`)}</label>`
+              )
+              .join('')}
+            <div class="search-option-divider"></div>
+            <label>${t('filters.search.matchType')}: <select data-action="searchOp">
+              ${Object.values(SEARCH_OPERATORS)
+                .map(
+                  (op) =>
+                    `<option value="${op}" ${f.search.operator === op ? 'selected' : ''}>${t(`filters.search.${op}`)}</option>`
+                )
+                .join('')}
+            </select></label>
+            <label><input type="checkbox" data-action="searchCase" ${f.search.caseSensitive ? 'checked' : ''}> ${t('filters.search.caseSensitive')}</label>
+          </div>
+        </div>
+        <div class="filter-quick-actions">
+          <button class="filter-toggle-btn" data-toggle="expanded" title="${t('filters.advancedFilters')}">
+            <span class="filter-icon">🎛️</span>
+          </button>
+          <button class="filter-presets-btn" data-toggle="presets" title="${t('filters.presets')}">📋</button>
+          <button class="filter-clear-btn" data-action="clearAll" hidden>✕ ${t('filters.clear')}</button>
+        </div>
+        <div class="filter-presets-dropdown" id="dropdown-presets" hidden>
+          <div class="presets-header"><span>${t('filters.presets')}</span><button class="preset-save-btn" data-action="savePreset">💾 ${t('filters.savePreset')}</button></div>
+          <div class="presets-list"></div>
+        </div>
+      </div>
+      <div class="filter-chips-container" hidden></div>
+      <div class="filter-advanced-panel" hidden></div>
+    `;
+    this.renderAdvanced();
+    this.renderChips();
+    this.updateBadge();
+  }
 
-    searchOptionsDropdown.addEventListener('change', () => {
-      const fields = Array.from(
-        searchOptionsDropdown.querySelectorAll(
-          'input[name="searchField"]:checked'
-        )
-      ).map((cb) => cb.value);
-      const operator = searchOptionsDropdown.querySelector(
-        'select[name="searchOperator"]'
-      ).value;
-      const caseSensitive = searchOptionsDropdown.querySelector(
-        'input[name="caseSensitive"]'
-      ).checked;
-      this.filterManager.setSearch(searchInput.value.trim(), {
-        fields,
-        operator,
-        caseSensitive,
-      });
-    });
+  renderAdvanced() {
+    const t = (k, p) => i18n.t(k, p);
+    const f = this.fm.getFilters();
+    const panel = this.container.querySelector('.filter-advanced-panel');
+    if (!panel) return;
 
-    const toggleBtn = this.container.querySelector('.filter-toggle-btn');
-    const advancedPanel = this.container.querySelector(
-      '.filter-advanced-panel'
-    );
-    toggleBtn.addEventListener('click', () => {
-      this.isExpanded = !this.isExpanded;
-      advancedPanel.style.display = this.isExpanded ? 'block' : 'none';
-      toggleBtn.classList.toggle('active', this.isExpanded);
-    });
-
-    const clearBtn = this.container.querySelector('.filter-clear-btn');
-    clearBtn.addEventListener('click', () => {
-      this.filterManager.clearAll();
-      searchInput.value = '';
-      this.syncFormWithFilters();
-    });
-
-    const matchModeButtons = this.container.querySelectorAll(
-      '.label-match-mode button'
-    );
-    matchModeButtons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        this.filterManager.setLabelMatchMode(btn.dataset.mode);
-      });
-    });
-
+    panel.hidden = !this.state.expanded;
     this.container
-      .querySelectorAll('.filter-priority-options input')
-      .forEach((cb) => {
-        cb.addEventListener('change', () => {
+      .querySelector('[data-toggle="expanded"]')
+      .classList.toggle('active', this.state.expanded);
+
+    const sections = [
+      {
+        title: `🏷️ ${t('filters.sections.labels')}`,
+        html: `
+          <div class="label-match-mode">
+            ${Object.values(LABEL_MATCH_MODE)
+              .map(
+                (m) =>
+                  `<button data-action="labelMode" value="${m}" class="${f.labels.matchMode === m ? 'active' : ''}">${t(`filters.labelMatch.${m}`)}</button>`
+              )
+              .join('')}
+          </div>
+          <div class="filter-labels-grid">
+            ${this.labels
+              .map((l) => {
+                const selected = f.labels.selected.includes(l.id);
+                return `<label class="filter-label-chip ${selected ? 'selected' : ''}" style="--label-color:${l.color}">
+                <input type="checkbox" data-action="toggleLabel" value="${l.id}" ${selected ? 'checked' : ''} hidden>
+                <span class="label-color" style="background:${l.color}"></span><span class="label-name">${l.name}</span>
+              </label>`;
+              })
+              .join('')}
+          </div>`,
+      },
+      {
+        title: `🚩 ${t('filters.sections.priority')}`,
+        html: `<div class="filter-priority-options">
+          ${['high', 'medium', 'low', 'none'].map((p) => `<label class="filter-checkbox priority-${p}"><input type="checkbox" data-action="togglePriority" value="${p}" ${f.priority.selected.includes(p) ? 'checked' : ''}> ${t(`card.priorities.${p}`)}</label>`).join('')}
+        </div>`,
+      },
+      {
+        title: `🔴 ${t('filters.sections.dueDate')}`,
+        html: `<select class="filter-select" data-action="dueStatus">
+            ${Object.values(DUE_STATUS)
+              .map(
+                (s) =>
+                  `<option value="${s}" ${f.dueDate.status === s ? 'selected' : ''}>${t(`filters.dueStatus.${s}`)}</option>`
+              )
+              .join('')}
+          </select>
+          <div class="filter-date-range">
+            <input type="date" class="filter-date-input" data-input="dueFrom" value="${f.dueDate.from || ''}" placeholder="${t('filters.range.from')}">
+            <span class="date-range-separator">→</span>
+            <input type="date" class="filter-date-input" data-input="dueTo" value="${f.dueDate.to || ''}" placeholder="${t('filters.range.to')}">
+          </div>`,
+      },
+      {
+        title: `🟢 ${t('filters.sections.startDate')}`,
+        html: `<div class="filter-date-range">
+          <input type="date" class="filter-date-input" data-input="startFrom" value="${f.startDate.from || ''}" placeholder="${t('filters.range.from')}">
+          <span class="date-range-separator">→</span>
+          <input type="date" class="filter-date-input" data-input="startTo" value="${f.startDate.to || ''}" placeholder="${t('filters.range.to')}">
+        </div>`,
+      },
+      {
+        title: `✅ ${t('filters.sections.status')}`,
+        html: `<div class="filter-status-options">
+          ${Object.values(COMPLETION_STATUS)
+            .map(
+              (s) =>
+                `<label class="filter-radio"><input type="radio" name="comp" data-action="completion" value="${s}" ${f.completion === s ? 'checked' : ''}> ${t(`filters.completion.${s}`)}</label>`
+            )
+            .join('')}
+        </div>`,
+      },
+      {
+        title: `⏱️ ${t('filters.sections.effort')}`,
+        html: `<div class="filter-effort-range">
+          <input type="number" class="filter-number-input" data-input="effortMin" placeholder="${t('filters.range.min')}" min="0" step="0.5" value="${f.effort.min ?? ''}">
+          <span class="range-separator">-</span>
+          <input type="number" class="filter-number-input" data-input="effortMax" placeholder="${t('filters.range.max')}" min="0" step="0.5" value="${f.effort.max ?? ''}">
+        </div>`,
+      },
+      {
+        title: `📅 ${t('filters.sections.activity')}`,
+        html: `<select class="filter-select" data-action="aging">
+          ${Object.values(AGING_OPTIONS)
+            .map(
+              (o) =>
+                `<option value="${o}" ${f.aging === o ? 'selected' : ''}>${t(`filters.aging.${o}`)}</option>`
+            )
+            .join('')}
+        </select>`,
+      },
+    ];
+
+    panel.innerHTML = `<div class="filter-sections">${sections.map((s) => `<div class="filter-section"><h4 class="filter-section-title">${s.title}</h4>${s.html}</div>`).join('')}</div>`;
+  }
+
+  renderChips() {
+    const chips = this.fm.getActiveFilterChips(this.labels);
+    const container = this.container.querySelector('.filter-chips-container');
+    container.hidden = !chips.length;
+    container.innerHTML = chips
+      .map(
+        (c, i) =>
+          `<div class="filter-chip filter-chip-${c.type}"><span class="chip-label">${c.label}</span><button class="chip-clear" data-action="clearChip" data-index="${i}">×</button></div>`
+      )
+      .join('');
+    container
+      .querySelectorAll('.chip-clear')
+      .forEach((b) => (b.onclick = () => chips[b.dataset.index].clear()));
+  }
+
+  renderPresets() {
+    const list = this.container.querySelector('.presets-list');
+    const presets = this.fm.getPresets();
+    list.innerHTML = presets.length
+      ? presets
+          .map(
+            (p) =>
+              `<div class="preset-item"><span class="preset-name">${p.name}</span><div class="preset-actions"><button class="preset-apply" data-action="applyPreset" data-id="${p.id}">✓</button><button class="preset-delete" data-action="deletePreset" data-id="${p.id}">🗑</button></div></div>`
+          )
+          .join('')
+      : `<div class="presets-empty">${i18n.t('filters.noPresets')}</div>`;
+  }
+
+  updateBadge() {
+    const count = this.fm.getActiveFilterCount();
+    const clear = this.container.querySelector('.filter-clear-btn');
+    clear.hidden = !count;
+    if (count > 0) clear.style.display = 'block';
+  }
+
+  syncUI() {
+    if (!this.state.expanded) return;
+    const f = this.fm.getFilters();
+    const setVal = (sel, val) => {
+      const el = this.container.querySelector(sel);
+      if (el && document.activeElement !== el) el.value = val ?? '';
+    };
+
+    setVal('[data-input="search"]', f.search.term);
+    this.renderAdvanced();
+  }
+
+  bindEvents() {
+    let searchTimer;
+
+    this.container.addEventListener('input', (e) => {
+      const t = e.target;
+      const val = t.value;
+      const act = t.dataset.input;
+
+      if (act === 'search') {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => this.fm.setSearch(val.trim()), 300);
+      } else if (['dueFrom', 'dueTo'].includes(act)) {
+        this.fm.setDueDate({
+          [act === 'dueFrom' ? 'from' : 'to']: val || null,
+        });
+      } else if (['startFrom', 'startTo'].includes(act)) {
+        this.fm.setStartDate({
+          [act === 'startFrom' ? 'from' : 'to']: val || null,
+        });
+      } else if (['effortMin', 'effortMax'].includes(act)) {
+        const min = this.container.querySelector(
+          '[data-input="effortMin"]'
+        ).value;
+        const max = this.container.querySelector(
+          '[data-input="effortMax"]'
+        ).value;
+        this.fm.setEffort(
+          min ? parseFloat(min) : null,
+          max ? parseFloat(max) : null
+        );
+      }
+    });
+
+    this.container.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action], [data-toggle]');
+      if (!el) {
+        if (
+          !e.target.closest('.search-options-dropdown') &&
+          !e.target.closest('.filter-presets-dropdown')
+        ) {
+          this.container
+            .querySelectorAll(
+              '.search-options-dropdown, .filter-presets-dropdown'
+            )
+            .forEach((d) => (d.hidden = true));
+        }
+        return;
+      }
+
+      const action = el.dataset.action;
+      const toggle = el.dataset.toggle;
+      const val = el.value || el.dataset.val;
+
+      if (toggle) {
+        if (toggle === 'expanded') {
+          this.state.expanded = !this.state.expanded;
+          this.renderAdvanced();
+        } else {
+          const target = this.container.querySelector(`#dropdown-${toggle}`);
+          target.hidden = !target.hidden;
+          if (toggle === 'presets' && !target.hidden) this.renderPresets();
+        }
+        return;
+      }
+
+      const actions = {
+        clearAll: () => {
+          this.fm.clearAll();
+          this.container.querySelector('[data-input="search"]').value = '';
+        },
+        toggleLabel: () => this.fm.toggleLabel(val),
+        labelMode: () => this.fm.setLabelMatchMode(val),
+        togglePriority: () => {
           const selected = Array.from(
             this.container.querySelectorAll(
-              '.filter-priority-options input:checked'
+              '[data-action="togglePriority"]:checked'
             )
           ).map((c) => c.value);
-          this.filterManager.setPriorities(selected);
-        });
-      });
+          this.fm.setPriorities(selected);
+        },
+        dueStatus: () => this.fm.setDueDate({ status: val }),
+        completion: () => this.fm.setCompletion(val),
+        aging: () => this.fm.setAging(val),
+        searchField: () => this.updateSearchOpts(),
+        searchOp: () => this.updateSearchOpts(),
+        searchCase: () => this.updateSearchOpts(),
+        savePreset: () => {
+          const name = prompt(i18n.t('filters.enterPresetName'));
+          if (name?.trim()) {
+            this.fm.createPreset(name.trim());
+            this.renderPresets();
+          }
+        },
+        applyPreset: () => this.fm.applyPreset(el.dataset.id),
+        deletePreset: () => {
+          if (confirm(i18n.t('filters.deletePreset'))) {
+            this.fm.deletePreset(el.dataset.id);
+            this.renderPresets();
+          }
+        },
+      };
 
-    this.container
-      .querySelector('.filter-due-status-select')
-      .addEventListener('change', (e) => {
-        this.filterManager.setDueDate({ status: e.target.value });
-      });
-
-    const dueFromInput = this.container.querySelector('.filter-due-from');
-    const dueToInput = this.container.querySelector('.filter-due-to');
-    dueFromInput.addEventListener('change', () =>
-      this.filterManager.setDueDate({ from: dueFromInput.value || null })
-    );
-    dueToInput.addEventListener('change', () =>
-      this.filterManager.setDueDate({ to: dueToInput.value || null })
-    );
-
-    const startFromInput = this.container.querySelector('.filter-start-from');
-    const startToInput = this.container.querySelector('.filter-start-to');
-    startFromInput.addEventListener('change', () =>
-      this.filterManager.setStartDate({ from: startFromInput.value || null })
-    );
-    startToInput.addEventListener('change', () =>
-      this.filterManager.setStartDate({ to: startToInput.value || null })
-    );
-
-    this.container
-      .querySelectorAll('input[name="completionStatus"]')
-      .forEach((radio) => {
-        radio.addEventListener('change', () => {
-          if (radio.checked) this.filterManager.setCompletion(radio.value);
-        });
-      });
-
-    const effortMinInput = this.container.querySelector('.filter-effort-min');
-    const effortMaxInput = this.container.querySelector('.filter-effort-max');
-    const updateEffort = () => {
-      const min = effortMinInput.value
-        ? parseFloat(effortMinInput.value)
-        : null;
-      const max = effortMaxInput.value
-        ? parseFloat(effortMaxInput.value)
-        : null;
-      this.filterManager.setEffort(min, max);
-    };
-    effortMinInput.addEventListener('change', updateEffort);
-    effortMaxInput.addEventListener('change', updateEffort);
-
-    this.container
-      .querySelector('.filter-aging-select')
-      .addEventListener('change', (e) => {
-        this.filterManager.setAging(e.target.value);
-      });
-
-    const presetsBtn = this.container.querySelector('.filter-presets-btn');
-    const presetsDropdown = this.container.querySelector(
-      '.filter-presets-dropdown'
-    );
-    presetsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      presetsDropdown.style.display =
-        presetsDropdown.style.display === 'none' ? 'block' : 'none';
-      this.renderPresetsList();
+      if (actions[action]) actions[action]();
     });
 
-    this.container
-      .querySelector('.preset-save-btn')
-      .addEventListener('click', () => {
-        const name = prompt(i18n.t('filters.enterPresetName'));
-        if (name && name.trim()) {
-          this.filterManager.createPreset(name.trim());
-          this.renderPresetsList();
-        }
-      });
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.filter-search-container'))
-        searchOptionsDropdown.style.display = 'none';
-      if (
-        !e.target.closest('.filter-presets-btn') &&
-        !e.target.closest('.filter-presets-dropdown')
-      )
-        presetsDropdown.style.display = 'none';
+    this.container.addEventListener('change', (e) => {
+      if (e.target.matches('select[data-action]')) e.target.click();
     });
   }
 
-  renderLabelFilter() {
-    const grid = this.container.querySelector('.filter-labels-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    const selectedLabels = this.filterManager.getFilters().labels.selected;
-    this.labels.forEach((label) => {
-      const labelEl = document.createElement('label');
-      labelEl.className = `filter-label-chip ${selectedLabels.includes(label.id) ? 'selected' : ''}`;
-      labelEl.style.setProperty('--label-color', label.color);
-      labelEl.innerHTML = `
-        <input type="checkbox" value="${label.id}" ${selectedLabels.includes(label.id) ? 'checked' : ''} />
-        <span class="label-color" style="background: ${label.color}"></span>
-        <span class="label-name">${label.name}</span>
-      `;
-      labelEl.querySelector('input').addEventListener('change', () => {
-        this.filterManager.toggleLabel(label.id);
-        labelEl.classList.toggle('selected');
-      });
-      grid.appendChild(labelEl);
-    });
-  }
-
-  renderActiveChips() {
-    const container = this.container.querySelector('.filter-chips-container');
-    const chips = this.filterManager.getActiveFilterChips(this.labels);
-    if (chips.length === 0) {
-      container.style.display = 'none';
-      return;
-    }
-    container.style.display = 'flex';
-    container.innerHTML = '';
-    chips.forEach((chip) => {
-      const chipEl = document.createElement('div');
-      chipEl.className = `filter-chip filter-chip-${chip.type}`;
-      chipEl.innerHTML = `<span class="chip-label">${chip.label}</span><button class="chip-clear">×</button>`;
-      chipEl.querySelector('.chip-clear').addEventListener('click', () => {
-        chip.clear();
-        this.syncFormWithFilters();
-      });
-      container.appendChild(chipEl);
-    });
-  }
-
-  updateFilterIndicator() {
-    const badge = this.container.querySelector('.filter-count-badge');
-    const clearBtn = this.container.querySelector('.filter-clear-btn');
-    const count = this.filterManager.getActiveFilterCount();
-    if (count > 0) {
-      badge.textContent = count;
-      badge.style.display = 'flex';
-      clearBtn.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
-      clearBtn.style.display = 'none';
-    }
-  }
-
-  renderPresetsList() {
-    const list = this.container.querySelector('.presets-list');
-    const presets = this.filterManager.getPresets();
-    if (presets.length === 0) {
-      list.innerHTML = `<div class="presets-empty">${i18n.t('filters.noPresets')}</div>`;
-      return;
-    }
-    list.innerHTML = '';
-    presets.forEach((preset) => {
-      const item = document.createElement('div');
-      item.className = 'preset-item';
-      item.innerHTML = `
-        <span class="preset-name">${preset.name}</span>
-        <div class="preset-actions">
-          <button class="preset-apply">✓</button>
-          <button class="preset-delete">🗑</button>
-        </div>
-      `;
-      item.querySelector('.preset-apply').addEventListener('click', () => {
-        this.filterManager.applyPreset(preset.id);
-        this.syncFormWithFilters();
-      });
-      item.querySelector('.preset-delete').addEventListener('click', () => {
-        if (confirm(i18n.t('filters.deletePreset'))) {
-          this.filterManager.deletePreset(preset.id);
-          this.renderPresetsList();
-        }
-      });
-      list.appendChild(item);
-    });
-  }
-
-  syncFormWithFilters() {
-    const filters = this.filterManager.getFilters();
-    const searchInput = this.container.querySelector('.filter-search-input');
-    if (searchInput) searchInput.value = filters.search.term;
-
-    const matchModeButtons = this.container.querySelectorAll(
-      '.label-match-mode button'
+  updateSearchOpts() {
+    const fields = Array.from(
+      this.container.querySelectorAll('[data-action="searchField"]:checked')
+    ).map((c) => c.value);
+    const operator = this.container.querySelector(
+      '[data-action="searchOp"]'
+    ).value;
+    const caseSensitive = this.container.querySelector(
+      '[data-action="searchCase"]'
+    ).checked;
+    this.fm.setSearch(
+      this.container.querySelector('[data-input="search"]').value.trim(),
+      { fields, operator, caseSensitive }
     );
-    matchModeButtons.forEach((btn) =>
-      btn.classList.toggle(
-        'active',
-        btn.dataset.mode === filters.labels.matchMode
-      )
-    );
-
-    this.container
-      .querySelectorAll('.filter-priority-options input')
-      .forEach((cb) => {
-        cb.checked = filters.priority.selected.includes(cb.value);
-      });
-
-    this.container.querySelector('.filter-due-status-select').value =
-      filters.dueDate.status;
-    this.container.querySelector('.filter-due-from').value =
-      filters.dueDate.from || '';
-    this.container.querySelector('.filter-due-to').value =
-      filters.dueDate.to || '';
-    this.container.querySelector('.filter-start-from').value =
-      filters.startDate.from || '';
-    this.container.querySelector('.filter-start-to').value =
-      filters.startDate.to || '';
-
-    this.container
-      .querySelectorAll('input[name="completionStatus"]')
-      .forEach((radio) => {
-        radio.checked = radio.value === filters.completion;
-      });
-
-    this.container.querySelector('.filter-effort-min').value =
-      filters.effort.min ?? '';
-    this.container.querySelector('.filter-effort-max').value =
-      filters.effort.max ?? '';
-    this.container.querySelector('.filter-aging-select').value = filters.aging;
-
-    this.renderLabelFilter();
-  }
-
-  getFilterManager() {
-    return this.filterManager;
   }
 }

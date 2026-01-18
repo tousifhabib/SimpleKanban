@@ -121,23 +121,6 @@
   color: white;
 }
 
-.filter-count-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: var(--accent-color);
-  border-radius: 9px;
-  color: white;
-  font-size: 0.7rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .filter-clear-btn {
   padding: 8px 12px;
   background: var(--danger-bg);
@@ -213,9 +196,11 @@
 
 .label-match-mode {
   display: flex;
+  width: fit-content;
   background: var(--toggle-bg);
   border-radius: 4px;
   overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .label-match-mode button {
