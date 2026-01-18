@@ -3,6 +3,7 @@ import Column from './Column.js';
 import DragDropManager from '../managers/DragDropManager.js';
 import ModalManager from '../managers/ModalManager.js';
 import FilterManager from '../managers/FilterManager.js';
+import RandomPickerManager from '../managers/RandomPickerManager.js';
 import FilterPanel from './FilterPanel.js';
 import { CONFIG } from './kanbanBoardConfig.js';
 import { on } from '../utils/dom.js';
@@ -63,13 +64,38 @@ export default class KanbanBoard {
     this.newLabelColor = document.getElementById(s.newLabelColor);
     this.addLabelBtn = document.getElementById(s.addLabelBtn);
 
+    this.optionsBtn = document.getElementById(s.optionsBtn);
+    this.optionsCloseBtn = document.getElementById(s.optionsCloseBtn);
+    this.saveOptionsBtn = document.getElementById(s.saveOptionsBtn);
+    this.resetOptionsBtn = document.getElementById(s.resetOptionsBtn);
+    this.optColumnsSelector = document.getElementById(s.optColumnsSelector);
+    this.optFactorPriority = document.getElementById(s.optFactorPriority);
+    this.optFactorDueDate = document.getElementById(s.optFactorDueDate);
+    this.optFactorAging = document.getElementById(s.optFactorAging);
+    this.optExcludeCompleted = document.getElementById(s.optExcludeCompleted);
+
+    this.randomPickerBtn = document.getElementById(s.randomPickerBtn);
+    this.randomPickerCloseBtn = document.getElementById(s.randomPickerCloseBtn);
+    this.randomPickerResult = document.getElementById(s.randomPickerResult);
+    this.randomPickerCard = document.getElementById(s.randomPickerCard);
+    this.randomPickerColumnInfo = document.getElementById(
+      s.randomPickerColumnInfo
+    );
+    this.randomPickerEmpty = document.getElementById(s.randomPickerEmpty);
+    this.randomPickerStats = document.getElementById(s.randomPickerStats);
+    this.goToCardBtn = document.getElementById(s.goToCardBtn);
+    this.pickAgainBtn = document.getElementById(s.pickAgainBtn);
+
     this.currentCardId = null;
     this.currentColumnId = null;
     this.selectedLabels = [];
+    this.pickedCard = null;
+    this.pickedColumn = null;
 
-    // Initialize the advanced filter system
     this.filterManager = new FilterManager();
     this.initializeFilterPanel();
+
+    this.randomPickerManager = new RandomPickerManager();
 
     this.modalManager = new ModalManager();
     this.registerModals();
@@ -177,6 +203,18 @@ export default class KanbanBoard {
       onReset: () => {
         this.newLabelName.value = '';
         this.newLabelColor.value = '#5e6c84';
+      },
+    });
+    this.modalManager.register('options', {
+      modalId: 'optionsModal',
+      overlayId: 'optionsOverlay',
+    });
+    this.modalManager.register('randomPicker', {
+      modalId: 'randomPickerModal',
+      overlayId: 'randomPickerOverlay',
+      onReset: () => {
+        this.pickedCard = null;
+        this.pickedColumn = null;
       },
     });
   }
@@ -376,9 +414,17 @@ export default class KanbanBoard {
       const action = btn.dataset.action;
       const colId = btn.closest('.column').dataset.columnId;
       const cardId = btn.closest('.card').dataset.cardId;
-      if (action === 'edit') this.openCardDetailModal(cardId, colId);
-      if (action === 'delete' && confirm(i18n.t('board.confirmDeleteCard')))
+
+      if (action === 'edit') {
+        this.openCardDetailModal(cardId, colId);
+      } else if (action === 'duplicate') {
+        this.duplicateCard(cardId, colId);
+      } else if (
+        action === 'delete' &&
+        confirm(i18n.t('board.confirmDeleteCard'))
+      ) {
         store.removeCard(colId, cardId);
+      }
     });
 
     on(this.kanbanContainer, 'click', '.card', (e, cardEl) => {
@@ -501,6 +547,229 @@ export default class KanbanBoard {
       };
       reader.readAsText(file);
     });
+
+    this.setupOptionsEventListeners();
+
+    this.setupRandomPickerEventListeners();
+  }
+
+  setupOptionsEventListeners() {
+    if (this.optionsBtn) {
+      this.optionsBtn.addEventListener('click', () => {
+        this.populateOptionsModal();
+        this.modalManager.open('options');
+      });
+    }
+
+    if (this.optionsCloseBtn) {
+      this.optionsCloseBtn.addEventListener('click', () => {
+        this.modalManager.close('options');
+      });
+    }
+
+    if (this.saveOptionsBtn) {
+      this.saveOptionsBtn.addEventListener('click', () => {
+        this.saveOptions();
+        this.modalManager.close('options');
+      });
+    }
+
+    if (this.resetOptionsBtn) {
+      this.resetOptionsBtn.addEventListener('click', () => {
+        this.randomPickerManager.resetOptions();
+        this.populateOptionsModal();
+      });
+    }
+  }
+
+  setupRandomPickerEventListeners() {
+    if (this.randomPickerBtn) {
+      this.randomPickerBtn.addEventListener('click', () => {
+        this.pickRandomCard();
+      });
+    }
+
+    if (this.randomPickerCloseBtn) {
+      this.randomPickerCloseBtn.addEventListener('click', () => {
+        this.modalManager.close('randomPicker');
+      });
+    }
+
+    if (this.goToCardBtn) {
+      this.goToCardBtn.addEventListener('click', () => {
+        if (this.pickedCard && this.pickedColumn) {
+          this.modalManager.close('randomPicker');
+          this.openCardDetailModal(this.pickedCard.id, this.pickedColumn.id);
+        }
+      });
+    }
+
+    if (this.pickAgainBtn) {
+      this.pickAgainBtn.addEventListener('click', () => {
+        this.pickRandomCard();
+      });
+    }
+  }
+
+  populateOptionsModal() {
+    const options = this.randomPickerManager.getOptions();
+    const boardState = store.getState();
+
+    if (this.optFactorPriority) {
+      this.optFactorPriority.checked = options.factorPriority;
+    }
+    if (this.optFactorDueDate) {
+      this.optFactorDueDate.checked = options.factorDueDate;
+    }
+    if (this.optFactorAging) {
+      this.optFactorAging.checked = options.factorAging;
+    }
+    if (this.optExcludeCompleted) {
+      this.optExcludeCompleted.checked = options.excludeCompleted;
+    }
+
+    if (this.optColumnsSelector && boardState && boardState.columns) {
+      this.optColumnsSelector.innerHTML = '';
+      boardState.columns.forEach((col) => {
+        const label = document.createElement('label');
+        label.className = 'options-column-checkbox';
+        const isChecked =
+          options.includeColumns.length === 0 ||
+          options.includeColumns.includes(col.id);
+        label.innerHTML = `
+          <input type="checkbox" value="${col.id}" ${isChecked ? 'checked' : ''} />
+          <span>${col.title}</span>
+        `;
+        this.optColumnsSelector.appendChild(label);
+      });
+    }
+  }
+
+  saveOptions() {
+    const selectedColumns = [];
+    if (this.optColumnsSelector) {
+      const checkedBoxes =
+        this.optColumnsSelector.querySelectorAll('input:checked');
+      const allBoxes = this.optColumnsSelector.querySelectorAll('input');
+
+      if (checkedBoxes.length < allBoxes.length) {
+        checkedBoxes.forEach((cb) => {
+          selectedColumns.push(cb.value);
+        });
+      }
+    }
+
+    this.randomPickerManager.setOptions({
+      factorPriority: this.optFactorPriority?.checked ?? true,
+      factorDueDate: this.optFactorDueDate?.checked ?? true,
+      factorAging: this.optFactorAging?.checked ?? true,
+      excludeCompleted: this.optExcludeCompleted?.checked ?? true,
+      includeColumns: selectedColumns,
+    });
+  }
+
+  pickRandomCard() {
+    const boardState = store.getState();
+    const result = this.randomPickerManager.pickRandomCard(boardState);
+    const stats = this.randomPickerManager.getPoolStats(boardState);
+
+    if (result) {
+      this.pickedCard = result.card;
+      this.pickedColumn = result.column;
+      this.renderRandomPickerResult(result.card, result.column, stats);
+      this.randomPickerResult.style.display = 'block';
+      this.randomPickerEmpty.style.display = 'none';
+      this.goToCardBtn.style.display = 'inline-block';
+    } else {
+      this.pickedCard = null;
+      this.pickedColumn = null;
+      this.randomPickerResult.style.display = 'none';
+      this.randomPickerEmpty.style.display = 'block';
+      this.goToCardBtn.style.display = 'none';
+    }
+
+    this.renderRandomPickerStats(stats);
+    this.modalManager.open('randomPicker');
+  }
+
+  renderRandomPickerResult(card, column) {
+    const allLabels = store.getLabels();
+
+    let labelsHtml = '';
+    if (card.labels && card.labels.length > 0) {
+      labelsHtml = '<div class="randomizer-card-labels">';
+      card.labels.forEach((labelId) => {
+        const label = allLabels.find((l) => l.id === labelId);
+        if (label) {
+          labelsHtml += `<span class="card-label" style="background-color: ${label.color}">${label.name}</span>`;
+        }
+      });
+      labelsHtml += '</div>';
+    }
+
+    let priorityBadge = '';
+    if (card.priority && card.priority !== 'none') {
+      const priorityText =
+        i18n.t(`card.priorities.${card.priority}`) || card.priority;
+      priorityBadge = `<span class="randomizer-priority priority-${card.priority}">${priorityText}</span>`;
+    }
+
+    let dueDateBadge = '';
+    if (card.dueDate) {
+      const date = new Date(card.dueDate);
+      const dateStr = date.toLocaleDateString(i18n.getLanguage(), {
+        month: 'short',
+        day: 'numeric',
+      });
+      const dueDateStatus = card.getDueDateStatus
+        ? card.getDueDateStatus()
+        : '';
+      dueDateBadge = `<span class="randomizer-due-date ${dueDateStatus}">🔴 ${dateStr}</span>`;
+    }
+
+    this.randomPickerCard.innerHTML = `
+      ${labelsHtml}
+      <div class="randomizer-card-title">${card.text}</div>
+      ${card.description ? `<div class="randomizer-card-desc">${card.description.substring(0, 100)}${card.description.length > 100 ? '...' : ''}</div>` : ''}
+      <div class="randomizer-card-meta">
+        ${priorityBadge}
+        ${dueDateBadge}
+        ${card.effort ? `<span class="randomizer-effort">⏱️ ${card.effort}h</span>` : ''}
+      </div>
+    `;
+
+    this.randomPickerColumnInfo.innerHTML = `
+      <span class="column-indicator">${i18n.t('modals.randomPicker.inColumn') || 'In column:'}</span>
+      <span class="column-name">${column.title}</span>
+    `;
+  }
+
+  renderRandomPickerStats(stats) {
+    this.randomPickerStats.innerHTML = `
+      <div class="stats-text">
+        ${
+          i18n.t('modals.randomPicker.stats', {
+            eligible: stats.eligible,
+            total: stats.total,
+          }) || `${stats.eligible} of ${stats.total} cards in selection pool`
+        }
+      </div>
+    `;
+  }
+
+  duplicateCard(cardId, columnId) {
+    const duplicated = store.duplicateCard(columnId, cardId);
+    if (duplicated) {
+      setTimeout(() => {
+        const newCardEl = this.kanbanContainer.querySelector(
+          `[data-card-id="${duplicated.id}"]`
+        );
+        if (newCardEl) {
+          newCardEl.classList.add('card-duplicated');
+          setTimeout(() => newCardEl.classList.remove('card-duplicated'), 1000);
+        }
+      }, 50);
+    }
   }
 
   resetCardDetail() {

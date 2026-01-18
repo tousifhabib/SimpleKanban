@@ -15,6 +15,7 @@ module.exports = {
       './css/components.css',
       './css/modal.css',
       './css/responsive.css',
+      './css/options-randomizer.css',
     ],
   },
   output: {

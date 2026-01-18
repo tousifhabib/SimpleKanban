@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'Dynamisches Kanban',
+    title: 'Simples Kanban',
     import: '📥 Importieren',
     export: '📤 Exportieren',
     labels: '🏷️ Labels',
     addColumn: '+ Spalte hinzufügen',
+    pickForMe: '🎲 Wähle für mich',
     titles: {
       addBoard: 'Neues Board erstellen',
       renameBoard: 'Board umbenennen',
       deleteBoard: 'Board löschen',
+      options: 'Optionen',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'Label löschen?',
     promptLabelName: 'Neuer Label-Name:',
     promptLabelColor: 'Neuer Farbcode (hex):',
+    cardDuplicated: 'Karte dupliziert',
   },
   card: {
     addTitle: 'Kartentitel eingeben...',
     btnAdd: 'Karte hinzufügen',
     btnCancel: 'Abbrechen',
     addBtnText: '+ Karte hinzufügen',
+    duplicate: 'Duplizieren',
     meta: {
       updated: 'Aktualisiert {time}',
       justNow: 'gerade eben',
@@ -175,6 +179,34 @@ export default {
       title: 'Labels verwalten',
       placeholderName: 'Label-Name',
       btnAdd: 'Hinzufügen',
+    },
+    options: {
+      title: 'Optionen',
+      btnSave: 'Speichern',
+      btnReset: 'Auf Standard zurücksetzen',
+      randomizer: {
+        title: '🎲 Zufallsauswahl-Einstellungen',
+        description:
+          'Konfigurieren Sie, wie "Wähle für mich" Ihre nächste Aufgabe auswählt.',
+        factorPriority: 'Nach Priorität gewichten',
+        factorPriorityHint: 'Karten mit hoher Priorität werden eher ausgewählt',
+        factorDueDate: 'Nach Fälligkeit gewichten',
+        factorDueDateHint: 'Bald fällige Karten werden eher ausgewählt',
+        factorAging: 'Nach Alter gewichten',
+        factorAgingHint:
+          'Ältere Karten werden eher ausgewählt, um Vernachlässigung zu vermeiden',
+        excludeCompleted: 'Abgeschlossene Karten ausschließen',
+        includeColumns: 'Nur diese Spalten einbeziehen (leer lassen für alle):',
+      },
+    },
+    randomPicker: {
+      title: 'Ihre nächste Aufgabe',
+      noCards:
+        'Keine passenden Karten gefunden! Sie sind wahrscheinlich mit allem fertig.',
+      inColumn: 'In Spalte:',
+      goToCard: 'Karte öffnen',
+      pickAgain: '🎲 Erneut wählen',
+      stats: '{eligible} von {total} Karten im Auswahlpool',
     },
   },
   templates: {

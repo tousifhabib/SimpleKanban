@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'Kanban dinamico',
+    title: 'Kanban semplice',
     import: '📥 Importa',
     export: '📤 Esporta',
     labels: '🏷️ Etichette',
     addColumn: '+ Aggiungi colonna',
+    pickForMe: '🎲 Scegli per me',
     titles: {
       addBoard: 'Crea nuova bacheca',
       renameBoard: 'Rinomina bacheca',
       deleteBoard: 'Elimina bacheca',
+      options: 'Opzioni',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'Eliminare etichetta?',
     promptLabelName: 'Inserisci il nuovo nome dell’etichetta:',
     promptLabelColor: 'Inserisci il nuovo colore (hex):',
+    cardDuplicated: 'Scheda duplicata',
   },
   card: {
     addTitle: 'Inserisci il titolo della scheda...',
     btnAdd: 'Aggiungi scheda',
     btnCancel: 'Annulla',
     addBtnText: '+ Aggiungi una scheda',
+    duplicate: 'Duplica',
     meta: {
       updated: 'Aggiornato {time}',
       justNow: 'proprio ora',
@@ -175,6 +179,35 @@ export default {
       title: 'Gestisci etichette',
       placeholderName: 'Nome etichetta',
       btnAdd: 'Aggiungi',
+    },
+    options: {
+      title: 'Opzioni',
+      btnSave: 'Salva',
+      btnReset: 'Ripristina predefiniti',
+      randomizer: {
+        title: '🎲 Impostazioni Scelta Casuale',
+        description:
+          'Configura come "Scegli per me" seleziona la tua prossima attività.',
+        factorPriority: 'Pesa per priorità',
+        factorPriorityHint:
+          'Le schede ad alta priorità hanno più probabilità di essere scelte',
+        factorDueDate: 'Pesa per scadenza',
+        factorDueDateHint:
+          'Le schede che scadono presto hanno più probabilità di essere scelte',
+        factorAging: 'Pesa per età',
+        factorAgingHint:
+          'Le schede più vecchie vengono scelte più spesso per evitare che vengano trascurate',
+        excludeCompleted: 'Escludi schede completate',
+        includeColumns: 'Includi solo queste colonne (lascia vuoto per tutte):',
+      },
+    },
+    randomPicker: {
+      title: 'La tua prossima attività',
+      noCards: 'Nessuna scheda idonea trovata! Potresti aver finito tutto.',
+      inColumn: 'Nella colonna:',
+      goToCard: 'Apri scheda',
+      pickAgain: '🎲 Scegli ancora',
+      stats: '{eligible} di {total} schede nel pool di selezione',
     },
   },
   templates: {

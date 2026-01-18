@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'Kanban dynamique',
+    title: 'Kanban simple',
     import: '📥 Importer',
     export: '📤 Exporter',
     labels: '🏷️ Étiquettes',
     addColumn: '+ Ajouter une colonne',
+    pickForMe: '🎲 Choisis pour moi !',
     titles: {
       addBoard: 'Créer un nouveau tableau',
       renameBoard: 'Renommer le tableau',
       deleteBoard: 'Supprimer le tableau',
+      options: 'Options',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'Supprimer l’étiquette ?',
     promptLabelName: 'Entrez le nouveau nom de l’étiquette :',
     promptLabelColor: 'Entrez la nouvelle couleur (hex) :',
+    cardDuplicated: 'Carte dupliquée',
   },
   card: {
     addTitle: 'Entrez le titre de la carte...',
     btnAdd: 'Ajouter une carte',
     btnCancel: 'Annuler',
     addBtnText: '+ Ajouter une carte',
+    duplicate: 'Dupliquer',
     meta: {
       updated: 'Mis à jour {time}',
       justNow: 'à l’instant',
@@ -175,6 +179,36 @@ export default {
       title: 'Gérer les étiquettes',
       placeholderName: 'Nom de l’étiquette',
       btnAdd: 'Ajouter',
+    },
+    options: {
+      title: 'Options',
+      btnSave: 'Enregistrer',
+      btnReset: 'Réinitialiser par défaut',
+      randomizer: {
+        title: '🎲 Paramètres du sélecteur aléatoire',
+        description:
+          'Configurez comment "Choisis pour moi" sélectionne votre prochaine tâche.',
+        factorPriority: 'Pondérer par priorité',
+        factorPriorityHint:
+          "Les cartes à haute priorité ont plus de chances d'être choisies",
+        factorDueDate: 'Pondérer par échéance',
+        factorDueDateHint:
+          "Les cartes dont l'échéance est proche ont plus de chances d'être choisies",
+        factorAging: 'Pondérer par ancienneté',
+        factorAgingHint:
+          "Les cartes plus anciennes ont plus de chances d'être choisies pour éviter l'oubli",
+        excludeCompleted: 'Exclure les cartes terminées',
+        includeColumns:
+          'Inclure uniquement ces colonnes (laisser vide pour tout inclure) :',
+      },
+    },
+    randomPicker: {
+      title: 'Votre prochaine tâche',
+      noCards: 'Aucune carte éligible trouvée ! Vous êtes sans doute à jour.',
+      inColumn: 'Dans la colonne :',
+      goToCard: 'Ouvrir la carte',
+      pickAgain: '🎲 Choisir à nouveau',
+      stats: '{eligible} sur {total} cartes dans le pool de sélection',
     },
   },
   templates: {

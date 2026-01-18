@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'Kanban dinâmico',
+    title: 'Kanban simples',
     import: '📥 Importar',
     export: '📤 Exportar',
     labels: '🏷️ Etiquetas',
     addColumn: '+ Adicionar coluna',
+    pickForMe: '🎲 Escolher para mim',
     titles: {
       addBoard: 'Criar novo quadro',
       renameBoard: 'Renomear quadro',
       deleteBoard: 'Excluir quadro',
+      options: 'Opções',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'Excluir etiqueta?',
     promptLabelName: 'Digite o novo nome da etiqueta:',
     promptLabelColor: 'Digite a nova cor (hex):',
+    cardDuplicated: 'Cartão duplicado',
   },
   card: {
     addTitle: 'Digite o título do cartão...',
     btnAdd: 'Adicionar cartão',
     btnCancel: 'Cancelar',
     addBtnText: '+ Adicionar um cartão',
+    duplicate: 'Duplicar',
     meta: {
       updated: 'Atualizado {time}',
       justNow: 'agora mesmo',
@@ -175,6 +179,37 @@ export default {
       title: 'Gerenciar etiquetas',
       placeholderName: 'Nome da etiqueta',
       btnAdd: 'Adicionar',
+    },
+    options: {
+      title: 'Opções',
+      btnSave: 'Salvar',
+      btnReset: 'Redefinir padrões',
+      randomizer: {
+        title: '🎲 Configurações do Seletor Aleatório',
+        description:
+          'Configure como o "Escolher para mim" seleciona a sua próxima tarefa.',
+        factorPriority: 'Pesar por prioridade',
+        factorPriorityHint:
+          'Cartões de alta prioridade têm mais chances de serem escolhidos',
+        factorDueDate: 'Pesar por data de entrega',
+        factorDueDateHint:
+          'Cartões que vencem logo têm mais chances de serem escolhidos',
+        factorAging: 'Pesar por antiguidade',
+        factorAgingHint:
+          'Cartões mais antigos são escolhidos com mais frequência para evitar negligência',
+        excludeCompleted: 'Excluir cartões concluídos',
+        includeColumns:
+          'Incluir apenas estas colunas (deixe vazio para todas):',
+      },
+    },
+    randomPicker: {
+      title: 'Sua próxima tarefa',
+      noCards:
+        'Nenhum cartão qualificado encontrado! Você pode ter terminado tudo.',
+      inColumn: 'Na coluna:',
+      goToCard: 'Abrir cartão',
+      pickAgain: '🎲 Escolher novamente',
+      stats: '{eligible} de {total} cartões no pool de seleção',
     },
   },
   templates: {

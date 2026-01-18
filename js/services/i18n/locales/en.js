@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: 'Dynamic Kanban',
+    title: 'Simple Kanban',
     import: '📥 Import',
     export: '📤 Export',
     labels: '🏷️ Labels',
     addColumn: '+ Add Column',
+    pickForMe: '🎲 Pick for me',
     titles: {
       addBoard: 'Create New Board',
       renameBoard: 'Rename Board',
       deleteBoard: 'Delete Board',
+      options: 'Options',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: 'Delete label?',
     promptLabelName: 'Enter new label name:',
     promptLabelColor: 'Enter new color (hex):',
+    cardDuplicated: 'Card duplicated',
   },
   card: {
     addTitle: 'Enter card title...',
     btnAdd: 'Add Card',
     btnCancel: 'Cancel',
     addBtnText: '+ Add a card',
+    duplicate: 'Duplicate',
     meta: {
       updated: 'Updated {time}',
       justNow: 'just now',
@@ -175,6 +179,32 @@ export default {
       title: 'Manage Labels',
       placeholderName: 'Label name',
       btnAdd: 'Add',
+    },
+    options: {
+      title: 'Options',
+      btnSave: 'Save',
+      btnReset: 'Reset to Defaults',
+      randomizer: {
+        title: '🎲 Random Picker Settings',
+        description: 'Configure how "Pick for me" selects your next task.',
+        factorPriority: 'Weight by priority',
+        factorPriorityHint: 'High priority cards are more likely to be picked',
+        factorDueDate: 'Weight by due date',
+        factorDueDateHint: 'Cards due sooner are more likely to be picked',
+        factorAging: 'Weight by age',
+        factorAgingHint:
+          'Older cards are more likely to be picked to prevent neglect',
+        excludeCompleted: 'Exclude completed cards',
+        includeColumns: 'Include only these columns (leave empty for all):',
+      },
+    },
+    randomPicker: {
+      title: 'Your Next Task',
+      noCards: 'No eligible cards found! You might be all caught up.',
+      inColumn: 'In column:',
+      goToCard: 'Open Card',
+      pickAgain: '🎲 Pick Again',
+      stats: '{eligible} of {total} cards in selection pool',
     },
   },
   templates: {

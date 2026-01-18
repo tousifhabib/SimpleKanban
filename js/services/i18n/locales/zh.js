@@ -1,14 +1,16 @@
 export default {
   header: {
-    title: '动态看板',
+    title: '简单看板',
     import: '📥 导入',
     export: '📤 导出',
     labels: '🏷️ 标签',
     addColumn: '+ 添加列',
+    pickForMe: '🎲 帮我挑选',
     titles: {
       addBoard: '创建新看板',
       renameBoard: '重命名看板',
       deleteBoard: '删除看板',
+      options: '设置',
     },
   },
   board: {
@@ -18,12 +20,14 @@ export default {
     confirmDeleteLabel: '删除标签？',
     promptLabelName: '输入新的标签名称：',
     promptLabelColor: '输入新的颜色（hex）：',
+    cardDuplicated: '卡片已复制',
   },
   card: {
     addTitle: '输入卡片标题...',
     btnAdd: '添加卡片',
     btnCancel: '取消',
     addBtnText: '+ 添加卡片',
+    duplicate: '复制',
     meta: {
       updated: '更新于 {time}',
       justNow: '刚刚',
@@ -174,6 +178,31 @@ export default {
       title: '管理标签',
       placeholderName: '标签名称',
       btnAdd: '添加',
+    },
+    options: {
+      title: '设置',
+      btnSave: '保存',
+      btnReset: '恢复默认值',
+      randomizer: {
+        title: '🎲 随机挑选设置',
+        description: '配置“帮我挑选”如何选择您的下一个任务。',
+        factorPriority: '按优先级加权',
+        factorPriorityHint: '高优先级的卡片更有可能被选中',
+        factorDueDate: '按截止日期加权',
+        factorDueDateHint: '截止日期临近的卡片更有可能被选中',
+        factorAging: '按时长加权',
+        factorAgingHint: '较旧的任务会更频繁地被选中以防止遗忘',
+        excludeCompleted: '排除已完成的卡片',
+        includeColumns: '仅包含这些列（留空则包含所有列）:',
+      },
+    },
+    randomPicker: {
+      title: '您的下一个任务',
+      noCards: '未找到符合条件的卡片！您可能已经完成了所有任务。',
+      inColumn: '所在列:',
+      goToCard: '打开卡片',
+      pickAgain: '🎲 重新挑选',
+      stats: '备选池中共有 {total} 张卡片，其中 {eligible} 张符合条件',
     },
   },
   templates: {
