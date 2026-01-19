@@ -5,18 +5,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   entry: {
-    main: [
-      './js/index.js',
-      './css/variables.css',
-      './css/buttons.css',
-      './css/filterPanel.css',
-      './css/base.css',
-      './css/layout.css',
-      './css/components.css',
-      './css/modal.css',
-      './css/responsive.css',
-      './css/options-randomizer.css',
-    ],
+    main: ['./js/index.js', './css/styles.css'],
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
