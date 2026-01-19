@@ -44,7 +44,7 @@ export default class ModalManager {
   closeAll() {
     Object.keys(this.modals).forEach((name) => this.close(name));
   }
-    setupGlobalListeners() {
+  setupGlobalListeners() {
     document.addEventListener('keydown', (e) => {
       if (e.key === CONFIG.keys.escape) {
         this.closeAll();
