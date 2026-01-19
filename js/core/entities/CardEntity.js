@@ -24,23 +24,7 @@ export default class CardEntity {
   touch() {
     this.updatedAt = new Date().toISOString();
   }
-
-  toggleComplete() {
-    this.completed = !this.completed;
-    this.touch();
-  }
-
-  addLog(text, columnTitle) {
-    this.logs.push({
-      id: generateId('log'),
-      text,
-      columnTitle,
-      createdAt: new Date().toISOString(),
-    });
-    this.touch();
-  }
-
-  getAgeInDays() {
+    getAgeInDays() {
     if (!this.updatedAt) return 0;
     const msPerDay = 24 * 60 * 60 * 1000;
     return Math.floor((new Date() - new Date(this.updatedAt)) / msPerDay);
