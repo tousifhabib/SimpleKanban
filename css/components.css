@@ -3,15 +3,19 @@
 .column {
   background: var(--card-color);
   width: var(--column-width);
+  min-width: var(--column-width);
   border-radius: var(--spacing-unit);
   box-shadow: 0 2px 8px var(--shadow-color);
-  padding: calc(var(--spacing-unit) * 2);
+  padding: calc(var(--spacing-unit) * 1.5);
   display: flex;
   flex-direction: column;
   position: relative;
   cursor: grab;
   transition: transform 300ms ease;
   transform: var(--flip-transform);
+
+  max-height: 100%;
+  box-sizing: border-box;
 }
 
 .column:hover {
@@ -69,16 +73,37 @@
   margin: 0;
 }
 
-/* Cards Container */
 .cards {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing-unit));
   min-height: 50px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 4px;
+  margin-bottom: 8px;
 }
 
-/* Cards */
+.cards::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cards::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cards::-webkit-scrollbar-thumb {
+  background: rgba(9, 30, 66, 0.13);
+  border-radius: 10px;
+}
+
+.cards::-webkit-scrollbar-thumb:hover {
+  background: rgba(9, 30, 66, 0.25);
+}
+
 .card {
   background: var(--card-color);
   border-radius: calc(var(--spacing-unit) * 0.75);

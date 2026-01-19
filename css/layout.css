@@ -155,9 +155,13 @@ header h1 {
 .kanban-container {
   flex: 1;
   overflow-x: auto;
+  overflow-y: hidden;
   display: flex;
+  align-items: flex-start;
   gap: calc(var(--spacing-unit) * 2);
   padding: calc(var(--spacing-unit) * 2);
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .search-wrapper {
