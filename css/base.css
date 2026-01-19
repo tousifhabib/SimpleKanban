@@ -20,9 +20,10 @@ body {
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
   background-color: var(--background-color);
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 h1,

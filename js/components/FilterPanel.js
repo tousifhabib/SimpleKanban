@@ -292,6 +292,8 @@ export default class FilterPanel {
         return;
       }
 
+      if (el.tagName === 'SELECT') return;
+
       const action = el.dataset.action;
       const toggle = el.dataset.toggle;
       const val = el.value || el.dataset.val;
@@ -323,12 +325,6 @@ export default class FilterPanel {
           ).map((c) => c.value);
           this.fm.setPriorities(selected);
         },
-        dueStatus: () => this.fm.setDueDate({ status: val }),
-        completion: () => this.fm.setCompletion(val),
-        aging: () => this.fm.setAging(val),
-        searchField: () => this.updateSearchOpts(),
-        searchOp: () => this.updateSearchOpts(),
-        searchCase: () => this.updateSearchOpts(),
         savePreset: () => {
           const name = prompt(i18n.t('filters.enterPresetName'));
           if (name?.trim()) {
@@ -349,7 +345,19 @@ export default class FilterPanel {
     });
 
     this.container.addEventListener('change', (e) => {
-      if (e.target.matches('select[data-action]')) e.target.click();
+      const t = e.target;
+      const action = t.dataset.action;
+      const val = t.value;
+
+      if (action === 'dueStatus') {
+        this.fm.setDueDate({ status: val });
+      } else if (action === 'aging') {
+        this.fm.setAging(val);
+      } else if (action === 'completion') {
+        this.fm.setCompletion(val);
+      } else if (['searchField', 'searchOp', 'searchCase'].includes(action)) {
+        this.updateSearchOpts();
+      }
     });
   }
 
