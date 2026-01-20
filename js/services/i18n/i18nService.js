@@ -2,7 +2,7 @@ import { locales } from './locales/index.js';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
-} from '../localStorageService.js';
+} from '../../data/LocalStorage.js';
 
 const STORAGE_KEY = 'kanban_lang';
 

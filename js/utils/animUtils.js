@@ -4,20 +4,17 @@ export const performFlipAnimation = (
   insertCallback
 ) => {
   const elements = Array.from(
-    container.querySelectorAll(`:scope > *:not(.dragging)`)
+    container.querySelectorAll(':scope > *:not(.dragging)')
   );
-
-  const initialRects = new Map();
-  elements.forEach((element) => {
-    initialRects.set(element, element.getBoundingClientRect());
-  });
+  const initialRects = new Map(
+    elements.map((el) => [el, el.getBoundingClientRect()])
+  );
 
   insertCallback();
 
   elements.forEach((element) => {
     const oldRect = initialRects.get(element);
     const newRect = element.getBoundingClientRect();
-
     const deltaX = oldRect.left - newRect.left;
     const deltaY = oldRect.top - newRect.top;
 

@@ -250,20 +250,17 @@
     color: var(--muted);
   }
 
-  #kanbanView {
+  #kanbanView:not([hidden]),
+  #ganttView:not([hidden]) {
     display: flex;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    height: 100%;
   }
 
-  #ganttView {
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .gantt-view {
-    height: calc(100vh - 60px);
+  [hidden] {
+    display: none !important;
   }
 }
 

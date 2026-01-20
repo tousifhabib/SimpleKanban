@@ -1,54 +1,43 @@
-import { CONFIG } from '../components/kanbanBoardConfig.js';
+const ESCAPE_KEY = 'Escape';
 
 export default class ModalManager {
+  modals = new Map();
+
   constructor() {
-    this.modals = {};
-    this.setupGlobalListeners();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ESCAPE_KEY) this.closeAll();
+    });
   }
 
-  register(name, { modalId, overlayId, formId, onReset }) {
-    const el = document.getElementById(modalId);
-    const overlay = document.getElementById(overlayId);
-    const form = formId ? document.getElementById(formId) : null;
+  register(name, config) {
+    const modal = document.getElementById(config.modalId);
+    if (!modal) return;
 
-    if (!el) {
-      console.warn(`Modal element ${modalId} not found`);
-      return;
-    }
+    const overlay = document.getElementById(config.overlayId);
+    overlay?.addEventListener('click', () => this.close(name));
 
-    this.modals[name] = { el, overlay, form, onReset };
-
-    if (overlay) {
-      overlay.addEventListener('click', () => this.close(name));
-    }
+    this.modals.set(name, {
+      el: modal,
+      form: config.formId ? document.getElementById(config.formId) : null,
+      onReset: config.onReset,
+    });
   }
 
   open(name) {
-    const modal = this.modals[name];
-    if (modal) {
-      modal.el.classList.add('active');
-      modal.el.setAttribute('aria-hidden', 'false');
-    }
+    const modal = this.modals.get(name);
+    modal?.el.classList.add('active');
+    modal?.el.setAttribute('aria-hidden', 'false');
   }
 
   close(name) {
-    const modal = this.modals[name];
-    if (modal) {
-      modal.el.classList.remove('active');
-      modal.el.setAttribute('aria-hidden', 'true');
-      if (modal.onReset) modal.onReset();
-      else if (modal.form) modal.form.reset();
-    }
+    const modal = this.modals.get(name);
+    if (!modal) return;
+    modal.el.classList.remove('active');
+    modal.el.setAttribute('aria-hidden', 'true');
+    modal.onReset?.() ?? modal.form?.reset();
   }
 
   closeAll() {
-    Object.keys(this.modals).forEach((name) => this.close(name));
-  }
-  setupGlobalListeners() {
-    document.addEventListener('keydown', (e) => {
-      if (e.key === CONFIG.keys.escape) {
-        this.closeAll();
-      }
-    });
+    this.modals.forEach((_, name) => this.close(name));
   }
 }

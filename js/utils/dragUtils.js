@@ -1,51 +1,49 @@
-export function getCardAfterElement(container, y) {
-  const cards = Array.from(container.querySelectorAll('.card:not(.dragging)'));
-  return cards.reduce(
+const getAfterElement = (container, selector, position, axis) => {
+  const elements = Array.from(container.querySelectorAll(selector));
+  return elements.reduce(
     (closest, child) => {
       const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
+      const offset =
+        position -
+        (axis === 'y' ? box.top + box.height / 2 : box.left + box.width / 2);
       return offset < 0 && offset > closest.offset
         ? { offset, element: child }
         : closest;
     },
     { offset: Number.NEGATIVE_INFINITY }
   ).element;
-}
+};
 
-export function getColumnAfterElement(container, x) {
-  const columns = Array.from(
-    container.querySelectorAll('.column:not(.dragging)')
-  );
-  return columns.reduce(
-    (closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = x - box.left - box.width / 2;
-      return offset < 0 && offset > closest.offset
-        ? { offset, element: child }
-        : closest;
-    },
-    { offset: Number.NEGATIVE_INFINITY }
-  ).element;
-}
+export const getCardAfterElement = (container, y) =>
+  getAfterElement(container, '.card:not(.dragging)', y, 'y');
 
-export function addDebugInnerBoxToElement(element, ratio = 0.8) {
-  const w = element.offsetWidth * ratio,
-    h = element.offsetHeight * ratio;
-  const left = (element.offsetWidth - w) / 2,
-    top = (element.offsetHeight - h) / 2;
+export const getColumnAfterElement = (container, x) =>
+  getAfterElement(container, '.column:not(.dragging)', x, 'x');
+
+export const addDebugInnerBoxToElement = (element, ratio = 0.8) => {
+  const w = element.offsetWidth * ratio;
+  const h = element.offsetHeight * ratio;
+  const left = (element.offsetWidth - w) / 2;
+  const top = (element.offsetHeight - h) / 2;
+
   let overlay = element.querySelector('.debug-inner-box');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.className = 'debug-inner-box';
-    overlay.style.position = 'absolute';
-    overlay.style.border = '2px dashed red';
-    overlay.style.pointerEvents = 'none';
-    if (window.getComputedStyle(element).position === 'static')
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      border: '2px dashed red',
+      pointerEvents: 'none',
+    });
+    if (getComputedStyle(element).position === 'static')
       element.style.position = 'relative';
     element.appendChild(overlay);
   }
-  overlay.style.left = `${left}px`;
-  overlay.style.top = `${top}px`;
-  overlay.style.width = `${w}px`;
-  overlay.style.height = `${h}px`;
-}
+
+  Object.assign(overlay.style, {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+  });
+};

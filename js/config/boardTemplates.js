@@ -1,4 +1,4 @@
-import { generateId } from '../utils/id.js';
+import { generateId } from '../utils/idUtils.js';
 import { i18n } from '../services/i18n/i18nService.js';
 
 const TEMPLATE_DEFINITIONS = {
