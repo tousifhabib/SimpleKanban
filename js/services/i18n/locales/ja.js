@@ -26,7 +26,7 @@ export default {
     addTitle: 'カードのタイトル...',
     btnAdd: 'カードを追加',
     btnCancel: 'キャンセル',
-    addBtnText: '+ カードを追加',
+    addBtnText: 'カードを追加',
     duplicate: '複製',
     meta: {
       updated: '更新 {time}',

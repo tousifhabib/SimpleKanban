@@ -26,7 +26,7 @@ export default {
     addTitle: 'Inserisci il titolo della scheda...',
     btnAdd: 'Aggiungi scheda',
     btnCancel: 'Annulla',
-    addBtnText: '+ Aggiungi una scheda',
+    addBtnText: 'Aggiungi una scheda',
     duplicate: 'Duplica',
     meta: {
       updated: 'Aggiornato {time}',

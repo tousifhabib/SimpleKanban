@@ -5,6 +5,7 @@ import ModalManager from '../managers/ModalManager.js';
 import FilterManager from '../managers/FilterManager.js';
 import RandomPickerManager from '../managers/RandomPickerManager.js';
 import FilterPanel from './FilterPanel.js';
+import GanttView from './GanttView.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
   supportedLanguages,
@@ -18,6 +19,7 @@ export default class KanbanBoard {
     this.fm = new FilterManager();
     this.picker = new RandomPickerManager();
     this.modals = new ModalManager();
+    this.gantt = null;
     this.init();
   }
 
@@ -26,6 +28,14 @@ export default class KanbanBoard {
       filterManager: this.fm,
       labels: store.getLabels(),
       onFilterChange: () => this.render(),
+    });
+
+    this.gantt = new GanttView(this.ui.ganttView, {
+      onCardClick: (card, colId) => {
+        this.switchView('kanban');
+        this.openCard(card.id, colId);
+      },
+      onNavigateBack: () => this.switchView('kanban'),
     });
 
     this.setupModals();
@@ -38,11 +48,27 @@ export default class KanbanBoard {
       this.filterPanel.setLabels(store.getLabels());
       this.populateLangSelector();
       this.render();
+      if (this.gantt) this.gantt.render();
     };
 
     store.subscribe(refresh);
     i18n.subscribe(refresh);
     refresh();
+  }
+
+  switchView(viewName) {
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.view === viewName);
+    });
+
+    if (viewName === 'gantt') {
+      this.ui.kanbanView.style.display = 'none';
+      this.ui.ganttView.style.display = 'block';
+      this.gantt.render();
+    } else {
+      this.ui.kanbanView.style.display = 'block';
+      this.ui.ganttView.style.display = 'none';
+    }
   }
 
   setupModals() {
@@ -133,6 +159,7 @@ export default class KanbanBoard {
       addLabelBtn: () => this.addLabel(),
       manageLabelCloseBtn: () => this.modals.close('labels'),
       addLogBtn: () => this.addLog(),
+      addDependencyBtn: () => this.addDependency(),
       cardDetailCloseBtn: () => this.modals.close('cardDetail'),
       importBtn: () => this.ui.importFileInput.click(),
       exportBtn: () => this.exportData(),
@@ -167,6 +194,13 @@ export default class KanbanBoard {
         this.toggleAddCard(col, false);
       },
       'cancel-add-card': (t) => this.toggleAddCard(t.closest('.column'), false),
+      'toggle-add-card': (t) => this.toggleAddCard(t.closest('.column'), true),
+      'edit-column-title': (t) => {
+        t.style.display = 'none';
+        const inp = t.nextElementSibling;
+        inp.style.display = 'block';
+        inp.focus();
+      },
       edit: (t) =>
         this.openCard(
           t.closest('.card').dataset.cardId,
@@ -183,6 +217,32 @@ export default class KanbanBoard {
           t.closest('.column').dataset.columnId,
           t.closest('.card').dataset.cardId
         ),
+      'delete-label': (t) => {
+        if (confirm(i18n.t('board.confirmDeleteLabel')))
+          store.removeLabel(t.dataset.id);
+        this.renderLabels();
+      },
+      'edit-label': (t) => {
+        const l = store.getLabels().find((x) => x.id === t.dataset.id);
+        const n = prompt(i18n.t('board.promptLabelName'), l.name);
+        if (n?.trim())
+          store.updateLabel(
+            l.id,
+            n.trim(),
+            prompt(i18n.t('board.promptLabelColor'), l.color) || l.color
+          );
+        this.renderLabels();
+      },
+      'remove-dependency': (t) => {
+        store.removeCardDependency(
+          this.ctx.colId,
+          this.ctx.cardId,
+          t.dataset.id
+        );
+        const card = store.getCard(this.ctx.cardId).card;
+        this.renderDependencies(card.dependencies);
+        this.populateDependencySelect();
+      },
     };
 
     this.submitActions = {
@@ -234,48 +294,44 @@ export default class KanbanBoard {
   }
 
   routeClick(e) {
-    const t = e.target,
-      id = t.id;
-    const actionKey =
-      t.dataset.action || t.closest('[data-action]')?.dataset.action || id;
+    const t = e.target;
+    const viewBtn = t.closest('.nav-btn');
+    if (viewBtn) return this.switchView(viewBtn.dataset.view);
 
-    if (this.actions[actionKey]) return this.actions[actionKey](t);
-    if (id?.startsWith('cancel') || id?.endsWith('CloseBtn')) {
-      const modal = Object.values(this.modals.modals).find((m) =>
-        m.el.contains(t)
+    if (t.id?.startsWith('cancel') || t.id?.endsWith('CloseBtn')) {
+      const modalName = Object.keys(this.modals.modals).find((k) =>
+        this.modals.modals[k].el.contains(t)
       );
-      if (modal)
-        this.modals.close(
-          Object.keys(this.modals.modals).find(
-            (k) => this.modals.modals[k] === modal
-          )
-        );
+      if (modalName) return this.modals.close(modalName);
     }
 
-    if (t.classList.contains('column-title-text')) {
-      t.style.display = 'none';
-      const inp = t.nextElementSibling;
-      inp.style.display = 'block';
-      inp.focus();
+    let actionEl = t.closest('[data-action]');
+    let actionKey = actionEl ? actionEl.dataset.action : t.id;
+
+    if (!actionKey) {
+      if (t.classList.contains('label-delete-btn')) {
+        actionKey = 'delete-label';
+        actionEl = t;
+      } else if (t.classList.contains('label-edit-btn')) {
+        actionKey = 'edit-label';
+        actionEl = t;
+      } else if (t.classList.contains('dependency-remove-btn')) {
+        actionKey = 'remove-dependency';
+        actionEl = t;
+      } else if (t.classList.contains('column-title-text')) {
+        actionKey = 'edit-column-title';
+        actionEl = t;
+      } else if (t.classList.contains('add-card-btn')) {
+        actionKey = 'toggle-add-card';
+        actionEl = t;
+      }
     }
-    if (t.classList.contains('add-card-btn'))
-      this.toggleAddCard(t.closest('.column'), true);
-    if (t.classList.contains('label-delete-btn')) {
-      if (confirm(i18n.t('board.confirmDeleteLabel')))
-        store.removeLabel(t.dataset.id);
-      this.renderLabels();
+
+    if (this.actions[actionKey]) {
+      this.actions[actionKey](actionEl || t);
+      return;
     }
-    if (t.classList.contains('label-edit-btn')) {
-      const l = store.getLabels().find((x) => x.id === t.dataset.id);
-      const n = prompt(i18n.t('board.promptLabelName'), l.name);
-      if (n?.trim())
-        store.updateLabel(
-          l.id,
-          n.trim(),
-          prompt(i18n.t('board.promptLabelColor'), l.color) || l.color
-        );
-      this.renderLabels();
-    }
+
     const card = t.closest('.card');
     if (
       card &&
@@ -382,6 +438,8 @@ export default class KanbanBoard {
     this.ui.cardCompletedInput.checked = card.completed || false;
     this.renderLogs(card.logs);
     this.renderLabelSelector();
+    this.renderDependencies(card.dependencies || []);
+    this.populateDependencySelect();
     this.modals.open('cardDetail');
   }
 
@@ -445,6 +503,64 @@ export default class KanbanBoard {
       this.ui.newLabelName.value = '';
       this.renderLabels();
     }
+  }
+
+  renderDependencies(depIds = []) {
+    const container = this.ui.dependenciesList;
+    if (!depIds.length) {
+      container.innerHTML = `<div class="no-dependencies">${i18n.t('card.detail.noDependencies') || 'No dependencies'}</div>`;
+      return;
+    }
+
+    container.innerHTML = depIds
+      .map((id) => {
+        const data = store.getCard(id);
+        if (!data) return '';
+        const { card } = data;
+        return `
+      <div class="dependency-item">
+        <div class="dependency-info">
+          <span class="dependency-priority priority-${card.priority}"></span>
+          <span class="dependency-title">${card.text}</span>
+        </div>
+        <button type="button" class="dependency-remove-btn" data-id="${card.id}">✕</button>
+      </div>
+    `;
+      })
+      .join('');
+  }
+
+  populateDependencySelect() {
+    const select = this.ui.dependencySelect;
+    const currentCardId = this.ctx.cardId;
+    const currentDeps = store.getCard(currentCardId)?.card.dependencies || [];
+    const availableTasks = store
+      .getAllCards()
+      .filter(
+        (item) =>
+          item.card.id !== currentCardId && !currentDeps.includes(item.card.id)
+      );
+
+    const defaultOption = select.options[0].outerHTML;
+    select.innerHTML =
+      defaultOption +
+      availableTasks
+        .map(
+          (item) =>
+            `<option value="${item.card.id}">${item.card.text} (${item.columnTitle})</option>`
+        )
+        .join('');
+  }
+
+  addDependency() {
+    const depId = this.ui.dependencySelect.value;
+    if (!depId) return;
+
+    store.addCardDependency(this.ctx.colId, this.ctx.cardId, depId);
+    const card = store.getCard(this.ctx.cardId).card;
+    this.renderDependencies(card.dependencies);
+    this.populateDependencySelect();
+    this.ui.dependencySelect.value = '';
   }
 
   resetCtx() {

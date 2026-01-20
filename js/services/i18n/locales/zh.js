@@ -26,7 +26,7 @@ export default {
     addTitle: '输入卡片标题...',
     btnAdd: '添加卡片',
     btnCancel: '取消',
-    addBtnText: '+ 添加卡片',
+    addBtnText: '添加卡片',
     duplicate: '复制',
     meta: {
       updated: '更新于 {time}',

@@ -26,7 +26,7 @@ export default {
     addTitle: 'Введите заголовок карточки...',
     btnAdd: 'Добавить карточку',
     btnCancel: 'Отмена',
-    addBtnText: '+ Добавить карточку',
+    addBtnText: 'Добавить карточку',
     duplicate: 'Дублировать',
     meta: {
       updated: 'Обновлено {time}',

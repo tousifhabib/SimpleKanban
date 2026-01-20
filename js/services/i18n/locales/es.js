@@ -26,7 +26,7 @@ export default {
     addTitle: 'Introduce el título de la tarjeta...',
     btnAdd: 'Añadir tarjeta',
     btnCancel: 'Cancelar',
-    addBtnText: '+ Añadir una tarjeta',
+    addBtnText: 'Añadir una tarjeta',
     duplicate: 'Duplicar',
     meta: {
       updated: 'Actualizado {time}',

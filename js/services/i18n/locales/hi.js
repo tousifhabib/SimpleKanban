@@ -26,7 +26,7 @@ export default {
     addTitle: 'कार्ड शीर्षक दर्ज करें...',
     btnAdd: 'कार्ड जोड़ें',
     btnCancel: 'रद्द करें',
-    addBtnText: '+ एक कार्ड जोड़ें',
+    addBtnText: 'एक कार्ड जोड़ें',
     duplicate: 'डुप्लिकेट',
     meta: {
       updated: '{time} पर अपडेट',

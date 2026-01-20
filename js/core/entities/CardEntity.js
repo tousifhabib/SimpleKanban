@@ -12,6 +12,7 @@ export default class CardEntity {
     this.effort = data.effort !== undefined ? Number(data.effort) : 0;
     this.labels = data.labels || [];
     this.logs = data.logs || [];
+    this.dependencies = data.dependencies || [];
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
   }

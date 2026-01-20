@@ -4,11 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Kanban Board</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/gantt.css" />
   </head>
   <body>
     <header>
       <div class="header-section">
         <h1 data-i18n="header.title">Simple Kanban</h1>
+        <nav class="header-nav">
+          <button
+            class="nav-btn active"
+            data-view="kanban"
+            data-i18n="nav.kanban"
+          >
+            📋 Kanban
+          </button>
+          <button class="nav-btn" data-view="gantt" data-i18n="nav.gantt">
+            📊 Gantt
+          </button>
+        </nav>
         <select
           id="langSelector"
           class="board-select"
@@ -42,7 +56,7 @@
           </button>
         </div>
       </div>
-      <div class="header-actions">
+      <div class="header-actions" id="kanbanActions">
         <button
           class="header-btn randomizer-btn"
           id="randomPickerBtn"
@@ -84,34 +98,41 @@
       </div>
     </header>
 
-    <div class="filter-bar" id="filterBar">
-      <div class="filter-group">
-        <span class="filter-label" data-i18n="filters.label">Filter by:</span>
-        <select id="filterLabel" class="filter-select">
-          <option value="all" data-i18n="filters.allLabels">All Labels</option>
-        </select>
-        <select id="filterPriority" class="filter-select">
-          <option value="all" data-i18n="filters.allPriorities">
-            All Priorities
-          </option>
-          <option value="high" data-i18n="card.priorities.high">High</option>
-          <option value="medium" data-i18n="card.priorities.medium">
-            Medium
-          </option>
-          <option value="low" data-i18n="card.priorities.low">Low</option>
-          <option value="none" data-i18n="card.priorities.none">None</option>
-        </select>
-        <button
-          id="clearFilters"
-          class="btn-clear-filters"
-          data-i18n="filters.clear"
-        >
-          Clear
-        </button>
+    <!-- Kanban View -->
+    <div id="kanbanView">
+      <div class="filter-bar" id="filterBar">
+        <div class="filter-group">
+          <span class="filter-label" data-i18n="filters.label">Filter by:</span>
+          <select id="filterLabel" class="filter-select">
+            <option value="all" data-i18n="filters.allLabels">
+              All Labels
+            </option>
+          </select>
+          <select id="filterPriority" class="filter-select">
+            <option value="all" data-i18n="filters.allPriorities">
+              All Priorities
+            </option>
+            <option value="high" data-i18n="card.priorities.high">High</option>
+            <option value="medium" data-i18n="card.priorities.medium">
+              Medium
+            </option>
+            <option value="low" data-i18n="card.priorities.low">Low</option>
+            <option value="none" data-i18n="card.priorities.none">None</option>
+          </select>
+          <button
+            id="clearFilters"
+            class="btn-clear-filters"
+            data-i18n="filters.clear"
+          >
+            Clear
+          </button>
+        </div>
       </div>
+
+      <div class="kanban-container" id="kanbanContainer"></div>
     </div>
 
-    <div class="kanban-container" id="kanbanContainer"></div>
+    <div id="ganttView" class="gantt-view" style="display: none"></div>
 
     <div class="modal" id="createBoardModal" aria-hidden="true">
       <div class="modal-overlay" id="createBoardOverlay"></div>
@@ -383,6 +404,31 @@
               data-i18n-attr="placeholder"
               rows="4"
             ></textarea>
+          </div>
+
+          <div class="card-detail-section">
+            <label class="card-detail-label">
+              <span class="card-detail-icon">🔗</span>
+              <span data-i18n="card.detail.dependencies">Dependencies</span>
+            </label>
+            <div class="dependencies-section">
+              <div id="dependenciesList" class="dependencies-list"></div>
+              <div class="add-dependency-form">
+                <select id="dependencySelect" class="priority-select">
+                  <option value="" data-i18n="card.detail.selectTask">
+                    Select a task...
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  id="addDependencyBtn"
+                  data-i18n="card.detail.addDependency"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="card-detail-section">
@@ -701,6 +747,7 @@
         </div>
       </div>
     </template>
+
     <script type="module" src="js/index.js"></script>
   </body>
 </html>
