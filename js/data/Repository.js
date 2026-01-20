@@ -1,7 +1,4 @@
-import {
-  loadFromLocalStorage,
-  saveToLocalStorage,
-} from '../services/localStorageService.js';
+import { loadFromLocalStorage, saveToLocalStorage } from './LocalStorage.js';
 
 const STORAGE_KEY = 'flexibleKanbanState';
 

@@ -1,5 +1,5 @@
-import KanbanBoard from './components/KanbanBoard.js';
+import BoardController from './views/board/BoardController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  new KanbanBoard();
+  new BoardController();
 });

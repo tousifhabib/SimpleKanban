@@ -6,37 +6,37 @@ config:
 ---
 flowchart TB
  subgraph Orchestration["🧠 Orchestration"]
-        KB("KanbanBoard.js<br>(Main Controller)")
+        KB("BoardController.js<br>(Main Controller)")
   end
  subgraph ViewLayer["🎨 UI Components"]
         FP("FilterPanel.js")
         QF("QuickFilters.js")
-        Col("Column.js")
-        Card("Card.js")
+        Col("ColumnView.js")
+        CardView("CardView.js")
   end
  subgraph LogicLayer["⚙️ Logic & Managers"]
         MM("ModalManager.js")
         FM("FilterManager.js")
         RPM("RandomPickerManager.js")
         DDM("DragDropManager.js")
-        Store("store.js<br>(Reactive Proxy)")
+        Store("Store.js<br>(Reactive Proxy)")
         DragUtils("utils/dragUtils.js")
-        FlipAnim("utils/flipAnimation.js")
+        FlipAnim("utils/animUtils.js")
   end
  subgraph DataLayer["💾 State & Persistence"]
         Entity("CardEntity.js<br>(Domain Model)")
         Repo("Repository.js")
-        LS("localStorageService.js")
+        LS("LocalStorage.js")
   end
  subgraph Configs["🔧 Configuration"]
         Templates("config/boardTemplates.js")
-        KBConfig("kanbanBoardConfig.js")
+        KBConfig("constants.js")
   end
     Index("index.js<br>(Entry Point)") --> KB
     KB -- Renders --> FP
     FP -- Contains --> QF
     KB -- Renders List --> Col
-    Col -- Renders List --> Card
+    Col -- Renders List --> CardView
     KB -- Instantiates --> MM & FM & RPM & DDM
     FP -- Updates/Reads --> FM
     QF -- Applies Presets --> FM
@@ -47,7 +47,7 @@ flowchart TB
     Store -- Manages --> Entity
     Store -- Persists via --> Repo
     Repo -- Raw I/O --> LS
-    Card -- Reads Data --> Entity
+    CardView -- Reads Data --> Entity
     Store -. Uses for Defaults .-> Templates
     DDM -. Reads Constants .-> KBConfig
     DDM -- Callbacks (onDrop) --> KB
@@ -57,7 +57,7 @@ flowchart TB
      FP:::view
      QF:::view
      Col:::view
-     Card:::view
+     CardView:::view
      MM:::manager
      FM:::manager
      RPM:::manager

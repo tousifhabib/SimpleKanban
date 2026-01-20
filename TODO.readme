@@ -2,28 +2,28 @@ nana bhai, your board already has the core loop nailed (columns/cards CRUD + dra
 
 ### High-impact features (worth doing first)
 
-**1) Card details (real “task” object)**
+**1) CardView details (real “task” object)**
 
 * Add fields: `description`, `dueDate`, `labels[]`, `priority`, `checklist[]`, `createdAt`, `updatedAt`.
-* UX: click card opens a modal (like your Add Column modal) instead of `prompt()`.
-* Where it fits: extend `store.js` card shape + new `CardDetailsModal` component + update `Card.js` to open it.
+* UX: click card opens a modal (like your Add ColumnView modal) instead of `prompt()`.
+* Where it fits: extend `Store.js` card shape + new `CardDetailsModal` component + update `CardView.js` to open it.
 
 **2) Search + quick filter**
 
 * Search box in header filters visible cards by text.
 * Filters: label, priority, due date (“overdue”, “today”, “this week”).
-* Where: a small “ui state” (search query, active filters) in `KanbanBoard` (doesn’t need to persist), and render only matching cards.
+* Where: a small “ui state” (search query, active filters) in `BoardController` (doesn’t need to persist), and render only matching cards.
 
 **3) Undo / redo (and/or “toast undo”)**
 
 * Users will mis-drag or delete columns/cards. Undo makes the app feel “safe”.
-* Implementation: keep a history stack of previous `state` snapshots in `store.js` (cap at like 30).
+* Implementation: keep a history stack of previous `state` snapshots in `Store.js` (cap at like 30).
 * Bonus: after delete, show toast “Deleted card — Undo”.
 
-**4) Column WIP limits**
+**4) ColumnView WIP limits**
 
 * Per-column “max cards” number; when exceeded, show a subtle warning + optionally block dropping into that column.
-* Where: `columnData.wipLimit`, enforce in `KanbanBoard.handleDrop()` when target column changes.
+* Where: `columnData.wipLimit`, enforce in `BoardController.handleDrop()` when target column changes.
 
 **5) Keyboard shortcuts**
 
@@ -94,7 +94,7 @@ nana bhai, your board already has the core loop nailed (columns/cards CRUD + dra
 These aren’t user features, but they make the above painless:
 
 * **Centralize ID generation**: you have `store.generateId()` and also `utils.generateId()`. Pick one.
-* **Separate “UI state” vs “data state”**: data in `store`, UI in `KanbanBoard` (filters, open modals, selected card).
+* **Separate “UI state” vs “data state”**: data in `store`, UI in `BoardController` (filters, open modals, selected card).
 * **Debug overlays toggle**: right now `.cards` and `.column` have forced debug outlines in CSS. Wrap those in a `.debug` body class so you can turn it on/off.
 
 ---
@@ -103,7 +103,7 @@ These aren’t user features, but they make the above painless:
 
 If you only build **three** next, I’d do:
 
-1. **Card details modal** (description, labels, due date)
+1. **CardView details modal** (description, labels, due date)
 2. **Search + filters**
 3. **Undo**
 
@@ -119,15 +119,15 @@ If you tell me which direction you want (personal todo vs team-ish board), I’l
 Implementation notes (what you built is actually solid)
 1) Architecture: clear separation for vanilla JS
 
-store.js is a simple pub/sub store with persistence. That’s the right level of abstraction for this size.
+Store.js is a simple pub/sub store with persistence. That’s the right level of abstraction for this size.
 
-Card, Column, KanbanBoard classes keep responsibilities mostly sane:
+CardView, ColumnView, BoardController classes keep responsibilities mostly sane:
 
-Card: rendering + click/drag behavior
+CardView: rendering + click/drag behavior
 
-Column: column UI + card creation/removal + title editing
+ColumnView: column UI + card creation/removal + title editing
 
-KanbanBoard: orchestration, modals, and the drag system
+BoardController: orchestration, modals, and the drag system
 
 2) Drag & drop: you went beyond “basic HTML5 drag”
 
@@ -152,13 +152,13 @@ Auto-saving via a store subscription is clean. You mutate state, call notify(), 
 The main things I’d tighten (because “no libs” means polish matters)
 A) You currently have two drag systems running
 
-KanbanBoard listens in capture phase and manages dragState.
+BoardController listens in capture phase and manages dragState.
 
-Card also handles dragstart/dragend.
+CardView also handles dragstart/dragend.
 
-Column also handles dragstart/dragend.
+ColumnView also handles dragstart/dragend.
 
-It can work, but it’s fragile: now behavior is split across three places (class toggling, dataTransfer, debug overlays). If you want this to be bulletproof, I’d centralize drag start/end into only KanbanBoard and let Card/Column be dumb renderers.
+It can work, but it’s fragile: now behavior is split across three places (class toggling, dataTransfer, debug overlays). If you want this to be bulletproof, I’d centralize drag start/end into only BoardController and let CardView/ColumnView be dumb renderers.
 
 B) Full re-render on every store update
 
@@ -176,7 +176,7 @@ localStorageService.loadFromLocalStorage() can throw if the saved JSON is corrup
 
 D) Minor consistency smell: duplicated utilities
 
-You have js/utils.js with generateId + localStorage helpers, but the app uses store.generateId() and services/localStorageService.js. That’s not harmful, but it’s the kind of thing that confuses “future you”.
+You have js/utils.js with generateId + localStorage helpers, but the app uses store.generateId() and services/LocalStorage.js. That’s not harmful, but it’s the kind of thing that confuses “future you”.
 
 E) Accessibility details (common in vanilla apps)
 
