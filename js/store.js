@@ -104,6 +104,18 @@ class Store {
     ids.forEach((id) => m.has(id) && arr.push(m.get(id)));
   };
 
+  #updateCard(colId, cardId, fn) {
+    const col = this.#col(colId);
+    if (!col) return;
+    const idx = col.cards.findIndex((c) => c.id === cardId);
+    if (idx !== -1) {
+      const card = col.cards[idx];
+      fn(card);
+      card.updatedAt = new Date().toISOString();
+      col.cards[idx] = card;
+    }
+  }
+
   get state() {
     return this.#state;
   }
@@ -137,6 +149,17 @@ class Store {
       if (card) return { card, columnId: col.id };
     }
     return null;
+  }
+
+  getAllCards() {
+    const board = this.#board();
+    const cards = [];
+    board.columns.forEach((col) => {
+      col.cards.forEach((card) => {
+        cards.push({ card, columnId: col.id, columnTitle: col.title });
+      });
+    });
+    return cards;
   }
 
   setActiveBoard = (id) => {
@@ -213,28 +236,26 @@ class Store {
     this.#col(colId)?.cards.push(new CardEntity({ text }));
 
   updateCardDetails(colId, id, updates) {
-    const col = this.#col(colId);
-    const idx = col?.cards.findIndex((c) => c.id === id);
-    if (idx !== -1 && idx !== undefined) {
-      const card = col.cards[idx];
-      Object.assign(card, updates);
-      card.updatedAt = new Date().toISOString();
-      col.cards[idx] = card;
-    }
+    this.#updateCard(colId, id, (card) => Object.assign(card, updates));
   }
 
   toggleCardComplete(colId, id) {
-    const col = this.#col(colId);
-    const idx = col?.cards.findIndex((c) => c.id === id);
-    if (idx !== -1 && idx !== undefined) {
-      const card = col.cards[idx];
+    this.#updateCard(colId, id, (card) => {
       card.completed = !card.completed;
-      card.updatedAt = new Date().toISOString();
-      col.cards[idx] = card;
-    }
+    });
   }
 
-  removeCard = (colId, id) => this.#remove(this.#col(colId)?.cards ?? [], id);
+  removeCard = (colId, id) => {
+    const board = this.#board();
+    board.columns.forEach((col) => {
+      col.cards.forEach((card) => {
+        if (card.dependencies?.includes(id)) {
+          card.dependencies = card.dependencies.filter((d) => d !== id);
+        }
+      });
+    });
+    return this.#remove(this.#col(colId)?.cards ?? [], id);
+  };
 
   duplicateCard(colId, id) {
     const col = this.#col(colId);
@@ -244,6 +265,7 @@ class Store {
       ...serialize(original),
       id: undefined,
       logs: [],
+      dependencies: [],
       createdAt: undefined,
       updatedAt: undefined,
     });
@@ -253,18 +275,31 @@ class Store {
 
   addCardLog(colId, id, text) {
     const col = this.#col(colId);
-    const idx = col?.cards.findIndex((c) => c.id === id);
-    if (idx !== -1 && idx !== undefined) {
-      const card = col.cards[idx];
+    this.#updateCard(colId, id, (card) => {
       card.logs.push({
         id: generateId('log'),
         text,
         columnTitle: col.title,
         createdAt: new Date().toISOString(),
       });
-      card.updatedAt = new Date().toISOString();
-      col.cards[idx] = card;
-    }
+    });
+  }
+
+  addCardDependency(colId, cardId, dependencyId) {
+    this.#updateCard(colId, cardId, (card) => {
+      if (!card.dependencies) card.dependencies = [];
+      if (!card.dependencies.includes(dependencyId)) {
+        card.dependencies.push(dependencyId);
+      }
+    });
+  }
+
+  removeCardDependency(colId, cardId, dependencyId) {
+    this.#updateCard(colId, cardId, (card) => {
+      if (card.dependencies) {
+        card.dependencies = card.dependencies.filter((d) => d !== dependencyId);
+      }
+    });
   }
 
   reorderColumns = (ids) => this.#reorder(this.#board()?.columns ?? [], ids);

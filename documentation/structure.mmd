@@ -1,0 +1,81 @@
+---
+config:
+  look: classic
+  theme: redux
+  layout: dagre
+---
+flowchart TB
+ subgraph Orchestration["🧠 Orchestration"]
+        KB("KanbanBoard.js<br>(Main Controller)")
+  end
+ subgraph ViewLayer["🎨 UI Components"]
+        FP("FilterPanel.js")
+        QF("QuickFilters.js")
+        Col("Column.js")
+        Card("Card.js")
+  end
+ subgraph LogicLayer["⚙️ Logic & Managers"]
+        MM("ModalManager.js")
+        FM("FilterManager.js")
+        RPM("RandomPickerManager.js")
+        DDM("DragDropManager.js")
+        Store("store.js<br>(Reactive Proxy)")
+        DragUtils("utils/dragUtils.js")
+        FlipAnim("utils/flipAnimation.js")
+  end
+ subgraph DataLayer["💾 State & Persistence"]
+        Entity("CardEntity.js<br>(Domain Model)")
+        Repo("Repository.js")
+        LS("localStorageService.js")
+  end
+ subgraph Configs["🔧 Configuration"]
+        Templates("config/boardTemplates.js")
+        KBConfig("kanbanBoardConfig.js")
+  end
+    Index("index.js<br>(Entry Point)") --> KB
+    KB -- Renders --> FP
+    FP -- Contains --> QF
+    KB -- Renders List --> Col
+    Col -- Renders List --> Card
+    KB -- Instantiates --> MM & FM & RPM & DDM
+    FP -- Updates/Reads --> FM
+    QF -- Applies Presets --> FM
+    RPM -- Reads Stats --> Store
+    DDM -.-> DragUtils & FlipAnim
+    KB -- Subscribes (Observer) --> Store
+    KB -- Dispatches Actions --> Store
+    Store -- Manages --> Entity
+    Store -- Persists via --> Repo
+    Repo -- Raw I/O --> LS
+    Card -- Reads Data --> Entity
+    Store -. Uses for Defaults .-> Templates
+    DDM -. Reads Constants .-> KBConfig
+    DDM -- Callbacks (onDrop) --> KB
+    KB -- Action: moveCard --> Store
+
+     KB:::controller
+     FP:::view
+     QF:::view
+     Col:::view
+     Card:::view
+     MM:::manager
+     FM:::manager
+     RPM:::manager
+     DDM:::manager
+     Store:::state
+     DragUtils:::config
+     FlipAnim:::config
+     Entity:::model
+     Repo:::infra
+     LS:::infra
+     Templates:::config
+     KBConfig:::config
+     Index:::entry
+    classDef entry fill:#333,stroke:#fff,stroke-width:2px,color:#fff
+    classDef view fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef controller fill:#e0f7fa,stroke:#006064,stroke-width:2px
+    classDef manager fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    classDef state fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef model fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px,stroke-dasharray: 5 5
+    classDef infra fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef config fill:#ffebee,stroke:#c62828,stroke-width:1px,stroke-dasharray: 5 5

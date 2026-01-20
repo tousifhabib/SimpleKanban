@@ -26,7 +26,7 @@ export default {
     addTitle: 'Kartentitel eingeben...',
     btnAdd: 'Karte hinzufügen',
     btnCancel: 'Abbrechen',
-    addBtnText: '+ Karte hinzufügen',
+    addBtnText: 'Karte hinzufügen',
     duplicate: 'Duplizieren',
     meta: {
       updated: 'Aktualisiert {time}',

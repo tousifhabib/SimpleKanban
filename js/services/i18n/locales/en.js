@@ -13,6 +13,10 @@ export default {
       options: 'Options',
     },
   },
+  nav: {
+    kanban: '📋 Kanban',
+    gantt: '📊 Gantt',
+  },
   board: {
     selectPlaceholder: 'Select Board...',
     confirmDeleteColumn: 'Delete this column and all its cards?',
@@ -26,7 +30,7 @@ export default {
     addTitle: 'Enter card title...',
     btnAdd: 'Add Card',
     btnCancel: 'Cancel',
-    addBtnText: '+ Add a card',
+    addBtnText: 'Add a card',
     duplicate: 'Duplicate',
     meta: {
       updated: 'Updated {time}',
@@ -45,6 +49,9 @@ export default {
       effort: 'Effort (h)',
       priority: 'Priority',
       description: 'Description',
+      dependencies: 'Dependencies',
+      selectTask: 'Select a task...',
+      addDependency: 'Add',
       workLog: 'Work Log',
       addEntry: 'Add Entry',
       save: 'Save',
@@ -66,7 +73,7 @@ export default {
     label: 'Filter by:',
     allLabels: 'All Labels',
     allPriorities: 'All Priorities',
-    clear: 'Clear All',
+    clear: 'Clear',
     searchPlaceholder: 'Search cards...',
     advancedFilters: 'Advanced Filters',
     presets: 'Filter Presets',
@@ -140,6 +147,23 @@ export default {
     results: {
       showing: 'Showing {count} of {total} cards',
       noResults: 'No cards match your filters',
+    },
+  },
+  gantt: {
+    title: 'Gantt Timeline',
+    backToKanban: 'Back to Kanban',
+    zoom: 'Zoom',
+    today: 'Today',
+    taskName: 'Task Name',
+    dependencies: 'Dependencies',
+    unscheduled: 'Unscheduled Tasks',
+    tasks: 'tasks',
+    noScheduledTasks: 'No scheduled tasks found.',
+    noDatesSet: 'No dates set',
+    zoomLevels: {
+      day: 'Day',
+      week: 'Week',
+      month: 'Month',
     },
   },
   modals: {

@@ -150,6 +150,42 @@
   .header-actions {
     gap: var(--sp);
   }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    border-radius: var(--r);
+    margin-left: var(--sp);
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--r);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--dur);
+  }
+
+  .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .nav-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
   .divider {
     width: 1px;
     height: 24px;
@@ -183,6 +219,7 @@
   .kanban-container {
     flex: 1;
     display: flex;
+    align-items: stretch;
     gap: var(--sp-2);
     padding: var(--sp-2);
     overflow-x: auto;
@@ -211,6 +248,22 @@
   .filter-label {
     font: 600 0.85rem/1 inherit;
     color: var(--muted);
+  }
+
+  #kanbanView {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #ganttView {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .gantt-view {
+    height: calc(100vh - 60px);
   }
 }
 
@@ -339,7 +392,7 @@
     background: var(--surface);
     width: var(--col-w);
     min-width: var(--col-w);
-    max-height: 100%;
+    height: 100%;
     border-radius: var(--sp);
     padding: 12px;
     display: flex;
@@ -408,14 +461,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp);
-    min-height: 50px;
+    min-height: 20px;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: var(--sp-h);
     margin-bottom: var(--sp);
   }
-
-  /* Card */
   .card {
     background: var(--surface);
     border-radius: 6px;
@@ -632,7 +683,6 @@
     gap: var(--sp);
   }
 
-  /* Modal */
   .modal {
     display: none;
     position: fixed;
@@ -961,7 +1011,117 @@
     align-items: flex-end;
   }
 
-  /* Filter Panel */
+  .dependencies-section {
+    background: var(--sec);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px;
+  }
+
+  .dependencies-list {
+    margin-bottom: var(--sp);
+  }
+
+  .dependencies-list:empty + .add-dependency-form {
+    margin-top: 0;
+  }
+
+  .dependency-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp) 0;
+    border-bottom: 1px solid var(--ov);
+  }
+
+  .dependency-item:last-child {
+    border-bottom: none;
+  }
+
+  .dependency-info {
+    display: flex;
+    align-items: center;
+    gap: var(--sp);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dependency-priority {
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .dependency-priority.priority-high {
+    background: var(--p-hi);
+  }
+
+  .dependency-priority.priority-medium {
+    background: var(--p-md);
+  }
+
+  .dependency-priority.priority-low {
+    background: var(--p-lo);
+  }
+
+  .dependency-priority.priority-none {
+    background: var(--ov-h);
+  }
+
+  .dependency-title {
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dependency-column {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--ov);
+    padding: 2px 6px;
+    border-radius: var(--r);
+    flex-shrink: 0;
+  }
+
+  .dependency-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--err);
+    font-size: 0.85rem;
+    padding: var(--sp-h);
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity var(--dur);
+  }
+
+  .dependency-remove-btn:hover {
+    opacity: 1;
+  }
+
+  .no-dependencies {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: center;
+    padding: var(--sp);
+  }
+
+  .add-dependency-form {
+    display: flex;
+    gap: var(--sp);
+    align-items: center;
+    margin-top: var(--sp);
+    padding-top: var(--sp);
+    border-top: 1px solid var(--ov);
+  }
+
+  .add-dependency-form .priority-select {
+    flex: 1;
+  }
+
   .advanced-filter-panel {
     padding: 0;
     margin-bottom: var(--sp);
@@ -1272,7 +1432,6 @@
     background: var(--item-h);
   }
 
-  /* Options / Randomizer */
   .options-section {
     margin-bottom: var(--sp-3);
   }
@@ -1594,5 +1753,11 @@
   .card-detail-row {
     flex-direction: column;
     gap: var(--sp);
+  }
+
+  .header-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
 }
