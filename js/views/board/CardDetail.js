@@ -38,14 +38,13 @@ export default class CardDetail {
   }
 
   getFormValues() {
-    const fd = new FormData(this.ui.cardDetailForm);
     return {
-      text: fd.get('cardTitleInput'),
-      description: fd.get('cardDescriptionInput'),
-      startDate: fd.get('cardStartDateInput') || null,
-      dueDate: fd.get('cardDueDateInput') || null,
-      effort: Number(fd.get('cardEffortInput')) || 0,
-      priority: fd.get('cardPriorityInput'),
+      text: this.ui.cardTitleInput.value,
+      description: this.ui.cardDescriptionInput.value,
+      startDate: this.ui.cardStartDateInput.value || null,
+      dueDate: this.ui.cardDueDateInput.value || null,
+      effort: Number(this.ui.cardEffortInput.value) || 0,
+      priority: this.ui.cardPriorityInput.value,
       completed: this.ui.cardCompletedInput.checked,
       labels: this.ctx.labels,
     };

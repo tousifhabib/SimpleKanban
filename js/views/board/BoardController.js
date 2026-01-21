@@ -130,16 +130,18 @@ export default class BoardController {
   }
 
   setupEvents() {
+    const controller = this;
+
     const commandContext = {
       ui: this.ui,
       modals: this.modals,
       fm: this.fm,
       picker: this.picker,
       get cardCtx() {
-        return this.cardCtrl.cardCtx;
+        return controller.cardCtrl.cardCtx;
       },
       get picked() {
-        return this.picked;
+        return controller.picked;
       },
       getFormValues: () => this.cardCtrl.getFormValues(),
       openCard: (id, col) => this.cardCtrl.open(id, col),
