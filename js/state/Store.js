@@ -12,6 +12,17 @@ import {
 const STORAGE_KEY = 'flexibleKanbanState';
 const SAVE_DEBOUNCE_MS = 150;
 
+const unproxy = (val) => {
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) return val.map(unproxy);
+  if (val && typeof val === 'object') {
+    return Object.fromEntries(
+      Object.entries(val).map(([k, v]) => [k, unproxy(v)])
+    );
+  }
+  return val;
+};
+
 const createCard = (data = {}) => ({
   text: '',
   description: '',
@@ -33,10 +44,14 @@ const createDeepProxy = (target, onChange) => {
   const handler = {
     get(t, p, r) {
       const v = Reflect.get(t, p, r);
-      if (v && typeof v === 'object') return new Proxy(v, handler);
+      if (v && typeof v === 'object' && !(v instanceof Date)) {
+        return new Proxy(v, handler);
+      }
       return v;
     },
     set(t, p, v) {
+      const old = t[p];
+      if (old === v) return true;
       const success = Reflect.set(t, p, v);
       if (success) onChange();
       return success;
@@ -101,10 +116,13 @@ class Store {
       this.#pendingNotify = true;
       return;
     }
+
     queueMicrotask(() => this.#observable.notify());
+
     clearTimeout(this.#saveDebounceId);
     this.#saveDebounceId = setTimeout(() => {
-      saveToLocalStorage(STORAGE_KEY, structuredClone(this.#state));
+      const snapshot = unproxy(this.#state);
+      saveToLocalStorage(STORAGE_KEY, snapshot);
     }, SAVE_DEBOUNCE_MS);
   }
 
@@ -144,9 +162,11 @@ class Store {
   get state() {
     return this.#state;
   }
+
   get activeBoard() {
     return this.#board();
   }
+
   get activeBoardId() {
     return this.#state.activeBoardId;
   }
@@ -154,6 +174,7 @@ class Store {
   subscribe(fn) {
     return this.#observable.subscribe(fn);
   }
+
   getState() {
     return this.#board();
   }
@@ -167,6 +188,7 @@ class Store {
   getLabels() {
     return this.#board()?.labels ?? [];
   }
+
   getActiveBoardId() {
     return this.#state.activeBoardId;
   }
@@ -190,8 +212,9 @@ class Store {
   }
 
   setActiveBoard(id) {
-    if (this.#state.boards.some((b) => b?.id === id))
+    if (this.#state.boards.some((b) => b?.id === id)) {
       this.#state.activeBoardId = id;
+    }
   }
 
   createBoard(name, type = DEFAULT_TEMPLATE) {
@@ -227,7 +250,8 @@ class Store {
 
   importData(json) {
     try {
-      saveToLocalStorage(STORAGE_KEY, JSON.parse(json));
+      const data = JSON.parse(json);
+      saveToLocalStorage(STORAGE_KEY, data);
       location.reload();
       return true;
     } catch {
@@ -293,8 +317,9 @@ class Store {
 
   toggleCardComplete(colId, id) {
     const res = this.getCard(id);
-    if (res)
+    if (res) {
       this.updateCardDetails(colId, id, { completed: !res.card.completed });
+    }
   }
 
   removeCard(colId, id) {
@@ -317,8 +342,9 @@ class Store {
       const original = col?.cards.find((c) => c.id === id);
       if (!original) return null;
 
+      const rawData = unproxy(original);
       const clone = createCard({
-        ...structuredClone(original),
+        ...rawData,
         id: undefined,
         logs: [],
         dependencies: [],
