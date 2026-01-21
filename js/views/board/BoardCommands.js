@@ -134,9 +134,10 @@ export const createBoardCommands = (ctx) => {
     [
       'goToCardBtn',
       () => {
-        if (ctx.picked) {
+        const picked = ctx.picked;
+        if (picked) {
           modals.close('randomPicker');
-          openCard(ctx.picked.card.id, ctx.picked.column.id);
+          openCard(picked.card.id, picked.column.id);
         }
       },
     ],

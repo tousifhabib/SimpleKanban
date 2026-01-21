@@ -143,7 +143,6 @@ export default class BoardController {
       get picked() {
         return controller.picked;
       },
-      getFormValues: () => this.cardCtrl.getFormValues(),
       openCard: (id, col) => this.cardCtrl.open(id, col),
       renderLabels: () => this.renderLabels(),
       renderLogs: (logs) => this.cardCtrl.renderLogs(logs),
