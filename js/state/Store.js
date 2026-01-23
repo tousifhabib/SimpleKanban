@@ -326,8 +326,8 @@ class Store {
     this.#mutate((b) => {
       b.columns.forEach((col) =>
         col.cards.forEach((card) => {
-          if (card.dependencies?.includes(id)) {
-            card.dependencies = card.dependencies.filter((d) => d !== id);
+          if (card.dependencies?.some((d) => d.id === id)) {
+            card.dependencies = card.dependencies.filter((d) => d.id !== id);
           }
         })
       );
@@ -373,11 +373,15 @@ class Store {
     });
   }
 
-  addCardDependency(colId, cardId, depId) {
+  addCardDependency(colId, cardId, depId, type = 'FS') {
     const res = this.getCard(cardId);
     if (res) {
+      const current = (res.card.dependencies || []).filter(
+        (d) => d.id !== depId
+      );
+
       this.updateCardDetails(colId, cardId, {
-        dependencies: [...new Set([...(res.card.dependencies || []), depId])],
+        dependencies: [...current, { id: depId, type }],
       });
     }
   }
@@ -386,7 +390,9 @@ class Store {
     const res = this.getCard(cardId);
     if (res) {
       this.updateCardDetails(colId, cardId, {
-        dependencies: (res.card.dependencies || []).filter((d) => d !== depId),
+        dependencies: (res.card.dependencies || []).filter(
+          (d) => d.id !== depId
+        ),
       });
     }
   }

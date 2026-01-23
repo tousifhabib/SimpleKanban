@@ -115,8 +115,8 @@ export default class CardDetail {
     );
   }
 
-  renderDependencies(depIds = []) {
-    if (!depIds.length) {
+  renderDependencies(deps = []) {
+    if (!deps.length) {
       this.ui.dependenciesList.replaceChildren(
         el(
           'div',
@@ -127,16 +127,32 @@ export default class CardDetail {
       return;
     }
     this.ui.dependenciesList.replaceChildren(
-      ...depIds
-        .map((id) => {
-          const data = store.getCard(id);
+      ...deps
+        .map((dep) => {
+          const data = store.getCard(dep.id);
           if (!data) return null;
+
           return el(
             'div',
             { class: 'dependency-item' },
             el(
               'div',
               { class: 'dependency-info' },
+              el(
+                'span',
+                {
+                  style: {
+                    background: '#e2e8f0',
+                    color: '#475569',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    marginRight: '8px',
+                  },
+                },
+                dep.type
+              ),
               el('span', {
                 class: `dependency-priority priority-${data.card.priority}`,
               }),
@@ -158,12 +174,16 @@ export default class CardDetail {
   }
 
   populateDependencySelect() {
-    const current = store.getCard(this.ctx.cardId)?.card.dependencies || [];
+    const currentDeps = store.getCard(this.ctx.cardId)?.card.dependencies || [];
+    const currentDepIds = currentDeps.map((d) => d.id);
+
     const available = store
       .getAllCards()
       .filter(
-        (i) => i.card.id !== this.ctx.cardId && !current.includes(i.card.id)
+        (i) =>
+          i.card.id !== this.ctx.cardId && !currentDepIds.includes(i.card.id)
       );
+
     this.ui.dependencySelect.replaceChildren(
       this.ui.dependencySelect.options[0],
       ...available.map((i) =>

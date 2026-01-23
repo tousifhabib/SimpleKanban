@@ -221,41 +221,57 @@ export const renderDependencyLines = (layout, calculatePosition, range) => {
   layout.groups.forEach((g) => g.tasks.forEach((t) => taskMap.set(t.id, t)));
 
   const ROW_HEIGHT = 48;
-  const BEND = 12;
-  const ARROW_OFFSET = 28;
+  const BEND = 10;
+  const ARROW_GAP = 20;
   const validColor = '#64748b';
   const invalidColor = '#ef4444';
 
   const lines = [];
 
   taskMap.forEach((task) => {
-    task.dependencies.forEach((depId) => {
-      const depTask = taskMap.get(depId);
+    task.dependencies.forEach((dep) => {
+      const depTask = taskMap.get(dep.id);
       if (!depTask) return;
 
       const pos = calculatePosition(task, range);
       const depPos = calculatePosition(depTask, range);
 
       if (pos.visible && depPos.visible) {
-        const startX = depPos.left + depPos.width;
+        let startX, endX, isValid;
         const startY = depTask.y + 24;
-        const endX = pos.left;
         const endY = task.y + 24;
-
-        const isForward = endX > startX + BEND * 2;
         let d = '';
 
-        if (isForward) {
-          const midX = startX + (endX - startX) / 2;
-          d = `M ${startX} ${startY} H ${midX} V ${endY} H ${endX}`;
+        if (dep.type === 'SS') {
+          startX = depPos.left;
+          endX = pos.left;
+          isValid = depTask.startDate <= task.startDate;
+
+          if (startX - BEND > endX - ARROW_GAP) {
+            const leftX = endX - ARROW_GAP;
+            d = `M ${startX} ${startY} H ${leftX} V ${endY} H ${endX}`;
+          } else {
+            d = `M ${startX} ${startY} H ${startX - BEND} V ${endY} H ${endX}`;
+          }
         } else {
-          const isTargetAbove = endY < startY;
-          const gapY = isTargetAbove
-            ? startY - ROW_HEIGHT / 2
-            : startY + ROW_HEIGHT / 2;
-          d = `M ${startX} ${startY} H ${startX + BEND} V ${gapY} H ${endX - ARROW_OFFSET} V ${endY} H ${endX}`;
+          startX = depPos.left + depPos.width;
+          endX = pos.left;
+          isValid = depTask.endDate <= task.startDate;
+
+          if (endX > startX + BEND * 2) {
+            const midX = startX + (endX - startX) / 2;
+            d = `M ${startX} ${startY} H ${midX} V ${endY} H ${endX}`;
+          } else {
+            const isTargetAbove = endY < startY;
+            const gapY = isTargetAbove
+              ? startY - ROW_HEIGHT / 2
+              : startY + ROW_HEIGHT / 2;
+
+            d = `M ${startX} ${startY} H ${startX + BEND} V ${gapY} H ${endX - ARROW_GAP} V ${endY} H ${endX}`;
+          }
         }
-        lines.push({ d, valid: depTask.endDate <= task.startDate });
+
+        lines.push({ d, valid: isValid });
       }
     });
   });

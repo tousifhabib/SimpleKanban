@@ -412,10 +412,22 @@
             <div class="dependencies-section">
               <div id="dependenciesList" class="dependencies-list"></div>
               <div class="add-dependency-form">
-                <select id="dependencySelect" class="priority-select">
+                <select
+                  id="dependencySelect"
+                  class="priority-select"
+                  style="flex: 2"
+                >
                   <option value="" data-i18n="card.detail.selectTask">
                     Select a task...
                   </option>
+                </select>
+                <select
+                  id="dependencyTypeSelect"
+                  class="priority-select"
+                  style="flex: 1; margin-left: 8px"
+                >
+                  <option value="FS">FS (Finish to Start)</option>
+                  <option value="SS">SS (Start to Start)</option>
                 </select>
                 <button
                   type="button"
