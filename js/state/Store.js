@@ -1,77 +1,83 @@
 import { createObservable } from '../core/Observable.js';
-import Repository from '../data/Repository.js';
-import CardEntity from '../entities/CardEntity.js';
+import {
+  loadFromLocalStorage,
+  saveToLocalStorage,
+} from '../data/LocalStorage.js';
 import { generateId } from '../utils/idUtils.js';
 import {
   createBoardFromTemplate,
   DEFAULT_TEMPLATE,
 } from '../config/boardTemplates.js';
 
-const serialize = (obj) => JSON.parse(JSON.stringify(obj));
+const STORAGE_KEY = 'flexibleKanbanState';
+const SAVE_DEBOUNCE_MS = 150;
+
+const unproxy = (val) => {
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) return val.map(unproxy);
+  if (val && typeof val === 'object') {
+    return Object.fromEntries(
+      Object.entries(val).map(([k, v]) => [k, unproxy(v)])
+    );
+  }
+  return val;
+};
+
+const createCard = (data = {}) => ({
+  text: '',
+  description: '',
+  startDate: null,
+  dueDate: null,
+  completed: false,
+  priority: 'none',
+  labels: [],
+  logs: [],
+  dependencies: [],
+  ...data,
+  id: data.id || generateId('card'),
+  effort: Number(data.effort) || 0,
+  createdAt: data.createdAt || new Date().toISOString(),
+  updatedAt: data.updatedAt || new Date().toISOString(),
+});
 
 const createDeepProxy = (target, onChange) => {
-  const proxyCache = new WeakMap();
-  const IS_PROXY = Symbol('isProxy');
-
-  const proxify = (obj) => {
-    if (obj === null || typeof obj !== 'object') return obj;
-
-    if (obj[IS_PROXY]) return obj;
-
-    if (proxyCache.has(obj)) return proxyCache.get(obj);
-
-    for (const key of Object.keys(obj)) {
-      const value = obj[key];
-      if (value !== null && typeof value === 'object') {
-        obj[key] = proxify(value);
+  const handler = {
+    get(t, p, r) {
+      const v = Reflect.get(t, p, r);
+      if (v && typeof v === 'object' && !(v instanceof Date)) {
+        return new Proxy(v, handler);
       }
-    }
-
-    const proxy = new Proxy(obj, {
-      get(t, p, receiver) {
-        if (p === IS_PROXY) return true;
-        return Reflect.get(t, p, receiver);
-      },
-      set(t, p, v) {
-        if (v !== null && typeof v === 'object' && !proxyCache.has(v)) {
-          t[p] = proxify(v);
-        } else {
-          t[p] = v;
-        }
-        onChange();
-        return true;
-      },
-      deleteProperty(t, p) {
-        delete t[p];
-        onChange();
-        return true;
-      },
-    });
-
-    proxyCache.set(obj, proxy);
-    return proxy;
+      return v;
+    },
+    set(t, p, v) {
+      const old = t[p];
+      if (old === v) return true;
+      const success = Reflect.set(t, p, v);
+      if (success) onChange();
+      return success;
+    },
+    deleteProperty(t, p) {
+      const success = Reflect.deleteProperty(t, p);
+      if (success) onChange();
+      return success;
+    },
   };
-
-  return proxify(target);
+  return new Proxy(target, handler);
 };
 
 class Store {
-  #repo = new Repository();
   #observable = createObservable();
   #state;
   #batchDepth = 0;
   #pendingNotify = false;
   #saveDebounceId = null;
-  #notifyScheduled = false;
-
-  static SAVE_DEBOUNCE_MS = 150;
 
   constructor() {
     this.#state = createDeepProxy(this.#load(), () => this.#scheduleUpdate());
   }
 
   #load() {
-    const data = this.#repo.load();
+    const data = loadFromLocalStorage(STORAGE_KEY);
     if (!data) return this.#createDefault();
 
     const boards = (
@@ -89,7 +95,7 @@ class Store {
       ...b,
       columns: b.columns.map((c) => ({
         ...c,
-        cards: c.cards.map((k) => new CardEntity(k)),
+        cards: c.cards.map((k) => createCard(k)),
       })),
     }));
 
@@ -110,32 +116,14 @@ class Store {
       this.#pendingNotify = true;
       return;
     }
-    this.#queueNotify();
-    this.#debounceSave();
-  }
 
-  #queueNotify() {
-    if (this.#notifyScheduled) return;
-    this.#notifyScheduled = true;
-    queueMicrotask(() => {
-      this.#notifyScheduled = false;
-      this.#observable.notify();
-    });
-  }
+    queueMicrotask(() => this.#observable.notify());
 
-  #debounceSave() {
     clearTimeout(this.#saveDebounceId);
     this.#saveDebounceId = setTimeout(() => {
-      this.#repo.save(serialize(this.#state));
-    }, Store.SAVE_DEBOUNCE_MS);
-  }
-
-  #flush() {
-    if (this.#pendingNotify) {
-      this.#pendingNotify = false;
-      this.#queueNotify();
-      this.#debounceSave();
-    }
+      const snapshot = unproxy(this.#state);
+      saveToLocalStorage(STORAGE_KEY, snapshot);
+    }, SAVE_DEBOUNCE_MS);
   }
 
   #batch(fn) {
@@ -144,8 +132,9 @@ class Store {
       return fn();
     } finally {
       this.#batchDepth--;
-      if (this.#batchDepth === 0) {
-        this.#flush();
+      if (this.#batchDepth === 0 && this.#pendingNotify) {
+        this.#pendingNotify = false;
+        this.#scheduleUpdate();
       }
     }
   }
@@ -249,7 +238,6 @@ class Store {
 
   deleteBoard(id) {
     if (this.#state.boards.length <= 1) return false;
-
     return this.#batch(() => {
       if (this.#state.activeBoardId === id) {
         this.#state.activeBoardId = this.#state.boards.find(
@@ -262,7 +250,8 @@ class Store {
 
   importData(json) {
     try {
-      this.#repo.save(JSON.parse(json));
+      const data = JSON.parse(json);
+      saveToLocalStorage(STORAGE_KEY, data);
       location.reload();
       return true;
     } catch {
@@ -284,12 +273,12 @@ class Store {
   removeLabel(id) {
     this.#mutate((b) => {
       this.#remove(b.labels, id);
-      for (const col of b.columns) {
-        for (const card of col.cards) {
+      b.columns.forEach((col) =>
+        col.cards.forEach((card) => {
           const idx = card.labels.indexOf(id);
           if (idx > -1) card.labels.splice(idx, 1);
-        }
-      }
+        })
+      );
     });
   }
 
@@ -314,36 +303,34 @@ class Store {
 
   addCard(colId, text) {
     const col = this.#col(colId);
-    if (col) col.cards.push(new CardEntity({ text }));
+    if (col) col.cards.push(createCard({ text }));
   }
 
   updateCardDetails(colId, id, updates) {
     const col = this.#col(colId);
     const card = col?.cards.find((x) => x.id === id);
     if (card) {
-      this.#batch(() => {
-        Object.assign(card, updates);
-        card.updatedAt = new Date().toISOString();
-      });
+      Object.assign(card, updates);
+      card.updatedAt = new Date().toISOString();
     }
   }
 
   toggleCardComplete(colId, id) {
-    const result = this.getCard(id);
-    if (result) {
-      this.updateCardDetails(colId, id, { completed: !result.card.completed });
+    const res = this.getCard(id);
+    if (res) {
+      this.updateCardDetails(colId, id, { completed: !res.card.completed });
     }
   }
 
   removeCard(colId, id) {
     this.#mutate((b) => {
-      for (const col of b.columns) {
-        for (const card of col.cards) {
-          if (card.dependencies?.includes(id)) {
-            card.dependencies = card.dependencies.filter((d) => d !== id);
+      b.columns.forEach((col) =>
+        col.cards.forEach((card) => {
+          if (card.dependencies?.some((d) => d.id === id)) {
+            card.dependencies = card.dependencies.filter((d) => d.id !== id);
           }
-        }
-      }
+        })
+      );
       const col = this.#col(colId);
       if (col) this.#remove(col.cards, id);
     });
@@ -355,8 +342,9 @@ class Store {
       const original = col?.cards.find((c) => c.id === id);
       if (!original) return null;
 
-      const clone = new CardEntity({
-        ...serialize(original),
+      const rawData = unproxy(original);
+      const clone = createCard({
+        ...rawData,
         id: undefined,
         logs: [],
         dependencies: [],
@@ -364,53 +352,56 @@ class Store {
         updatedAt: undefined,
       });
 
-      const idx = col.cards.indexOf(original);
-      col.cards.splice(idx + 1, 0, clone);
+      col.cards.splice(col.cards.indexOf(original) + 1, 0, clone);
       return clone;
     });
   }
 
   addCardLog(colId, id, text) {
-    const result = this.getCard(id);
-    if (!result) return;
-
-    const col = this.#col(colId);
+    const res = this.getCard(id);
+    if (!res) return;
     this.updateCardDetails(colId, id, {
       logs: [
-        ...(result.card.logs || []),
+        ...(res.card.logs || []),
         {
           id: generateId('log'),
           text,
-          columnTitle: col.title,
+          columnTitle: this.#col(colId).title,
           createdAt: new Date().toISOString(),
         },
       ],
     });
   }
 
-  addCardDependency(colId, cardId, depId) {
-    const result = this.getCard(cardId);
-    if (!result) return;
+  addCardDependency(colId, cardId, depId, type = 'FS') {
+    const res = this.getCard(cardId);
+    if (res) {
+      const current = (res.card.dependencies || []).filter(
+        (d) => d.id !== depId
+      );
 
-    this.updateCardDetails(colId, cardId, {
-      dependencies: [...new Set([...(result.card.dependencies || []), depId])],
-    });
+      this.updateCardDetails(colId, cardId, {
+        dependencies: [...current, { id: depId, type }],
+      });
+    }
   }
 
   removeCardDependency(colId, cardId, depId) {
-    const result = this.getCard(cardId);
-    if (!result) return;
-
-    this.updateCardDetails(colId, cardId, {
-      dependencies: (result.card.dependencies || []).filter((d) => d !== depId),
-    });
+    const res = this.getCard(cardId);
+    if (res) {
+      this.updateCardDetails(colId, cardId, {
+        dependencies: (res.card.dependencies || []).filter(
+          (d) => d.id !== depId
+        ),
+      });
+    }
   }
 
   reorderColumns(ids) {
     this.#batch(() => {
-      const board = this.#board();
-      const map = new Map(board.columns.map((x) => [x.id, x]));
-      board.columns = ids.map((id) => map.get(id)).filter(Boolean);
+      const b = this.#board();
+      const map = new Map(b.columns.map((x) => [x.id, x]));
+      b.columns = ids.map((id) => map.get(id)).filter(Boolean);
     });
   }
 
@@ -428,13 +419,10 @@ class Store {
       const oldCol = this.#col(oldColId);
       const newCol = this.#col(newColId);
       if (!oldCol || !newCol) return;
-
       const card = this.#remove(oldCol.cards, id);
       if (!card) return;
-
       card.updatedAt = new Date().toISOString();
       newCol.cards.push(card);
-
       const map = new Map(newCol.cards.map((x) => [x.id, x]));
       newCol.cards = newOrder.map((cid) => map.get(cid)).filter(Boolean);
     });

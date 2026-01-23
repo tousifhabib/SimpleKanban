@@ -1,6 +1,6 @@
 import { store } from '../../state/Store.js';
 import { el } from '../../utils/domUtils.js';
-import ColumnView from './ColumnView.js';
+import { renderColumn } from './ColumnView.js';
 import DragDropManager from '../../managers/DragDropManager.js';
 import ModalManager from '../../managers/ModalManager.js';
 import FilterManager from '../../managers/FilterManager.js';
@@ -116,7 +116,6 @@ export default class BoardController {
         () => (this.picked = null),
       ],
     ];
-
     configs.forEach(([name, modalId, overlayId, formId, onReset]) =>
       this.modals.register(name, { modalId, overlayId, formId, onReset })
     );
@@ -131,14 +130,19 @@ export default class BoardController {
   }
 
   setupEvents() {
+    const controller = this;
+
     const commandContext = {
       ui: this.ui,
       modals: this.modals,
       fm: this.fm,
       picker: this.picker,
-      cardCtx: this.cardCtrl.cardCtx,
-      picked: this.picked,
-      getFormValues: () => this.cardCtrl.getFormValues(),
+      get cardCtx() {
+        return controller.cardCtrl.cardCtx;
+      },
+      get picked() {
+        return controller.picked;
+      },
       openCard: (id, col) => this.cardCtrl.open(id, col),
       renderLabels: () => this.renderLabels(),
       renderLogs: (logs) => this.cardCtrl.renderLogs(logs),
@@ -151,26 +155,17 @@ export default class BoardController {
       dupCard: (id, col) => this.dupCard(id, col),
     };
 
-    Object.defineProperty(commandContext, 'cardCtx', {
-      get: () => this.cardCtrl.cardCtx,
-    });
-    Object.defineProperty(commandContext, 'picked', { get: () => this.picked });
-
-    const commands = createBoardCommands(commandContext);
-    const formHandlers = createFormSubmitHandlers(this.ui, this.modals);
-
-    formHandlers.set('cardDetailForm', () => this.cardCtrl.save());
-
-    const uiBridge = Object.assign(Object.create(this.ui), {
-      onSwitchView: (v) => this.switchView(v),
-      onLabelToggle: (id, checked) => this.cardCtrl.toggleLabel(id, checked),
-    });
-
     setupBoardEvents({
-      ui: uiBridge,
+      ui: Object.assign(Object.create(this.ui), {
+        onSwitchView: (v) => this.switchView(v),
+        onLabelToggle: (id, c) => this.cardCtrl.toggleLabel(id, c),
+      }),
       modals: this.modals,
-      commands,
-      formHandlers,
+      commands: createBoardCommands(commandContext),
+      formHandlers: createFormSubmitHandlers(this.ui, this.modals).set(
+        'cardDetailForm',
+        () => this.cardCtrl.save()
+      ),
       openCard: (id, col) => this.cardCtrl.open(id, col),
       saveColTitle: (inp) => this.saveColTitle(inp),
     });
@@ -184,10 +179,10 @@ export default class BoardController {
     );
     store.getState()?.columns.forEach((col) => {
       this.ui.kanbanContainer.appendChild(
-        new ColumnView({
+        renderColumn({
           ...col,
           cards: this.fm.applyFilters(col.cards, store.getLabels()),
-        }).render()
+        })
       );
     });
   }

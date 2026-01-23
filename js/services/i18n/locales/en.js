@@ -50,6 +50,7 @@ export default {
       priority: 'Priority',
       description: 'Description',
       dependencies: 'Dependencies',
+      noDependencies: 'No dependencies',
       selectTask: 'Select a task...',
       addDependency: 'Add',
       workLog: 'Work Log',

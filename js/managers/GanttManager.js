@@ -1,4 +1,4 @@
-import { Observable } from '../core/Observable.js';
+import { createObservable } from '../core/Observable.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
   MS_DAY,
@@ -31,8 +31,17 @@ const ZOOM_CONFIG = {
   },
 };
 
-export default class GanttManager extends Observable() {
+export default class GanttManager {
+  observable = createObservable();
   zoom = ZOOM_LEVELS.WEEK;
+
+  subscribe(fn) {
+    return this.observable.subscribe(fn);
+  }
+
+  notify() {
+    this.observable.notify();
+  }
 
   setZoom(level) {
     if (ZOOM_CONFIG[level]) {

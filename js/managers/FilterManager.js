@@ -1,4 +1,4 @@
-import { Observable } from '../core/Observable.js';
+import { createObservable } from '../core/Observable.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
   toDate,
@@ -216,13 +216,21 @@ const CHIP_CONFIGS = [
   },
 ];
 
-export default class FilterManager extends Observable() {
+export default class FilterManager {
   constructor() {
-    super();
+    this.observable = createObservable();
     this.filters = structuredClone(DEFAULT_STATE);
     this.presets = JSON.parse(
       localStorage.getItem('kanban-filter-presets') || '[]'
     );
+  }
+
+  subscribe(fn) {
+    return this.observable.subscribe(fn);
+  }
+
+  notify(data) {
+    this.observable.notify(data);
   }
 
   getFilters = () => this.filters;

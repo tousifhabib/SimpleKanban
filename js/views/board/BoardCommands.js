@@ -86,8 +86,17 @@ export const createBoardCommands = (ctx) => {
       'addDependencyBtn',
       () => {
         const depId = ui.dependencySelect.value;
+        const depType = ui.dependencyTypeSelect.value;
+
         if (!depId) return;
-        store.addCardDependency(ctx.cardCtx.colId, ctx.cardCtx.cardId, depId);
+
+        store.addCardDependency(
+          ctx.cardCtx.colId,
+          ctx.cardCtx.cardId,
+          depId,
+          depType
+        );
+
         const card = store.getCard(ctx.cardCtx.cardId).card;
         renderDependencies(card.dependencies);
         populateDependencySelect();
@@ -134,9 +143,10 @@ export const createBoardCommands = (ctx) => {
     [
       'goToCardBtn',
       () => {
-        if (ctx.picked) {
+        const picked = ctx.picked;
+        if (picked) {
           modals.close('randomPicker');
-          openCard(ctx.picked.card.id, ctx.picked.column.id);
+          openCard(picked.card.id, picked.column.id);
         }
       },
     ],

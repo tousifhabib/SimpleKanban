@@ -18,6 +18,7 @@ export default class FilterPanel {
     this.labels = labels;
     this.onFilterChange = onFilterChange;
     this.state = { expanded: false };
+    this.container.className = 'advanced-filter-panel';
     this.init();
   }
 
@@ -27,35 +28,30 @@ export default class FilterPanel {
   }
 
   init() {
-    this.container.className = 'advanced-filter-panel';
     this.render();
     this.fm.subscribe(() => {
       this.syncUI();
-      this.renderChips();
-      this.updateBadge();
       this.onFilterChange(this.fm.getFilters());
     });
     i18n.subscribe(() => this.render());
+    this.bindEvents();
   }
 
   t = (k, p) => i18n.t(k, p);
 
   render() {
-    const f = this.fm.getFilters();
-
     this.container.replaceChildren(
-      this.renderQuickBar(f),
+      this.renderQuickBar(),
       el('div', { class: 'filter-chips-container', hidden: true }),
       el('div', { class: 'filter-advanced-panel', hidden: true })
     );
-
     this.renderAdvanced();
     this.renderChips();
     this.updateBadge();
-    this.bindEvents();
   }
 
-  renderQuickBar(f) {
+  renderQuickBar() {
+    const f = this.fm.getFilters();
     return el(
       'div',
       { class: 'filter-quick-bar' },
@@ -72,11 +68,7 @@ export default class FilterPanel {
         }),
         el(
           'button',
-          {
-            class: 'search-options-btn',
-            dataset: { toggle: 'searchOpts' },
-            title: this.t('filters.search.matchType'),
-          },
+          { class: 'search-options-btn', dataset: { toggle: 'searchOpts' } },
           '⚙️'
         ),
         this.renderSearchDropdown(f)
@@ -86,20 +78,12 @@ export default class FilterPanel {
         { class: 'filter-quick-actions' },
         el(
           'button',
-          {
-            class: 'filter-toggle-btn',
-            dataset: { toggle: 'expanded' },
-            title: this.t('filters.advancedFilters'),
-          },
-          el('span', { class: 'filter-icon' }, '🎛️')
+          { class: 'filter-toggle-btn', dataset: { toggle: 'expanded' } },
+          '🎛️'
         ),
         el(
           'button',
-          {
-            class: 'filter-presets-btn',
-            dataset: { toggle: 'presets' },
-            title: this.t('filters.presets'),
-          },
+          { class: 'filter-presets-btn', dataset: { toggle: 'presets' } },
           '📋'
         ),
         el(
@@ -182,7 +166,7 @@ export default class FilterPanel {
         el(
           'button',
           { class: 'preset-save-btn', dataset: { action: 'savePreset' } },
-          `💾 ${this.t('filters.savePreset')}`
+          `💾`
         )
       ),
       el('div', { class: 'presets-list' })
@@ -193,7 +177,6 @@ export default class FilterPanel {
     const f = this.fm.getFilters();
     const panel = this.container.querySelector('.filter-advanced-panel');
     if (!panel) return;
-
     panel.hidden = !this.state.expanded;
     this.container
       .querySelector('[data-toggle="expanded"]')
@@ -202,31 +185,31 @@ export default class FilterPanel {
     const sections = [
       {
         title: `🏷️ ${this.t('filters.sections.labels')}`,
-        content: this.renderLabelSection(f),
+        content: this.renderLabels(f),
       },
       {
         title: `🚩 ${this.t('filters.sections.priority')}`,
-        content: this.renderPrioritySection(f),
+        content: this.renderPriorities(f),
       },
       {
         title: `🔴 ${this.t('filters.sections.dueDate')}`,
-        content: this.renderDueDateSection(f),
+        content: this.renderDate(f, 'due'),
       },
       {
         title: `🟢 ${this.t('filters.sections.startDate')}`,
-        content: this.renderStartDateSection(f),
+        content: this.renderDate(f, 'start'),
       },
       {
         title: `✅ ${this.t('filters.sections.status')}`,
-        content: this.renderStatusSection(f),
+        content: this.renderStatus(f),
       },
       {
         title: `⏱️ ${this.t('filters.sections.effort')}`,
-        content: this.renderEffortSection(f),
+        content: this.renderEffort(f),
       },
       {
         title: `📅 ${this.t('filters.sections.activity')}`,
-        content: this.renderAgingSection(f),
+        content: this.renderAging(f),
       },
     ];
 
@@ -246,7 +229,7 @@ export default class FilterPanel {
     );
   }
 
-  renderLabelSection(f) {
+  renderLabels(f) {
     return el(
       'div',
       {},
@@ -294,7 +277,7 @@ export default class FilterPanel {
     );
   }
 
-  renderPrioritySection(f) {
+  renderPriorities(f) {
     return el(
       'div',
       { class: 'filter-priority-options' },
@@ -314,66 +297,48 @@ export default class FilterPanel {
     );
   }
 
-  renderDueDateSection(f) {
+  renderDate(f, type) {
+    const k = type === 'due' ? 'dueDate' : 'startDate';
+    const hasStatus = type === 'due';
     return el(
       'div',
       {},
-      el(
-        'select',
-        { class: 'filter-select', dataset: { action: 'dueStatus' } },
-        ...Object.values(DUE_STATUS).map((s) =>
-          el(
-            'option',
-            { value: s, selected: f.dueDate.status === s },
-            this.t(`filters.dueStatus.${s}`)
+      hasStatus
+        ? el(
+            'select',
+            { class: 'filter-select', dataset: { action: 'dueStatus' } },
+            ...Object.values(DUE_STATUS).map((s) =>
+              el(
+                'option',
+                { value: s, selected: f[k].status === s },
+                this.t(`filters.dueStatus.${s}`)
+              )
+            )
           )
-        )
-      ),
+        : null,
       el(
         'div',
         { class: 'filter-date-range' },
         el('input', {
           type: 'date',
           class: 'filter-date-input',
-          dataset: { input: 'dueFrom' },
-          value: f.dueDate.from || '',
+          dataset: { input: `${type}From` },
+          value: f[k].from || '',
           placeholder: this.t('filters.range.from'),
         }),
         el('span', { class: 'date-range-separator' }, '→'),
         el('input', {
           type: 'date',
           class: 'filter-date-input',
-          dataset: { input: 'dueTo' },
-          value: f.dueDate.to || '',
+          dataset: { input: `${type}To` },
+          value: f[k].to || '',
           placeholder: this.t('filters.range.to'),
         })
       )
     );
   }
 
-  renderStartDateSection(f) {
-    return el(
-      'div',
-      { class: 'filter-date-range' },
-      el('input', {
-        type: 'date',
-        class: 'filter-date-input',
-        dataset: { input: 'startFrom' },
-        value: f.startDate.from || '',
-        placeholder: this.t('filters.range.from'),
-      }),
-      el('span', { class: 'date-range-separator' }, '→'),
-      el('input', {
-        type: 'date',
-        class: 'filter-date-input',
-        dataset: { input: 'startTo' },
-        value: f.startDate.to || '',
-        placeholder: this.t('filters.range.to'),
-      })
-    );
-  }
-
-  renderStatusSection(f) {
+  renderStatus(f) {
     return el(
       'div',
       { class: 'filter-status-options' },
@@ -394,7 +359,7 @@ export default class FilterPanel {
     );
   }
 
-  renderEffortSection(f) {
+  renderEffort(f) {
     return el(
       'div',
       { class: 'filter-effort-range' },
@@ -420,7 +385,7 @@ export default class FilterPanel {
     );
   }
 
-  renderAgingSection(f) {
+  renderAging(f) {
     return el(
       'select',
       { class: 'filter-select', dataset: { action: 'aging' } },
@@ -487,28 +452,24 @@ export default class FilterPanel {
   }
 
   updateBadge() {
-    const count = this.fm.getActiveFilterCount();
-    const clear = this.container.querySelector('.filter-clear-btn');
-    clear.hidden = !count;
+    this.container.querySelector('.filter-clear-btn').hidden =
+      !this.fm.getActiveFilterCount();
   }
 
   syncUI() {
-    if (!this.state.expanded) return;
-    const f = this.fm.getFilters();
+    if (this.state.expanded) this.renderAdvanced();
+    this.renderChips();
+    this.updateBadge();
     const searchInput = this.container.querySelector('[data-input="search"]');
     if (searchInput && document.activeElement !== searchInput)
-      searchInput.value = f.search.term ?? '';
-    this.renderAdvanced();
+      searchInput.value = this.fm.getFilters().search.term ?? '';
   }
 
   bindEvents() {
     let searchTimer;
-
     this.container.addEventListener('input', (e) => {
-      const t = e.target;
-      const val = t.value;
-      const act = t.dataset.input;
-
+      const { input } = e.target.dataset;
+      const val = e.target.value;
       const handlers = {
         search: () => {
           clearTimeout(searchTimer);
@@ -518,43 +479,37 @@ export default class FilterPanel {
         dueTo: () => this.fm.setDueDate({ to: val || null }),
         startFrom: () => this.fm.setStartDate({ from: val || null }),
         startTo: () => this.fm.setStartDate({ to: val || null }),
-        effortMin: () => this.updateEffort(),
-        effortMax: () => this.updateEffort(),
+        effortMin: () => this.fm.setEffort(val ? parseFloat(val) : null, null),
+        effortMax: () => this.fm.setEffort(null, val ? parseFloat(val) : null),
       };
-
-      handlers[act]?.();
+      handlers[input]?.();
     });
 
     this.container.addEventListener('click', (e) => {
-      const elem = e.target.closest('[data-action], [data-toggle]');
-      if (!elem) {
+      const el = e.target.closest('[data-action], [data-toggle]');
+      if (!el) {
         if (
           !e.target.closest(
             '.search-options-dropdown, .filter-presets-dropdown'
           )
-        ) {
+        )
           this.container
             .querySelectorAll(
               '.search-options-dropdown, .filter-presets-dropdown'
             )
             .forEach((d) => (d.hidden = true));
-        }
         return;
       }
-
-      if (elem.tagName === 'SELECT') return;
-
-      const { action, toggle } = elem.dataset;
-      const val = elem.value || elem.dataset.val;
+      const { action, toggle } = el.dataset;
 
       if (toggle) {
         if (toggle === 'expanded') {
           this.state.expanded = !this.state.expanded;
           this.renderAdvanced();
         } else {
-          const target = this.container.querySelector(`#dropdown-${toggle}`);
-          target.hidden = !target.hidden;
-          if (toggle === 'presets' && !target.hidden) this.renderPresets();
+          const t = this.container.querySelector(`#dropdown-${toggle}`);
+          t.hidden = !t.hidden;
+          if (toggle === 'presets' && !t.hidden) this.renderPresets();
         }
         return;
       }
@@ -564,8 +519,8 @@ export default class FilterPanel {
           this.fm.clearAll();
           this.container.querySelector('[data-input="search"]').value = '';
         },
-        toggleLabel: () => this.fm.toggleLabel(val),
-        labelMode: () => this.fm.setLabelMatchMode(val),
+        toggleLabel: () => this.fm.toggleLabel(el.value),
+        labelMode: () => this.fm.setLabelMatchMode(el.value),
         togglePriority: () =>
           this.fm.setPriorities(
             Array.from(
@@ -575,63 +530,49 @@ export default class FilterPanel {
             ).map((c) => c.value)
           ),
         savePreset: () => {
-          const name = prompt(this.t('filters.enterPresetName'));
-          if (name?.trim()) {
-            this.fm.createPreset(name.trim());
+          const n = prompt(this.t('filters.enterPresetName'));
+          if (n?.trim()) {
+            this.fm.createPreset(n.trim());
             this.renderPresets();
           }
         },
-        applyPreset: () => this.fm.applyPreset(elem.dataset.id),
+        applyPreset: () => this.fm.applyPreset(el.dataset.id),
         deletePreset: () => {
           if (confirm(this.t('filters.deletePreset'))) {
-            this.fm.deletePreset(elem.dataset.id);
+            this.fm.deletePreset(el.dataset.id);
             this.renderPresets();
           }
         },
       };
-
       actions[action]?.();
     });
 
     this.container.addEventListener('change', (e) => {
       const t = e.target;
-      const { action } = t.dataset;
-
-      const handlers = {
-        dueStatus: () => this.fm.setDueDate({ status: t.value }),
-        aging: () => this.fm.setAging(t.value),
-        completion: () => this.fm.setCompletion(t.value),
-        searchField: () => this.updateSearchOpts(),
-        searchOp: () => this.updateSearchOpts(),
-        searchCase: () => this.updateSearchOpts(),
-      };
-
-      handlers[action]?.();
+      if (t.dataset.action === 'dueStatus')
+        this.fm.setDueDate({ status: t.value });
+      else if (t.dataset.action === 'aging') this.fm.setAging(t.value);
+      else if (t.dataset.action === 'completion')
+        this.fm.setCompletion(t.value);
+      else if (
+        ['searchField', 'searchOp', 'searchCase'].includes(t.dataset.action)
+      ) {
+        this.fm.setSearch(
+          this.container.querySelector('[data-input="search"]').value.trim(),
+          {
+            fields: Array.from(
+              this.container.querySelectorAll(
+                '[data-action="searchField"]:checked'
+              )
+            ).map((c) => c.value),
+            operator: this.container.querySelector('[data-action="searchOp"]')
+              .value,
+            caseSensitive: this.container.querySelector(
+              '[data-action="searchCase"]'
+            ).checked,
+          }
+        );
+      }
     });
-  }
-
-  updateEffort() {
-    const min = this.container.querySelector('[data-input="effortMin"]').value;
-    const max = this.container.querySelector('[data-input="effortMax"]').value;
-    this.fm.setEffort(
-      min ? parseFloat(min) : null,
-      max ? parseFloat(max) : null
-    );
-  }
-
-  updateSearchOpts() {
-    const fields = Array.from(
-      this.container.querySelectorAll('[data-action="searchField"]:checked')
-    ).map((c) => c.value);
-    const operator = this.container.querySelector(
-      '[data-action="searchOp"]'
-    ).value;
-    const caseSensitive = this.container.querySelector(
-      '[data-action="searchCase"]'
-    ).checked;
-    this.fm.setSearch(
-      this.container.querySelector('[data-input="search"]').value.trim(),
-      { fields, operator, caseSensitive }
-    );
   }
 }
