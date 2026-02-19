@@ -7,8 +7,10 @@ export const el = (tag, props = {}, ...children) => {
       node.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === 'dataset') Object.assign(node.dataset, v);
     else if (k === 'style') Object.assign(node.style, v);
-    else if (k === 'class') node.className = v;
-    else node[k] = v;
+    else if (k === 'class' || k === 'className') node.className = v;
+    else if (k.includes('-') || ['role', 'for', 'accept'].includes(k)) {
+      node.setAttribute(k, v === true ? '' : v);
+    } else node[k] = v;
   });
 
   node.append(...children.flat().filter((c) => c != null && c !== false));
