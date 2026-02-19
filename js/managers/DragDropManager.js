@@ -7,6 +7,7 @@ import { performFlipAnimation } from '../utils/animUtils.js';
 
 const DEBUG_RATIO = 0.7;
 const SWAP_THRESHOLD = 0.025;
+const ENABLE_DEBUG_BOXES = false;
 
 export default class DragDropManager {
   constructor(container, callbacks = {}) {
@@ -72,14 +73,22 @@ export default class DragDropManager {
       element.dataset.cardId || element.dataset.columnId
     );
 
-    document
-      .querySelectorAll(type === 'card' ? '.card' : '.column')
-      .forEach((el) => addDebugInnerBoxToElement(el, DEBUG_RATIO));
+    if (ENABLE_DEBUG_BOXES) {
+      document
+        .querySelectorAll(type === 'card' ? '.card' : '.column')
+        .forEach((el) => addDebugInnerBoxToElement(el, DEBUG_RATIO));
+    }
   }
 
   handleDragEnd() {
     if (!this.dragState?.active) return;
     this.dragState.element.classList.remove('dragging');
+
+    if (ENABLE_DEBUG_BOXES) {
+      document
+        .querySelectorAll('.debug-inner-box')
+        .forEach((el) => el.remove());
+    }
     this.dragState = null;
   }
 
@@ -125,6 +134,11 @@ export default class DragDropManager {
       }
     }
 
+    if (ENABLE_DEBUG_BOXES) {
+      document
+        .querySelectorAll('.debug-inner-box')
+        .forEach((el) => el.remove());
+    }
     this.dragState = null;
   }
 
@@ -203,8 +217,12 @@ export default class DragDropManager {
         ghostRect.top < target.innerRect.bottom &&
         ghostRect.bottom > target.innerRect.top;
 
-      const debugBox = target.element.querySelector('.debug-inner-box');
-      debugBox && (debugBox.style.borderColor = intersect ? 'yellow' : 'red');
+      if (ENABLE_DEBUG_BOXES) {
+        const debugBox = target.element.querySelector('.debug-inner-box');
+        if (debugBox) {
+          debugBox.style.borderColor = intersect ? 'green' : 'red';
+        }
+      }
 
       if (intersect && this.shouldSwap(ghostRect, target)) {
         this.performSwap(this.dragState.element, target.element);
