@@ -91,11 +91,12 @@ nana bhai, your board already has the core loop nailed (columns/cards CRUD + dra
 
 ### Engineering cleanups that unlock features
 
-These aren’t user features, but they make the above painless:
+Resolved by refactoring sprint 5 (see ARCHITECTURE.md):
 
-* **Centralize ID generation**: you have `store.generateId()` and also `utils.generateId()`. Pick one.
-* **Separate “UI state” vs “data state”**: data in `store`, UI in `BoardController` (filters, open modals, selected card).
-* **Debug overlays toggle**: right now `.cards` and `.column` have forced debug outlines in CSS. Wrap those in a `.debug` body class so you can turn it on/off.
+* ~~Centralize ID generation~~ — ids come from the `ports/ids.js` port, threaded through `env.fx`.
+* ~~Separate “UI state” vs “data state”~~ — board data in the board store, filter/UI state in `app/filterStore.js`, view-local drafts in closures.
+* ~~Debug overlays toggle~~ — the debug-box machinery was removed outright.
+* ~~Storage robustness~~ — corrupt localStorage JSON now degrades gracefully instead of crashing boot.
 
 ---
 

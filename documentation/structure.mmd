@@ -5,77 +5,101 @@ config:
   layout: dagre
 ---
 flowchart TB
- subgraph Orchestration["🧠 Orchestration"]
-        KB("BoardController.js<br>(Main Controller)")
+ subgraph Root["🌱 Composition Root"]
+        Index("index.js<br>(creates env, renders static DOM, starts app)")
   end
- subgraph ViewLayer["🎨 UI Components"]
-        FP("FilterPanel.js")
-        QF("QuickFilters.js")
-        Col("ColumnView.js")
-        CardView("CardView.js")
+ subgraph Shell["🐚 Imperative Shell — js/app/"]
+        App("createApp.js<br>(wiring + refresh loop)")
+        BS("boardStore.js<br>(boot → migrate → core + persist)")
+        FStore("filterStore.js")
+        BC("boardCommands.js<br>(intents → commands)")
+        BE("boardEvents.js<br>(event delegation)")
+        CDet("cardDetail.js")
+        FPan("filterPanel.js")
+        GV("ganttView.js")
+        DD("dragDrop.js")
+        RPk("randomPicker.js")
+        Mod("modals.js")
+        POpt("pickerOptions.js")
   end
- subgraph LogicLayer["⚙️ Logic & Managers"]
-        MM("ModalManager.js")
-        FM("FilterManager.js")
-        RPM("RandomPickerManager.js")
-        DDM("DragDropManager.js")
-        Store("Store.js<br>(Reactive Proxy)")
-        DragUtils("utils/dragUtils.js")
-        FlipAnim("utils/animUtils.js")
+ subgraph Ports["🔌 Ports — js/ports/ (IO-returning adapters)"]
+        Env("env.js<br>(capability dictionary + fx edge)")
   end
- subgraph DataLayer["💾 State & Persistence"]
-        Entity("CardEntity.js<br>(Domain Model)")
-        Repo("Repository.js")
-        LS("LocalStorage.js")
+ subgraph Effects["🎞️ Effect Language — js/effects/"]
+        Prog("programs.js<br>(boot / import / export / persist as Free data)")
+        BI("browserInterpreter.js")
   end
- subgraph Configs["🔧 Configuration"]
-        Templates("config/boardTemplates.js")
-        KBConfig("constants.js")
+ subgraph Core["⚙️ Runtimes — js/core/"]
+        CS("store.js<br>(pure reducers, coalesced notify, dev freeze)")
+        Obs("Observable.js · debounce.js · timers.js")
   end
-    Index("index.js<br>(Entry Point)") --> KB
-    KB -- Renders --> FP
-    FP -- Contains --> QF
-    KB -- Renders List --> Col
-    Col -- Renders List --> CardView
-    KB -- Instantiates --> MM & FM & RPM & DDM
-    FP -- Updates/Reads --> FM
-    QF -- Applies Presets --> FM
-    RPM -- Reads Stats --> Store
-    DDM -.-> DragUtils & FlipAnim
-    KB -- Subscribes (Observer) --> Store
-    KB -- Dispatches Actions --> Store
-    Store -- Manages --> Entity
-    Store -- Persists via --> Repo
-    Repo -- Raw I/O --> LS
-    CardView -- Reads Data --> Entity
-    Store -. Uses for Defaults .-> Templates
-    DDM -. Reads Constants .-> KBConfig
-    DDM -- Callbacks (onDrop) --> KB
-    KB -- Action: moveCard --> Store
-
-     KB:::controller
-     FP:::view
-     QF:::view
-     Col:::view
-     CardView:::view
-     MM:::manager
-     FM:::manager
-     RPM:::manager
-     DDM:::manager
-     Store:::state
-     DragUtils:::config
-     FlipAnim:::config
-     Entity:::model
-     Repo:::infra
-     LS:::infra
-     Templates:::config
-     KBConfig:::config
+ subgraph Domain["🧮 Functional Core — js/domain/ (pure, lint-enforced)"]
+        Board("board/*<br>(commands · transitions · selectors · lenses · migrate · templates)")
+        Filt("filters/*<br>(predicates · transitions · chips)")
+        Gantt("gantt/timeline.js")
+        Pick("picker/weights.js")
+        DragG("drag/geometry.js")
+        Dates("dates.js")
+        Trans("i18n/translate.js")
+  end
+ subgraph FP["λ FP Stdlib — js/fp/"]
+        Fp("maybe · result · io · task · free · trampoline · transformers<br>lens · match · arrays · memo · freeze · fn")
+  end
+ subgraph Views["🎨 Pure Views — js/views/ (data, ctx) → DOM"]
+        V("board/* · gantt/GanttRenderers · layout/* · modals/*")
+  end
+ subgraph I18n["🌐 services/i18n"]
+        Svc("createI18n + 12 locales")
+  end
+    Index --> Env & App
+    App --> BS & FStore & BC & BE & CDet & FPan & GV & DD & RPk & Mod & POpt & V
+    BS --> Prog & CS & Board
+    FStore --> CS & Filt
+    BC --> Board & Prog
+    BI --> Env
+    Prog --> BI
+    CS --> Obs
+    Board --> Fp
+    Filt --> Dates
+    Gantt --> Dates
+    Pick --> Dates
+    DragG --> Fp
+    Trans --> Fp
+    Svc --> Trans
+    V -. t() .-> Svc
+    Shell --> Env
      Index:::entry
+     App:::shell
+     BS:::shell
+     FStore:::shell
+     BC:::shell
+     BE:::shell
+     CDet:::shell
+     FPan:::shell
+     GV:::shell
+     DD:::shell
+     RPk:::shell
+     Mod:::shell
+     POpt:::shell
+     Env:::infra
+     Prog:::effects
+     BI:::effects
+     CS:::state
+     Obs:::state
+     Board:::pure
+     Filt:::pure
+     Gantt:::pure
+     Pick:::pure
+     DragG:::pure
+     Dates:::pure
+     Trans:::pure
+     Fp:::pure
+     V:::view
+     Svc:::infra
     classDef entry fill:#333,stroke:#fff,stroke-width:2px,color:#fff
+    classDef shell fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    classDef pure fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     classDef view fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
-    classDef controller fill:#e0f7fa,stroke:#006064,stroke-width:2px
-    classDef manager fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
-    classDef state fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    classDef model fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px,stroke-dasharray: 5 5
+    classDef effects fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef state fill:#e0f7fa,stroke:#006064,stroke-width:2px
     classDef infra fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef config fill:#ffebee,stroke:#c62828,stroke-width:1px,stroke-dasharray: 5 5
