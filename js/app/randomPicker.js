@@ -1,8 +1,10 @@
 // Random-picker controller: `picked` is view-local closure state; the
-// result panel renders as a pure function of (pick, labels, stats).
+// pick itself is a pure function — the rng port supplies u, the clock
+// supplies now, and the result panel renders from data.
 
 import { el } from '../utils/domUtils.js';
 import * as sel from '../domain/board/selectors.js';
+import { pickRandomCard, poolStats } from '../domain/picker/weights.js';
 
 const renderPickedCard = (pick, labels) => {
   const cardLabels = labels.filter((l) => pick.card.labels?.includes(l.id));
@@ -24,11 +26,18 @@ const renderPickedCard = (pick, labels) => {
   ];
 };
 
-export const createRandomPicker = ({ ui, modals, picker, query, t }) => {
+export const createRandomPicker = ({
+  ui,
+  modals,
+  pickerOptions,
+  query,
+  fx,
+  t,
+}) => {
   let picked = null;
 
   const populateOptions = () => {
-    const options = picker.getOptions();
+    const options = pickerOptions.get();
     ['Priority', 'DueDate', 'Aging'].forEach((key) => {
       ui[`optFactor${key}`].checked = options[`factor${key}`];
     });
@@ -55,7 +64,7 @@ export const createRandomPicker = ({ ui, modals, picker, query, t }) => {
     const checked = Array.from(
       ui.optColumnsSelector.querySelectorAll('input:checked')
     ).map((input) => input.value);
-    picker.setOptions({
+    pickerOptions.set({
       factorPriority: ui.optFactorPriority.checked,
       factorDueDate: ui.optFactorDueDate.checked,
       factorAging: ui.optFactorAging.checked,
@@ -67,7 +76,7 @@ export const createRandomPicker = ({ ui, modals, picker, query, t }) => {
 
   const pickRandom = () => {
     const board = sel.activeBoard(query());
-    picked = picker.pickRandomCard(board);
+    picked = pickRandomCard(board, pickerOptions.get(), fx.now(), fx.random());
 
     ui.randomPickerResult.style.display = picked ? 'block' : 'none';
     ui.randomPickerEmpty.style.display = picked ? 'none' : 'block';
@@ -91,7 +100,7 @@ export const createRandomPicker = ({ ui, modals, picker, query, t }) => {
       el(
         'div',
         { class: 'stats-text' },
-        t('modals.randomPicker.stats', picker.getPoolStats(board))
+        t('modals.randomPicker.stats', poolStats(pickerOptions.get())(board))
       )
     );
     modals.open('randomPicker');

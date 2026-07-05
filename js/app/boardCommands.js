@@ -29,7 +29,7 @@ export const createBoardCommands = (ctx) => {
   const {
     ui,
     modals,
-    picker,
+    pickerOptions,
     dispatch,
     query,
     fx,
@@ -173,7 +173,7 @@ export const createBoardCommands = (ctx) => {
     [
       'resetOptionsBtn',
       () => {
-        picker.resetOptions();
+        pickerOptions.reset();
         populateOptions();
       },
     ],

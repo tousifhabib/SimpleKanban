@@ -24,9 +24,9 @@ import {
 } from '../views/layout/selectorOptions.js';
 import { createFilterStore } from './filterStore.js';
 import { createFilterPanel } from './filterPanel.js';
+import { createPickerOptions } from './pickerOptions.js';
 import { filterCards, isActive } from '../domain/filters/predicates.js';
 import DragDropManager from '../managers/DragDropManager.js';
-import RandomPickerManager from '../managers/RandomPickerManager.js';
 import GanttView from '../views/gantt/GanttView.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
@@ -51,10 +51,10 @@ export const createApp = ({ env, doc }) => {
 
   const uiStore = createFilterStore(env);
   const filtersActive = () => isActive(uiStore.getState().filters);
-  const picker = new RandomPickerManager();
+  const pickerOptions = createPickerOptions(env);
   const modals = createModals(doc);
   const cardDetail = createCardDetail({ ui, modals, dispatch, query, fx, t });
-  const rp = createRandomPicker({ ui, modals, picker, query, t });
+  const rp = createRandomPicker({ ui, modals, pickerOptions, query, fx, t });
 
   const render = () => {
     ui.kanbanContainer.replaceChildren();
@@ -208,7 +208,7 @@ export const createApp = ({ env, doc }) => {
   const commands = createBoardCommands({
     ui,
     modals,
-    picker,
+    pickerOptions,
     dispatch,
     query,
     fx,

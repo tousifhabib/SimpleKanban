@@ -2,7 +2,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fc from 'fast-check';
-import RandomPickerManager from '../../js/managers/RandomPickerManager.js';
+import { legacyRandomPicker } from '../helpers/legacyPickerApi.js';
 import { mulberry32 } from '../helpers/seededRandom.js';
 
 const NOW = new Date('2026-07-05T12:00:00.000Z');
@@ -31,7 +31,7 @@ describe('eligibility', () => {
         const rand = mulberry32(seed);
         vi.spyOn(Math, 'random').mockImplementation(rand);
 
-        const picker = new RandomPickerManager();
+        const picker = legacyRandomPicker();
         picker.setOptions({
           includeColumns: ['col-a'],
           excludeCompleted: true,
@@ -57,7 +57,7 @@ describe('eligibility', () => {
   });
 
   it('returns null when nothing is eligible', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     expect(picker.pickRandomCard(board([]))).toBeNull();
     expect(
       picker.pickRandomCard(
@@ -72,7 +72,7 @@ describe('weights (frozen semantics)', () => {
   const weightOf = (picker, card) => picker.calculateWeight(card);
 
   it('weight is always >= 1', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     fc.assert(
       fc.property(
         fc.constantFrom('none', 'low', 'medium', 'high'),
@@ -90,7 +90,7 @@ describe('weights (frozen semantics)', () => {
   });
 
   it('monotone in priority, overdue-ness, and staleness', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     // priority
     expect(weightOf(picker, mkCard({ priority: 'high' }))).toBeGreaterThan(
       weightOf(picker, mkCard({ priority: 'low' }))
@@ -108,7 +108,7 @@ describe('weights (frozen semantics)', () => {
   });
 
   it('factors multiply: exact weight table spot-check', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     // high(4) * overdue(5) * stale>=14d(3) = 60
     const w = weightOf(
       picker,
@@ -122,7 +122,7 @@ describe('weights (frozen semantics)', () => {
   });
 
   it('disabling factors flattens weights to 1', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     picker.setOptions({
       factorPriority: false,
       factorDueDate: false,
@@ -141,7 +141,7 @@ describe('inverse-CDF selection', () => {
     fc.assert(
       fc.property(fc.double({ min: 0, max: 0.999, noNaN: true }), (u) => {
         vi.spyOn(Math, 'random').mockImplementation(() => u);
-        const picker = new RandomPickerManager();
+        const picker = legacyRandomPicker();
         picker.setOptions({ factorDueDate: false, factorAging: false });
 
         const cards = [
@@ -171,7 +171,7 @@ describe('inverse-CDF selection', () => {
 
   it('return shape on the main path is {card, column} (frozen)', () => {
     vi.spyOn(Math, 'random').mockImplementation(() => 0.5);
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     const res = picker.pickRandomCard(
       board([{ id: 'col', title: 'C', cards: [mkCard({ id: 'only' })] }])
     );
@@ -181,17 +181,17 @@ describe('inverse-CDF selection', () => {
 
 describe('options persistence', () => {
   it('setOptions persists; a new instance reads them back; resetOptions restores defaults', () => {
-    const p1 = new RandomPickerManager();
+    const p1 = legacyRandomPicker();
     p1.setOptions({ factorPriority: false, includeColumns: ['x'] });
 
-    const p2 = new RandomPickerManager();
+    const p2 = legacyRandomPicker();
     expect(p2.getOptions()).toMatchObject({
       factorPriority: false,
       includeColumns: ['x'],
     });
 
     p2.resetOptions();
-    expect(new RandomPickerManager().getOptions()).toMatchObject({
+    expect(legacyRandomPicker().getOptions()).toMatchObject({
       factorPriority: true,
       includeColumns: [],
     });
@@ -199,14 +199,14 @@ describe('options persistence', () => {
 
   it('corrupt options JSON falls back to defaults', () => {
     localStorage.setItem('kanban-randomizer-options', '{nope');
-    const p = new RandomPickerManager();
+    const p = legacyRandomPicker();
     expect(p.getOptions()).toMatchObject({ factorPriority: true });
   });
 });
 
 describe('getPoolStats', () => {
   it('eligible equals the sum of byColumn counts and never exceeds total', () => {
-    const picker = new RandomPickerManager();
+    const picker = legacyRandomPicker();
     const state = board([
       {
         id: 'col-a',
