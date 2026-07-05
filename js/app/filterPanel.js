@@ -498,15 +498,23 @@ export const createFilterPanel = (
             type: 'filters/startDateSet',
             payload: { patch: { to: val || null } },
           }),
+        // Each bound preserves the other — the legacy panel reset max
+        // when min was typed (and vice versa), so both could never be set.
         effortMin: () =>
           dispatch({
             type: 'filters/effortSet',
-            payload: { min: val ? parseFloat(val) : null, max: null },
+            payload: {
+              min: val ? parseFloat(val) : null,
+              max: filters().effort.max,
+            },
           }),
         effortMax: () =>
           dispatch({
             type: 'filters/effortSet',
-            payload: { min: null, max: val ? parseFloat(val) : null },
+            payload: {
+              min: filters().effort.min,
+              max: val ? parseFloat(val) : null,
+            },
           }),
       };
       handlers[input]?.();

@@ -168,6 +168,9 @@ export default {
     },
   },
   modals: {
+    import: {
+      confirmReplace: 'Importing will replace all boards and cards. Continue?',
+    },
     createBoard: {
       title: 'Create New Board',
       placeholder: 'Board Name',

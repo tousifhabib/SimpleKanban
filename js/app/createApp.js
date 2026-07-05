@@ -56,7 +56,66 @@ export const createApp = ({ env, doc }) => {
   const cardDetail = createCardDetail({ ui, modals, dispatch, query, fx, t });
   const rp = createRandomPicker({ ui, modals, pickerOptions, query, fx, t });
 
+  // Transient view state (open add-card forms with typed text, an
+  // in-progress column rename) is captured before the full re-render and
+  // restored after, so background state changes don't wipe user input.
+  const captureTransients = () => ({
+    openForms: Array.from(
+      ui.kanbanContainer.querySelectorAll('.add-card-form.active')
+    ).map((form) => ({
+      columnId: form.closest('.column').dataset.columnId,
+      text: form.querySelector('.card-input').value,
+      focused: form.contains(doc.activeElement),
+    })),
+    editingTitle: (() => {
+      const input = Array.from(
+        ui.kanbanContainer.querySelectorAll('.column-title-input')
+      ).find((inp) => inp.style.display !== 'none');
+      return input
+        ? {
+            columnId: input.closest('.column').dataset.columnId,
+            value: input.value,
+            focused: doc.activeElement === input,
+            selectionStart: input.selectionStart,
+            selectionEnd: input.selectionEnd,
+          }
+        : null;
+    })(),
+  });
+
+  const restoreTransients = ({ openForms, editingTitle }) => {
+    for (const saved of openForms) {
+      const col = ui.kanbanContainer.querySelector(
+        `[data-column-id="${saved.columnId}"]`
+      );
+      if (!col) continue;
+      col.querySelector('.add-card-form').classList.add('active');
+      col.querySelector('.add-card-btn').style.display = 'none';
+      const input = col.querySelector('.card-input');
+      input.value = saved.text;
+      if (saved.focused) input.focus();
+    }
+    if (editingTitle) {
+      const col = ui.kanbanContainer.querySelector(
+        `[data-column-id="${editingTitle.columnId}"]`
+      );
+      if (!col) return;
+      col.querySelector('.column-title-text').style.display = 'none';
+      const input = col.querySelector('.column-title-input');
+      input.style.display = 'block';
+      input.value = editingTitle.value;
+      if (editingTitle.focused) {
+        input.focus();
+        input.setSelectionRange(
+          editingTitle.selectionStart,
+          editingTitle.selectionEnd
+        );
+      }
+    }
+  };
+
   const render = () => {
+    const transients = captureTransients();
     ui.kanbanContainer.replaceChildren();
     ui.kanbanContainer.classList.toggle('filters-active', filtersActive());
     const labels = sel.labels(query());
@@ -66,9 +125,13 @@ export const createApp = ({ env, doc }) => {
     });
     sel.activeBoard(query())?.columns.forEach((col) => {
       ui.kanbanContainer.appendChild(
-        renderColumn({ ...col, cards: applyFilters(col.cards) }, { labels })
+        renderColumn(
+          { ...col, cards: applyFilters(col.cards) },
+          { labels, dragDisabled: filtersActive() }
+        )
       );
     });
+    restoreTransients(transients);
   };
 
   const gantt = createGanttView(ui.ganttView, {
@@ -251,6 +314,7 @@ export const createApp = ({ env, doc }) => {
     fx,
     setLanguage: (lang) => i18n.setLanguage(lang),
     importJson: (json) => {
+      if (!ask.confirm(t('modals.import.confirmReplace'))) return false;
       try {
         return runEffects(importProgram(STORAGE_KEY, json));
       } catch {

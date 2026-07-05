@@ -154,7 +154,13 @@ export const createBoardCommands = (ctx) => {
     ['importBtn', () => ui.importFileInput.click()],
     [
       'exportBtn',
-      () => runEffects(exportProgram('kanban-backup.json', query())),
+      () =>
+        runEffects(
+          exportProgram(
+            `kanban-backup-${fx.nowIso().slice(0, 10)}.json`,
+            query()
+          )
+        ),
     ],
     [
       'optionsBtn',

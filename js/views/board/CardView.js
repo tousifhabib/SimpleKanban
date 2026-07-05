@@ -44,7 +44,13 @@ export const renderCard = (card, ctx = {}) => {
 
   return el(
     'div',
-    { class: classList, draggable: true, dataset: { cardId: id } },
+    {
+      class: classList,
+      // No drag affordance while filters hide cards — a reorder computed
+      // from a filtered view would be misleading.
+      draggable: !ctx.dragDisabled,
+      dataset: { cardId: id },
+    },
     renderLabels(labels, ctx.labels || []),
     renderContent(completed, text),
     renderMeta({ startDate, dueDate, effort, updatedAt, completed }),

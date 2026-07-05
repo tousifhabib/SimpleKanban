@@ -11,7 +11,11 @@ export const renderColumn = ({ id, title, cards }, ctx = {}) => {
 
   return el(
     'div',
-    { class: 'column', draggable: true, dataset: { columnId: id } },
+    {
+      class: 'column',
+      draggable: !ctx.dragDisabled,
+      dataset: { columnId: id },
+    },
     renderHeader(title, totalEffort),
     el(
       'div',
