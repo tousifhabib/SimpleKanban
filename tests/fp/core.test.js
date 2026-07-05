@@ -92,7 +92,7 @@ describe('arrays', () => {
     );
   });
 
-  it('reorderByIds: permutation of ids preserves the multiset; omissions drop (whitelist)', () => {
+  it('reorderByIds: NEVER loses elements — omitted ids are appended in original order', () => {
     fc.assert(
       fc.property(
         fc
@@ -102,10 +102,15 @@ describe('arrays', () => {
           const ids = xs.map((x) => x.id);
           const shuffled = [...ids].reverse();
           expect(reorderByIds(shuffled)(xs).map((x) => x.id)).toEqual(shuffled);
-          // whitelist: dropping an id drops the element
+          // FIXED SEMANTICS (bug-fix pass): a partial order array no
+          // longer deletes elements — unlisted items keep their relative
+          // order at the end.
           if (ids.length > 0) {
             const partial = ids.slice(1);
-            expect(reorderByIds(partial)(xs).length).toBe(xs.length - 1);
+            expect(reorderByIds(partial)(xs).map((x) => x.id)).toEqual([
+              ...partial,
+              ids[0],
+            ]);
           }
           // unknown ids are ignored
           expect(reorderByIds([...ids, 99999])(xs).length).toBe(xs.length);

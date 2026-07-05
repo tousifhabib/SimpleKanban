@@ -129,7 +129,7 @@ describe('moveCard', () => {
   });
 });
 
-describe('reorderCards (whitelist semantics — frozen)', () => {
+describe('reorderCards (data-preserving semantics)', () => {
   it('a permutation of ids reorders without loss and does NOT touch updatedAt', async () => {
     const store = await freshStore(twoColumnState());
     store.reorderCards('col-a', ['card-2', 'card-1']);
@@ -140,11 +140,11 @@ describe('reorderCards (whitelist semantics — frozen)', () => {
     }
   });
 
-  it('ids omitted from the order array are silently DELETED (landmine)', async () => {
+  it('ids omitted from the order array are PRESERVED at the end (fixed: was silent deletion)', async () => {
     const store = await freshStore(twoColumnState());
     store.reorderCards('col-a', ['card-2']);
     const colA = store.getState().columns.find((c) => c.id === 'col-a');
-    expect(colA.cards.map((c) => c.id)).toEqual(['card-2']);
+    expect(colA.cards.map((c) => c.id)).toEqual(['card-2', 'card-1']);
   });
 
   it('unknown ids in the order array are ignored', async () => {

@@ -105,15 +105,27 @@ describe('label match modes', () => {
   });
 });
 
-describe('dueDate quirks (frozen)', () => {
-  it('a card with no dueDate is EXCLUDED when a from/to range is set, even with status ALL', () => {
+describe('dueDate semantics', () => {
+  it('a from/to range constrains dated cards only; undated cards pass (fixed)', () => {
     const fm = legacyFilterManager();
-    fm.setDueDate({ from: '2026-07-01' });
+    fm.setDueDate({ from: '2026-07-10' });
+    const cards = [
+      { id: 'c1', text: 'no due', dueDate: null },
+      { id: 'c2', text: 'in range', dueDate: '2026-07-12' },
+      { id: 'c3', text: 'before range', dueDate: '2026-07-08' },
+    ];
+    // undated c1 passes; dated cards are range-checked
+    expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1', 'c2']);
+  });
+
+  it('NO_DUE_DATE combined with a range shows undated cards (was: empty result)', () => {
+    const fm = legacyFilterManager();
+    fm.setDueDate({ status: DUE_STATUS.NO_DUE_DATE, from: '2026-07-01' });
     const cards = [
       { id: 'c1', text: 'no due', dueDate: null },
       { id: 'c2', text: 'due', dueDate: '2026-07-08' },
     ];
-    expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c2']);
+    expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1']);
   });
 
   it('OVERDUE compares against end-of-day: due-today is not overdue', () => {
@@ -146,15 +158,15 @@ describe('search operators (frozen)', () => {
     { id: 'c3', text: 'gamma', description: '' },
   ];
 
-  it('CONTAINS searches across fields; NOT_CONTAINS is fields.some (NOT the complement)', () => {
+  it('CONTAINS searches across fields; NOT_CONTAINS is its complement (fixed)', () => {
     const fm = legacyFilterManager();
     fm.setSearch('alpha', { operator: SEARCH_OPERATORS.CONTAINS });
     expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1', 'c2']);
 
     fm.setSearch('alpha', { operator: SEARCH_OPERATORS.NOT_CONTAINS });
-    // c1 passes because its description 'x' does not contain 'alpha' —
-    // the some() across fields makes NOT_CONTAINS non-complementary.
-    expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1', 'c2', 'c3']);
+    // FIXED: the term must be absent from EVERY searched field — the old
+    // fields.some() passed any card with one non-matching field.
+    expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c3']);
   });
 
   it('EXACT and STARTS_WITH; caseSensitive flag', () => {

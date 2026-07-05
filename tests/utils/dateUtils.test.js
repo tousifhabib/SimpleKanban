@@ -73,11 +73,11 @@ describe('isToday / isWeekend', () => {
   });
 });
 
-describe('getEndOfWeek (frozen quirk)', () => {
-  it('maps a Sunday input to the NEXT Sunday (getDay()==0 adds 7)', () => {
+describe('getEndOfWeek', () => {
+  it('a Sunday IS the end of its own week (fixed: used to map to next Sunday)', () => {
     const end = getEndOfWeek(new Date('2026-07-05T00:00:00.000Z'));
     expect(end.getDay()).toBe(0);
-    expect(end.getDate()).toBe(12);
+    expect(end.getDate()).toBe(5);
     expect(end.getHours()).toBe(23);
   });
 
@@ -119,13 +119,15 @@ describe('getAgingLevel', () => {
   });
 });
 
-describe('getDueDateStatus (frozen: due-soon is <= 2 days, not DUE_SOON_DAYS)', () => {
+describe('getDueDateStatus (due-soon window == DUE_SOON_DAYS, matching the filter)', () => {
   it('classifies overdue/due-today/due-soon and mutes completed', () => {
     expect(getDueDateStatus('2026-07-04', false)).toBe('overdue');
     expect(getDueDateStatus('2026-07-05', false)).toBe('due-today');
     expect(getDueDateStatus('2026-07-06', false)).toBe('due-soon');
     expect(getDueDateStatus('2026-07-07', false)).toBe('due-soon');
-    expect(getDueDateStatus('2026-07-08', false)).toBe(''); // 3 days out: NOT due-soon
+    // FIXED: 3 days out is due-soon, agreeing with the DUE_SOON filter
+    expect(getDueDateStatus('2026-07-08', false)).toBe('due-soon');
+    expect(getDueDateStatus('2026-07-09', false)).toBe(''); // 4 days out
     expect(getDueDateStatus('2026-07-04', true)).toBe('');
     expect(getDueDateStatus(null, false)).toBe('');
   });

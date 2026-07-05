@@ -11,12 +11,17 @@ export const insertAt = (idx, item) => (xs) => [
   ...xs.slice(idx),
 ];
 
-// Project xs into the order given by ids (matching on x.id).
-// Ids without a match are dropped; xs entries omitted from ids are dropped —
-// the whitelist semantics the drag-drop layer relies on.
+// Project xs into the order given by ids (matching on x.id), PRESERVING
+// entries omitted from ids by appending them in their original relative
+// order. Unknown ids are ignored. A reorder can therefore never lose
+// data — the old whitelist semantics silently deleted any card missing
+// from the order array (e.g. a reorder computed from a filtered DOM).
 export const reorderByIds = (ids) => (xs) => {
   const byId = new Map(xs.map((x) => [x.id, x]));
-  return ids.map((id) => byId.get(id)).filter(Boolean);
+  const listed = ids.map((id) => byId.get(id)).filter(Boolean);
+  const listedIds = new Set(ids);
+  const unlisted = xs.filter((x) => !listedIds.has(x.id));
+  return [...listed, ...unlisted];
 };
 
 export const uniqueBy = (keyFn) => (xs) => {

@@ -44,7 +44,14 @@ const PREDICATES = {
         [SEARCH_OPERATORS.NOT_CONTAINS]: (a, b) => !a.includes(b),
       };
 
-      return fields.some((f) => ops[operator](val(getters[f](card)), needle));
+      // Positive operators match if ANY field matches; the negative
+      // operator requires the term absent from EVERY field — making
+      // NOT_CONTAINS the true complement of CONTAINS.
+      const combine =
+        operator === SEARCH_OPERATORS.NOT_CONTAINS ? 'every' : 'some';
+      return fields[combine]((f) =>
+        ops[operator](val(getters[f](card)), needle)
+      );
     },
 
   labels:
@@ -87,9 +94,14 @@ const PREDICATES = {
         if (checks[status] && !checks[status]()) return false;
       }
 
-      // Frozen quirk: cards without a due date fail any from/to range.
-      if (from && toDate(card.dueDate) < toDate(from)) return false;
-      if (to && toDate(card.dueDate) > toDate(to, true)) return false;
+      // The from/to range constrains DATED cards only; visibility of
+      // undated cards is governed by the status dropdown. (Previously
+      // any range silently hid every undated card, and combining a
+      // range with NO_DUE_DATE returned nothing.)
+      if (card.dueDate) {
+        if (from && toDate(card.dueDate) < toDate(from)) return false;
+        if (to && toDate(card.dueDate) > toDate(to, true)) return false;
+      }
       return true;
     },
 

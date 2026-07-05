@@ -49,7 +49,9 @@ export const isWeekend = (date) => {
 
 export const getEndOfWeek = (date) => {
   const d = new Date(date);
-  d.setDate(d.getDate() + (7 - d.getDay()));
+  // (7 - getDay()) % 7: a Sunday IS the end of its week — previously it
+  // mapped to the NEXT Sunday, stretching "this week" by seven days.
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
   d.setHours(23, 59, 59, 999);
   return d;
 };
@@ -68,7 +70,9 @@ export const getDueDateStatus = (dueDate, completed, now) => {
   const days = getDaysUntil(dueDate, now);
   if (days < 0) return 'overdue';
   if (days === 0) return 'due-today';
-  if (days <= 2) return 'due-soon';
+  // Same window as the DUE_SOON filter — the badge and the filter used
+  // to disagree (<= 2 here vs <= 3 there).
+  if (days <= DUE_SOON_DAYS) return 'due-soon';
   return '';
 };
 

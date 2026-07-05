@@ -69,7 +69,7 @@ describe('transition totality and purity', () => {
 });
 
 describe('card multiset invariants', () => {
-  it('moveCard preserves card ids; reorder with permutation preserves; whitelist drops', () => {
+  it('moveCard preserves card ids; reorders never lose cards', () => {
     fc.assert(
       fc.property(arbState, (state) => {
         const fx = mkFx();
@@ -105,7 +105,7 @@ describe('card multiset invariants', () => {
         );
         expect(cardIdsOf(sel.activeBoard(permuted))).toEqual(cardIdsOf(board));
 
-        // whitelist: dropping an id deletes the card (frozen semantics)
+        // FIXED: a partial order array preserves omitted cards at the end
         if (from.cards.length > 1) {
           const partial = apply(
             s,
@@ -114,9 +114,11 @@ describe('card multiset invariants', () => {
               from.cards.slice(1).map((c) => c.id)
             )
           );
-          expect(
-            sel.activeBoard(partial).columns.find((c) => c.id === from.id).cards
-          ).toHaveLength(from.cards.length - 1);
+          const afterCards = sel
+            .activeBoard(partial)
+            .columns.find((c) => c.id === from.id).cards;
+          expect(afterCards).toHaveLength(from.cards.length);
+          expect(afterCards.at(-1).id).toBe(from.cards[0].id);
         }
       }),
       { numRuns: 30 }

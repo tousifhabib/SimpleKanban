@@ -9,8 +9,12 @@ const PURE_CORE = ['js/fp/**/*.js', 'js/domain/**/*.js'];
 
 export default [
   {
+    // Global ignores (an entry with only `ignores` applies to every config):
+    // worktrees under .claude/ carry their own dist/ and node_modules.
+    ignores: ['**/node_modules/**', '**/dist/**', 'coverage/**', '.claude/**'],
+  },
+  {
     files: ['**/*.js'],
-    ignores: ['node_modules/**', 'dist/**', 'coverage/**'],
 
     languageOptions: {
       ecmaVersion: 'latest',

@@ -159,7 +159,7 @@ describe('column ops', () => {
     expect(store.getState().columns.at(-1).title).toBe('Renamed');
   });
 
-  it('reorderColumns follows whitelist semantics', async () => {
+  it('reorderColumns preserves omitted columns at the end (fixed: was deletion)', async () => {
     const store = await freshStore(labeledState());
     store.reorderColumns(['col-b', 'col-a']);
     expect(store.getState().columns.map((c) => c.id)).toEqual([
@@ -167,7 +167,10 @@ describe('column ops', () => {
       'col-a',
     ]);
     store.reorderColumns(['col-a']);
-    expect(store.getState().columns.map((c) => c.id)).toEqual(['col-a']);
+    expect(store.getState().columns.map((c) => c.id)).toEqual([
+      'col-a',
+      'col-b',
+    ]);
   });
 
   it('removeColumn drops the column with its cards', async () => {

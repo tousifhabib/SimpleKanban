@@ -103,7 +103,11 @@ export const dateRange = (tasks, now) => {
   return {
     start: minDate,
     end: maxDate,
-    days: Math.ceil((maxDate - minDate) / MS_DAY) + 1,
+    // Math.round, not ceil: both bounds are local midnights, so across a
+    // DST boundary the span is n*24h ± 1h. ceil over-counted by one on
+    // fall-back transitions, desynchronizing the grid from the header
+    // day loop; round always recovers the calendar-day count.
+    days: Math.round((maxDate - minDate) / MS_DAY) + 1,
   };
 };
 
