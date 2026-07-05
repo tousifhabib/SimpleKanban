@@ -2,7 +2,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fc from 'fast-check';
-import GanttManager, { ZOOM_LEVELS } from '../../js/managers/GanttManager.js';
+import { ZOOM_LEVELS } from '../../js/domain/gantt/timeline.js';
+import { legacyGanttManager } from '../helpers/legacyGanttApi.js';
 import { arbDateStr } from '../helpers/arbitraries.js';
 
 const NOW = new Date('2026-07-05T12:00:00.000Z');
@@ -35,7 +36,7 @@ describe('transformToGanttData', () => {
           { maxLength: 8 }
         ),
         (specs) => {
-          const gm = new GanttManager();
+          const gm = legacyGanttManager();
           const cards = specs.map((s, i) => mkCard({ id: `c${i}`, ...s }));
           const { scheduled, unscheduled } = gm.transformToGanttData(
             boardWith(cards)
@@ -54,7 +55,7 @@ describe('transformToGanttData', () => {
   });
 
   it('resolves label ids and carries column context', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     const labels = [{ id: 'l1', name: 'L', color: '#f00' }];
     const { unscheduled } = gm.transformToGanttData(
       boardWith([mkCard({ id: 'c1', labels: ['l1', 'missing'] })]),
@@ -65,7 +66,7 @@ describe('transformToGanttData', () => {
   });
 
   it('null board yields empty structure', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     expect(gm.transformToGanttData(null)).toEqual({
       scheduled: [],
       unscheduled: [],
@@ -76,7 +77,7 @@ describe('transformToGanttData', () => {
 
 describe('calculateDateRange (frozen: -3/+7 padding)', () => {
   it('empty input -> today..today+30, days: 30', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     const range = gm.calculateDateRange([]);
     expect(range.days).toBe(30);
     expect(range.start.getTime()).toBe(
@@ -95,7 +96,7 @@ describe('calculateDateRange (frozen: -3/+7 padding)', () => {
           { minLength: 1, maxLength: 6 }
         ),
         (pairs) => {
-          const gm = new GanttManager();
+          const gm = legacyGanttManager();
           const tasks = pairs.map(([s, e], i) => ({
             id: `t${i}`,
             startDate: new Date(s),
@@ -118,7 +119,7 @@ describe('calculateDateRange (frozen: -3/+7 padding)', () => {
 
 describe('generateTimelineHeaders', () => {
   it('primary has one entry per day inclusive; secondary spans sum to primary length', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     const range = {
       start: new Date('2026-06-20T00:00:00.000Z'),
       end: new Date('2026-07-10T00:00:00.000Z'),
@@ -132,7 +133,7 @@ describe('generateTimelineHeaders', () => {
   });
 
   it('month zoom groups by year', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     gm.setZoom(ZOOM_LEVELS.MONTH);
     const range = {
       start: new Date('2026-12-25T00:00:00.000Z'),
@@ -143,7 +144,7 @@ describe('generateTimelineHeaders', () => {
   });
 
   it('null range -> empty headers', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     expect(gm.generateTimelineHeaders(null)).toEqual({
       primary: [],
       secondary: [],
@@ -153,7 +154,7 @@ describe('generateTimelineHeaders', () => {
 
 describe('calculateTaskPosition (frozen arithmetic)', () => {
   it('left = floor(dayOffset) * cellWidth; width = (ceil(duration)+1) * cellWidth - 4', () => {
-    const gm = new GanttManager(); // WEEK zoom: cellWidth 60
+    const gm = legacyGanttManager(); // WEEK zoom: cellWidth 60
     const range = { start: new Date('2026-07-01T00:00:00.000Z') };
     const task = {
       startDate: new Date('2026-07-04T00:00:00.000Z'),
@@ -170,7 +171,7 @@ describe('calculateTaskPosition (frozen arithmetic)', () => {
   });
 
   it('unscheduled tasks are invisible', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     expect(gm.calculateTaskPosition({ startDate: null }, {})).toEqual({
       left: 0,
       width: 0,
@@ -179,7 +180,7 @@ describe('calculateTaskPosition (frozen arithmetic)', () => {
   });
 
   it('single-day task has duration 1', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     const d = new Date('2026-07-04T00:00:00.000Z');
     const pos = gm.calculateTaskPosition(
       { startDate: d, endDate: d },
@@ -191,7 +192,7 @@ describe('calculateTaskPosition (frozen arithmetic)', () => {
 
 describe('zoom', () => {
   it('setZoom on a bogus level is a no-op; valid levels swap cellWidth', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     expect(gm.getZoom()).toBe(ZOOM_LEVELS.WEEK);
     expect(gm.getZoomConfig().cellWidth).toBe(60);
     gm.setZoom('bogus');
@@ -203,7 +204,7 @@ describe('zoom', () => {
   });
 
   it('setZoom notifies subscribers', () => {
-    const gm = new GanttManager();
+    const gm = legacyGanttManager();
     const spy = vi.fn();
     gm.subscribe(spy);
     gm.setZoom(ZOOM_LEVELS.DAY);
@@ -213,7 +214,7 @@ describe('zoom', () => {
 
 describe('getTodayOffset', () => {
   it('clamps at zero and subtracts the 200px lead-in', () => {
-    const gm = new GanttManager(); // week: 60px
+    const gm = legacyGanttManager(); // week: 60px
     const range10 = { start: new Date('2026-06-25T00:00:00.000Z') }; // today offset: 10 days
     expect(gm.getTodayOffset(range10)).toBe(10 * 60 - 200);
     const rangeNow = { start: new Date('2026-07-05T00:00:00.000Z') };

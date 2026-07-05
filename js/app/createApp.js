@@ -26,8 +26,8 @@ import { createFilterStore } from './filterStore.js';
 import { createFilterPanel } from './filterPanel.js';
 import { createPickerOptions } from './pickerOptions.js';
 import { filterCards, isActive } from '../domain/filters/predicates.js';
+import { createGanttView } from './ganttView.js';
 import DragDropManager from '../managers/DragDropManager.js';
-import GanttView from '../views/gantt/GanttView.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
   supportedLanguages,
@@ -71,9 +71,12 @@ export const createApp = ({ env, doc }) => {
     });
   };
 
-  const gantt = new GanttView(ui.ganttView, {
+  const gantt = createGanttView(ui.ganttView, {
     getBoard: () => sel.activeBoard(query()),
     getLabels: () => sel.labels(query()),
+    getLang: () => i18n.getLanguage(),
+    now: fx.now,
+    t,
     onCardClick: (card, colId) => {
       switchView('kanban');
       cardDetail.open(card.id, colId);
