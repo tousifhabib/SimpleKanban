@@ -155,8 +155,8 @@ describe('reorderCards (whitelist semantics — frozen)', () => {
   });
 });
 
-describe('duplicateCard (frozen semantics)', () => {
-  it('clones with fresh id/timestamps and CLEARED logs+dependencies; lands at the TOP of the column', async () => {
+describe('duplicateCard', () => {
+  it('clones with fresh id/timestamps and CLEARED logs+dependencies, inserted right after the original', async () => {
     const store = await freshStore(twoColumnState());
     const clone = store.duplicateCard('col-a', 'card-1');
 
@@ -168,12 +168,13 @@ describe('duplicateCard (frozen semantics)', () => {
     expect(clone.updatedAt).toBe(NOW.toISOString());
 
     const colA = store.getState().columns.find((c) => c.id === 'col-a');
-    // QUIRK: the code intends indexOf(original)+1, but the deep Proxy
-    // returns fresh wrappers on every access so indexOf yields -1 and the
-    // clone lands at index 0. Documented candidate fix for the engine swap.
-    expect(colA.cards.map((c) => c.id)).toEqual([clone.id, 'card-1', 'card-2']);
+    // DELIBERATE FIX at the engine swap: the legacy deep Proxy broke the
+    // intended indexOf(original)+1 insertion (fresh wrappers made indexOf
+    // return -1, dropping clones at index 0). The immutable engine restores
+    // the intended after-the-original placement.
+    expect(colA.cards.map((c) => c.id)).toEqual(['card-1', clone.id, 'card-2']);
 
-    const original = colA.cards[1];
+    const original = colA.cards[0];
     for (const key of [
       'text',
       'description',

@@ -39,7 +39,9 @@ const stripDependenciesTo = (cardId) =>
 
 export const transitions = Object.freeze({
   'board/selected': (state, { id }) =>
-    state.boards.some(byId(id)) ? { ...state, activeBoardId: id } : state,
+    state.activeBoardId !== id && state.boards.some(byId(id))
+      ? { ...state, activeBoardId: id }
+      : state,
 
   'board/created': (state, { board }) => ({
     ...state,
@@ -47,10 +49,12 @@ export const transitions = Object.freeze({
     activeBoardId: board.id,
   }),
 
-  'board/renamed': (state, { id, name }) =>
-    view(boardById(id))(state) === undefined
+  'board/renamed': (state, { id, name }) => {
+    const board = view(boardById(id))(state);
+    return board === undefined || board.name === name
       ? state
-      : over(boardById(id))((b) => ({ ...b, name }))(state),
+      : over(boardById(id))((b) => ({ ...b, name }))(state);
+  },
 
   'board/deleted': (state, { id }) => {
     if (state.boards.length <= 1 || !state.boards.some(byId(id))) return state;
@@ -96,10 +100,12 @@ export const transitions = Object.freeze({
       ? state
       : over(columnsL)(removeWhere(byId(id)))(state),
 
-  'column/renamed': (state, { id, title }) =>
-    view(columnById(id))(state) === undefined
+  'column/renamed': (state, { id, title }) => {
+    const column = view(columnById(id))(state);
+    return column === undefined || column.title === title
       ? state
-      : over(columnById(id))((col) => ({ ...col, title }))(state),
+      : over(columnById(id))((col) => ({ ...col, title }))(state);
+  },
 
   'card/added': (state, { columnId, card }) =>
     view(columnById(columnId))(state) === undefined

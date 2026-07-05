@@ -1,432 +1,157 @@
-import { createObservable } from '../core/Observable.js';
-import {
-  loadFromLocalStorage,
-  saveToLocalStorage,
-} from '../data/LocalStorage.js';
-import { generateId } from '../utils/idUtils.js';
-import {
-  createBoardFromTemplate,
-  DEFAULT_TEMPLATE,
-} from '../config/boardTemplates.js';
+// Compatibility facade over the pure functional core.
+//
+// The deep-Proxy mutable Store is gone. State now lives in an immutable
+// reducer store (js/core/store.js) driven by pure transitions
+// (js/domain/board/transitions.js); this module keeps the legacy method
+// surface so existing call sites work unchanged while they migrate to
+// dispatch/selectors. It is deliberately a thin shell: every method is
+// creator -> dispatch or selector -> fold, and persistence is a debounced
+// effect scheduled only when a dispatch actually changed state.
+//
+// This facade is deleted at the end of the sprint; the composition root
+// (js/index.js) takes over store construction.
+
+import { createStore } from '../core/store.js';
+import { debounce } from '../core/debounce.js';
+import { transitions } from '../domain/board/transitions.js';
+import * as make from '../domain/board/commands.js';
+import * as sel from '../domain/board/selectors.js';
+import { migrate } from '../domain/board/migrate.js';
+import { createEnv } from '../ports/env.js';
+import { bootProgram, importProgram } from '../effects/programs.js';
+import { runInBrowser } from '../effects/browserInterpreter.js';
+import { getOrElse, fold } from '../fp/maybe.js';
+import { i18n } from '../services/i18n/i18nService.js';
 
 const STORAGE_KEY = 'flexibleKanbanState';
 const SAVE_DEBOUNCE_MS = 150;
 
-const unproxy = (val) => {
-  if (val instanceof Date) return val.toISOString();
-  if (Array.isArray(val)) return val.map(unproxy);
-  if (val && typeof val === 'object') {
-    return Object.fromEntries(
-      Object.entries(val).map(([k, v]) => [k, unproxy(v)])
-    );
-  }
-  return val;
-};
+const env = createEnv(window);
+const run = runInBrowser(env);
+const fx = env.fx;
 
-const createCard = (data = {}) => ({
-  text: '',
-  description: '',
-  startDate: null,
-  dueDate: null,
-  completed: false,
-  priority: 'none',
-  labels: [],
-  logs: [],
-  dependencies: [],
-  ...data,
-  id: data.id || generateId('card'),
-  effort: Number(data.effort) || 0,
-  createdAt: data.createdAt || new Date().toISOString(),
-  updatedAt: data.updatedAt || new Date().toISOString(),
+const core = createStore({
+  transitions,
+  initialState: migrate(
+    run(bootProgram(STORAGE_KEY)),
+    fx,
+    i18n.getLocale().templates
+  ),
 });
 
-const createDeepProxy = (target, onChange) => {
-  const handler = {
-    get(t, p, r) {
-      const v = Reflect.get(t, p, r);
-      if (v && typeof v === 'object' && !(v instanceof Date)) {
-        return new Proxy(v, handler);
-      }
-      return v;
-    },
-    set(t, p, v) {
-      const old = t[p];
-      if (old === v) return true;
-      const success = Reflect.set(t, p, v);
-      if (success) onChange();
-      return success;
-    },
-    deleteProperty(t, p) {
-      const success = Reflect.deleteProperty(t, p);
-      if (success) onChange();
-      return success;
-    },
-  };
-  return new Proxy(target, handler);
+const persist = debounce(SAVE_DEBOUNCE_MS, () =>
+  env.storage.save(STORAGE_KEY, core.getState()).run()
+);
+
+// Persistence is anchored at dispatch time (like the legacy proxy trap)
+// and skipped entirely for no-op commands.
+const dispatch = (command) => {
+  const before = core.getState();
+  core.dispatch(command);
+  if (core.getState() !== before) persist();
 };
 
-class Store {
-  #observable = createObservable();
-  #state;
-  #batchDepth = 0;
-  #pendingNotify = false;
-  #saveDebounceId = null;
+const state = () => core.getState();
 
-  constructor() {
-    this.#state = createDeepProxy(this.#load(), () => this.#scheduleUpdate());
-  }
-
-  #load() {
-    const data = loadFromLocalStorage(STORAGE_KEY);
-    if (!data) return this.#createDefault();
-
-    const boards = (
-      Array.isArray(data.columns)
-        ? [
-            {
-              id: generateId('board'),
-              name: 'My Board',
-              columns: data.columns,
-              labels: data.labels,
-            },
-          ]
-        : data.boards
-    ).map((b) => ({
-      ...b,
-      columns: b.columns.map((c) => ({
-        ...c,
-        cards: c.cards.map((k) => createCard(k)),
-      })),
-    }));
-
-    return { activeBoardId: data.activeBoardId ?? boards[0].id, boards };
-  }
-
-  #createDefault() {
-    const id = generateId('board');
-    const { columns, labels } = createBoardFromTemplate(DEFAULT_TEMPLATE);
-    return {
-      activeBoardId: id,
-      boards: [{ id, name: 'My First Board', columns, labels }],
-    };
-  }
-
-  #scheduleUpdate() {
-    if (this.#batchDepth > 0) {
-      this.#pendingNotify = true;
-      return;
-    }
-
-    queueMicrotask(() => this.#observable.notify());
-
-    clearTimeout(this.#saveDebounceId);
-    this.#saveDebounceId = setTimeout(() => {
-      const snapshot = unproxy(this.#state);
-      saveToLocalStorage(STORAGE_KEY, snapshot);
-    }, SAVE_DEBOUNCE_MS);
-  }
-
-  #batch(fn) {
-    this.#batchDepth++;
-    try {
-      return fn();
-    } finally {
-      this.#batchDepth--;
-      if (this.#batchDepth === 0 && this.#pendingNotify) {
-        this.#pendingNotify = false;
-        this.#scheduleUpdate();
-      }
-    }
-  }
-
-  #board() {
-    return (
-      this.#state.boards.find((b) => b?.id === this.#state.activeBoardId) ||
-      this.#state.boards[0]
-    );
-  }
-
-  #col(id) {
-    return this.#board()?.columns.find((c) => c.id === id);
-  }
-
-  #mutate(fn) {
-    return this.#batch(() => fn(this.#board()));
-  }
-
-  #remove(arr, id) {
-    const idx = arr.findIndex((x) => x?.id === id);
-    return idx > -1 ? arr.splice(idx, 1)[0] : null;
-  }
-
+export const store = Object.freeze({
   get state() {
-    return this.#state;
-  }
+    return state();
+  },
 
   get activeBoard() {
-    return this.#board();
-  }
+    return sel.activeBoard(state());
+  },
 
   get activeBoardId() {
-    return this.#state.activeBoardId;
-  }
+    return sel.activeBoardId(state());
+  },
 
-  subscribe(fn) {
-    return this.#observable.subscribe(fn);
-  }
+  subscribe: core.subscribe,
 
-  getState() {
-    return this.#board();
-  }
+  // Legacy quirk preserved: getState() returns the ACTIVE BOARD.
+  getState: () => sel.activeBoard(state()),
 
-  getBoards() {
-    return this.#state.boards
-      .filter((b) => b?.id)
-      .map(({ id, name }) => ({ id, name: name || 'Untitled' }));
-  }
+  getBoards: () => sel.boardList(state()),
 
-  getLabels() {
-    return this.#board()?.labels ?? [];
-  }
+  getLabels: () => sel.labels(state()),
 
-  getActiveBoardId() {
-    return this.#state.activeBoardId;
-  }
+  getActiveBoardId: () => sel.activeBoardId(state()),
 
-  getCard(id) {
-    for (const col of this.#board().columns) {
-      const card = col.cards.find((c) => c.id === id);
-      if (card) return { card, columnId: col.id };
-    }
-    return null;
-  }
+  getCard: (id) => getOrElse(null)(sel.findCard(id)(state())),
 
-  getAllCards() {
-    return this.#board().columns.flatMap((col) =>
-      col.cards.map((card) => ({
-        card,
-        columnId: col.id,
-        columnTitle: col.title,
-      }))
-    );
-  }
+  getAllCards: () => sel.allCards(state()),
 
-  setActiveBoard(id) {
-    if (this.#state.boards.some((b) => b?.id === id)) {
-      this.#state.activeBoardId = id;
-    }
-  }
+  setActiveBoard: (id) => dispatch(make.selectBoard()(id)),
 
-  createBoard(name, type = DEFAULT_TEMPLATE) {
-    this.#batch(() => {
-      const id = generateId('board');
-      const { columns, labels } = createBoardFromTemplate(type);
-      this.#state.boards.push({
-        id,
-        name: name || 'New Board',
-        columns,
-        labels,
-      });
-      this.#state.activeBoardId = id;
-    });
-  }
+  createBoard: (name, type) =>
+    dispatch(make.createBoard(fx)(name, type, i18n.getLocale().templates)),
 
-  renameBoard(id, name) {
-    const board = this.#state.boards.find((b) => b.id === id);
-    if (board) board.name = name.trim();
-  }
+  renameBoard: (id, name) => dispatch(make.renameBoard()(id, name)),
 
   deleteBoard(id) {
-    if (this.#state.boards.length <= 1) return false;
-    return this.#batch(() => {
-      if (this.#state.activeBoardId === id) {
-        this.#state.activeBoardId = this.#state.boards.find(
-          (b) => b.id !== id
-        ).id;
-      }
-      return !!this.#remove(this.#state.boards, id);
-    });
-  }
+    const deletable =
+      sel.canDeleteBoard(state()) && state().boards.some((b) => b?.id === id);
+    dispatch(make.deleteBoard()(id));
+    return deletable;
+  },
 
   importData(json) {
     try {
-      const data = JSON.parse(json);
-      saveToLocalStorage(STORAGE_KEY, data);
-      location.reload();
-      return true;
+      return run(importProgram(STORAGE_KEY, json));
     } catch {
       return false;
     }
-  }
+  },
 
-  addLabel(name, color) {
-    this.#mutate((b) =>
-      b.labels.push({ id: generateId('label'), name, color })
-    );
-  }
+  addLabel: (name, color) => dispatch(make.addLabel(fx)(name, color)),
 
-  updateLabel(id, name, color) {
-    const label = this.getLabels().find((l) => l.id === id);
-    if (label) Object.assign(label, { name, color });
-  }
+  updateLabel: (id, name, color) =>
+    dispatch(make.updateLabel()(id, name, color)),
 
-  removeLabel(id) {
-    this.#mutate((b) => {
-      this.#remove(b.labels, id);
-      b.columns.forEach((col) =>
-        col.cards.forEach((card) => {
-          const idx = card.labels.indexOf(id);
-          if (idx > -1) card.labels.splice(idx, 1);
-        })
-      );
-    });
-  }
+  removeLabel: (id) => dispatch(make.removeLabel()(id)),
 
-  addColumn(title) {
-    this.#mutate((b) =>
-      b.columns.push({
-        id: generateId('column'),
-        title: title || 'New Column',
-        cards: [],
-      })
-    );
-  }
+  addColumn: (title) => dispatch(make.addColumn(fx)(title)),
 
-  removeColumn(id) {
-    this.#mutate((b) => this.#remove(b.columns, id));
-  }
+  removeColumn: (id) => dispatch(make.removeColumn()(id)),
 
-  updateColumnTitle(id, title) {
-    const col = this.#col(id);
-    if (col) col.title = title;
-  }
+  updateColumnTitle: (id, title) => dispatch(make.renameColumn()(id, title)),
 
-  addCard(colId, text) {
-    const col = this.#col(colId);
-    if (col) col.cards.push(createCard({ text }));
-  }
+  addCard: (columnId, text) => dispatch(make.addCard(fx)(columnId, text)),
 
-  updateCardDetails(colId, id, updates) {
-    const col = this.#col(colId);
-    const card = col?.cards.find((x) => x.id === id);
-    if (card) {
-      Object.assign(card, updates);
-      card.updatedAt = new Date().toISOString();
-    }
-  }
+  updateCardDetails: (columnId, cardId, changes) =>
+    dispatch(make.updateCard(fx)(columnId, cardId, changes)),
 
-  toggleCardComplete(colId, id) {
-    const res = this.getCard(id);
-    if (res) {
-      this.updateCardDetails(colId, id, { completed: !res.card.completed });
-    }
-  }
+  toggleCardComplete: (columnId, cardId) =>
+    dispatch(make.toggleCardComplete(fx)(columnId, cardId)),
 
-  removeCard(colId, id) {
-    this.#mutate((b) => {
-      b.columns.forEach((col) =>
-        col.cards.forEach((card) => {
-          if (card.dependencies?.some((d) => d.id === id)) {
-            card.dependencies = card.dependencies.filter((d) => d.id !== id);
-          }
-        })
-      );
-      const col = this.#col(colId);
-      if (col) this.#remove(col.cards, id);
-    });
-  }
+  removeCard: (columnId, cardId) =>
+    dispatch(make.removeCard()(columnId, cardId)),
 
-  duplicateCard(colId, id) {
-    return this.#batch(() => {
-      const col = this.#col(colId);
-      const original = col?.cards.find((c) => c.id === id);
-      if (!original) return null;
+  duplicateCard(columnId, cardId) {
+    const command = make.duplicateCard(fx)(columnId, cardId);
+    const before = state();
+    dispatch(command);
+    if (state() === before) return null;
+    return fold(
+      () => null,
+      ({ card }) => card
+    )(sel.findCard(command.payload.newId)(state()));
+  },
 
-      const rawData = unproxy(original);
-      const clone = createCard({
-        ...rawData,
-        id: undefined,
-        logs: [],
-        dependencies: [],
-        createdAt: undefined,
-        updatedAt: undefined,
-      });
+  addCardLog: (columnId, cardId, text) =>
+    dispatch(make.addCardLog(fx)(columnId, cardId, text)),
 
-      col.cards.splice(col.cards.indexOf(original) + 1, 0, clone);
-      return clone;
-    });
-  }
+  addCardDependency: (columnId, cardId, depId, type = 'FS') =>
+    dispatch(make.addCardDependency(fx)(columnId, cardId, depId, type)),
 
-  addCardLog(colId, id, text) {
-    const res = this.getCard(id);
-    if (!res) return;
-    this.updateCardDetails(colId, id, {
-      logs: [
-        ...(res.card.logs || []),
-        {
-          id: generateId('log'),
-          text,
-          columnTitle: this.#col(colId).title,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    });
-  }
+  removeCardDependency: (columnId, cardId, depId) =>
+    dispatch(make.removeCardDependency(fx)(columnId, cardId, depId)),
 
-  addCardDependency(colId, cardId, depId, type = 'FS') {
-    const res = this.getCard(cardId);
-    if (res) {
-      const current = (res.card.dependencies || []).filter(
-        (d) => d.id !== depId
-      );
+  reorderColumns: (order) => dispatch(make.reorderColumns()(order)),
 
-      this.updateCardDetails(colId, cardId, {
-        dependencies: [...current, { id: depId, type }],
-      });
-    }
-  }
+  reorderCards: (columnId, order) =>
+    dispatch(make.reorderCards()(columnId, order)),
 
-  removeCardDependency(colId, cardId, depId) {
-    const res = this.getCard(cardId);
-    if (res) {
-      this.updateCardDetails(colId, cardId, {
-        dependencies: (res.card.dependencies || []).filter(
-          (d) => d.id !== depId
-        ),
-      });
-    }
-  }
-
-  reorderColumns(ids) {
-    this.#batch(() => {
-      const b = this.#board();
-      const map = new Map(b.columns.map((x) => [x.id, x]));
-      b.columns = ids.map((id) => map.get(id)).filter(Boolean);
-    });
-  }
-
-  reorderCards(colId, ids) {
-    this.#batch(() => {
-      const col = this.#col(colId);
-      if (!col) return;
-      const map = new Map(col.cards.map((x) => [x.id, x]));
-      col.cards = ids.map((id) => map.get(id)).filter(Boolean);
-    });
-  }
-
-  moveCard(id, oldColId, newColId, newOrder) {
-    this.#batch(() => {
-      const oldCol = this.#col(oldColId);
-      const newCol = this.#col(newColId);
-      if (!oldCol || !newCol) return;
-      const card = this.#remove(oldCol.cards, id);
-      if (!card) return;
-      card.updatedAt = new Date().toISOString();
-      newCol.cards.push(card);
-      const map = new Map(newCol.cards.map((x) => [x.id, x]));
-      newCol.cards = newOrder.map((cid) => map.get(cid)).filter(Boolean);
-    });
-  }
-}
-
-export const store = new Store();
+  moveCard: (cardId, fromColumnId, toColumnId, order) =>
+    dispatch(make.moveCard(fx)(cardId, fromColumnId, toColumnId, order)),
+});
