@@ -2,12 +2,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fc from 'fast-check';
-import FilterManager, {
+import {
   SEARCH_OPERATORS,
   LABEL_MATCH_MODE,
   DUE_STATUS,
   COMPLETION_STATUS,
-} from '../../js/managers/FilterManager.js';
+} from '../../js/domain/filters/model.js';
+import { legacyFilterManager } from '../helpers/legacyFilterApi.js';
 import { arbCard } from '../helpers/arbitraries.js';
 
 const NOW = new Date('2026-07-05T12:00:00.000Z');
@@ -24,7 +25,7 @@ describe('applyFilters fundamentals', () => {
   it('inactive filters are the identity (same reference)', () => {
     fc.assert(
       fc.property(arbCards, (cards) => {
-        const fm = new FilterManager();
+        const fm = legacyFilterManager();
         expect(fm.applyFilters(cards)).toBe(cards);
       })
     );
@@ -33,7 +34,7 @@ describe('applyFilters fundamentals', () => {
   it('output is always a subset of input (never invents cards)', () => {
     fc.assert(
       fc.property(arbCards, fc.string({ maxLength: 3 }), (cards, term) => {
-        const fm = new FilterManager();
+        const fm = legacyFilterManager();
         fm.setSearch(term || 'x');
         const out = fm.applyFilters(cards);
         for (const c of out) {
@@ -46,7 +47,7 @@ describe('applyFilters fundamentals', () => {
   it('conjunction monotonicity: adding a criterion never grows the result', () => {
     fc.assert(
       fc.property(arbCards, (cards) => {
-        const fm = new FilterManager();
+        const fm = legacyFilterManager();
         fm.setCompletion(COMPLETION_STATUS.INCOMPLETE);
         const once = fm.applyFilters(cards);
         fm.setPriorities(['high']);
@@ -60,7 +61,7 @@ describe('applyFilters fundamentals', () => {
   it('completion partitions the card set', () => {
     fc.assert(
       fc.property(arbCards, (cards) => {
-        const fm = new FilterManager();
+        const fm = legacyFilterManager();
         fm.setCompletion(COMPLETION_STATUS.COMPLETED);
         const completed = fm.applyFilters(cards);
         fm.setCompletion(COMPLETION_STATUS.INCOMPLETE);
@@ -80,7 +81,7 @@ describe('label match modes', () => {
   ];
 
   it('ALL-results are a subset of ANY-results; NONE is disjoint from ANY', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setLabels(['l1', 'l2'], LABEL_MATCH_MODE.ANY);
     const any = fm.applyFilters(cards);
     fm.setLabels(['l1', 'l2'], LABEL_MATCH_MODE.ALL);
@@ -96,7 +97,7 @@ describe('label match modes', () => {
   });
 
   it('toggleLabel adds then removes', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.toggleLabel('l1');
     expect(fm.getFilters().labels.selected).toEqual(['l1']);
     fm.toggleLabel('l1');
@@ -106,7 +107,7 @@ describe('label match modes', () => {
 
 describe('dueDate quirks (frozen)', () => {
   it('a card with no dueDate is EXCLUDED when a from/to range is set, even with status ALL', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setDueDate({ from: '2026-07-01' });
     const cards = [
       { id: 'c1', text: 'no due', dueDate: null },
@@ -116,7 +117,7 @@ describe('dueDate quirks (frozen)', () => {
   });
 
   it('OVERDUE compares against end-of-day: due-today is not overdue', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setDueDate({ status: DUE_STATUS.OVERDUE });
     const cards = [
       { id: 'today', text: 't', dueDate: '2026-07-05' },
@@ -126,7 +127,7 @@ describe('dueDate quirks (frozen)', () => {
   });
 
   it('NO_DUE_DATE and HAS_DUE_DATE partition on presence', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     const cards = [
       { id: 'c1', text: 'a', dueDate: null },
       { id: 'c2', text: 'b', dueDate: '2026-07-08' },
@@ -146,7 +147,7 @@ describe('search operators (frozen)', () => {
   ];
 
   it('CONTAINS searches across fields; NOT_CONTAINS is fields.some (NOT the complement)', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setSearch('alpha', { operator: SEARCH_OPERATORS.CONTAINS });
     expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1', 'c2']);
 
@@ -157,7 +158,7 @@ describe('search operators (frozen)', () => {
   });
 
   it('EXACT and STARTS_WITH; caseSensitive flag', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setSearch('Alpha', { operator: SEARCH_OPERATORS.EXACT });
     expect(fm.applyFilters(cards).map((c) => c.id)).toEqual(['c1']);
     fm.setSearch('Alpha', {
@@ -171,7 +172,7 @@ describe('search operators (frozen)', () => {
   });
 
   it('searches label names when the labels field is enabled', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setSearch('urgent');
     const labels = [{ id: 'l1', name: 'Urgent', color: '#f00' }];
     const cards = [
@@ -184,7 +185,7 @@ describe('search operators (frozen)', () => {
 
 describe('effort and aging', () => {
   it('effort range is inclusive and null-bounded', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setEffort(2, 5);
     const cards = [
       { id: 'c1', text: 'a', effort: 1 },
@@ -196,7 +197,7 @@ describe('effort and aging', () => {
   });
 
   it('aging buckets by updatedAt; completed cards always pass', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setAging('stale'); // >= 7 days, < 14 days (AGING..STALE window)
     const cards = [
       { id: 'fresh', text: 'f', updatedAt: '2026-07-04T00:00:00.000Z' },
@@ -214,7 +215,7 @@ describe('effort and aging', () => {
 
 describe('isActive / counts / clear', () => {
   it('fresh -> inactive; any set -> active; clearAll -> inactive again', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     expect(fm.isActive()).toBe(false);
     expect(fm.getActiveFilterCount()).toBe(0);
     fm.setSearch('x');
@@ -231,12 +232,12 @@ describe('isActive / counts / clear', () => {
 
 describe('presets', () => {
   it('round-trip through localStorage restores structurally equal filters', () => {
-    const fm1 = new FilterManager();
+    const fm1 = legacyFilterManager();
     fm1.setSearch('needle');
     fm1.setPriorities(['high']);
     fm1.createPreset('mine');
 
-    const fm2 = new FilterManager();
+    const fm2 = legacyFilterManager();
     const presets = fm2.getPresets();
     expect(presets).toHaveLength(1);
     expect(presets[0].name).toBe('mine');
@@ -247,19 +248,19 @@ describe('presets', () => {
   });
 
   it('deletePreset removes and persists', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setSearch('x');
     fm.createPreset('p');
     const id = fm.getPresets()[0].id;
     fm.deletePreset(id);
     expect(fm.getPresets()).toEqual([]);
-    expect(new FilterManager().getPresets()).toEqual([]);
+    expect(legacyFilterManager().getPresets()).toEqual([]);
   });
 });
 
 describe('chips', () => {
   it('one chip per active filter with a working clear', () => {
-    const fm = new FilterManager();
+    const fm = legacyFilterManager();
     fm.setSearch('n');
     fm.setEffort(1, null);
     const chips = fm.getActiveFilterChips([]);

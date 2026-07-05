@@ -22,10 +22,11 @@ import {
   renderBoardOptions,
   renderLangOptions,
 } from '../views/layout/selectorOptions.js';
+import { createFilterStore } from './filterStore.js';
+import { createFilterPanel } from './filterPanel.js';
+import { filterCards, isActive } from '../domain/filters/predicates.js';
 import DragDropManager from '../managers/DragDropManager.js';
-import FilterManager from '../managers/FilterManager.js';
 import RandomPickerManager from '../managers/RandomPickerManager.js';
-import FilterPanel from '../views/common/FilterPanel.js';
 import GanttView from '../views/gantt/GanttView.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
@@ -48,7 +49,8 @@ export const createApp = ({ env, doc }) => {
   };
   const runEffects = runInBrowser(env);
 
-  const fm = new FilterManager();
+  const uiStore = createFilterStore(env);
+  const filtersActive = () => isActive(uiStore.getState().filters);
   const picker = new RandomPickerManager();
   const modals = createModals(doc);
   const cardDetail = createCardDetail({ ui, modals, dispatch, query, fx, t });
@@ -56,14 +58,15 @@ export const createApp = ({ env, doc }) => {
 
   const render = () => {
     ui.kanbanContainer.replaceChildren();
-    ui.kanbanContainer.classList.toggle('filters-active', fm.isActive());
+    ui.kanbanContainer.classList.toggle('filters-active', filtersActive());
     const labels = sel.labels(query());
+    const applyFilters = filterCards(uiStore.getState().filters, {
+      labels,
+      now: fx.now(),
+    });
     sel.activeBoard(query())?.columns.forEach((col) => {
       ui.kanbanContainer.appendChild(
-        renderColumn(
-          { ...col, cards: fm.applyFilters(col.cards, labels) },
-          { labels }
-        )
+        renderColumn({ ...col, cards: applyFilters(col.cards) }, { labels })
       );
     });
   };
@@ -90,10 +93,14 @@ export const createApp = ({ env, doc }) => {
     else render();
   };
 
-  const filterPanel = new FilterPanel(ui.filterBar, {
-    filterManager: fm,
+  const filterPanel = createFilterPanel(ui.filterBar, {
+    uiStore,
     labels: sel.labels(query()),
     onFilterChange: () => render(),
+    t,
+    ask,
+    fx,
+    subscribeI18n: (fn) => i18n.subscribe(fn),
   });
 
   const renderLabels = () => {
@@ -148,9 +155,9 @@ export const createApp = ({ env, doc }) => {
 
   new DragDropManager(ui.kanbanContainer, {
     onDropCard: (cardId, newColId, newOrder) =>
-      !fm.isActive() && handleDrop(cardId, newColId, newOrder),
+      !filtersActive() && handleDrop(cardId, newColId, newOrder),
     onDropColumn: (newOrder) =>
-      !fm.isActive() && dispatch(make.reorderColumns()(newOrder)),
+      !filtersActive() && dispatch(make.reorderColumns()(newOrder)),
   });
 
   const modalConfigs = [
