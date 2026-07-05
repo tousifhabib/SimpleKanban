@@ -27,7 +27,7 @@ import { createFilterPanel } from './filterPanel.js';
 import { createPickerOptions } from './pickerOptions.js';
 import { filterCards, isActive } from '../domain/filters/predicates.js';
 import { createGanttView } from './ganttView.js';
-import DragDropManager from '../managers/DragDropManager.js';
+import { createDragDrop } from './dragDrop.js';
 import { i18n } from '../services/i18n/i18nService.js';
 import {
   supportedLanguages,
@@ -156,7 +156,7 @@ export const createApp = ({ env, doc }) => {
     }
   };
 
-  new DragDropManager(ui.kanbanContainer, {
+  createDragDrop(ui.kanbanContainer, {
     onDropCard: (cardId, newColId, newOrder) =>
       !filtersActive() && handleDrop(cardId, newColId, newOrder),
     onDropColumn: (newOrder) =>
