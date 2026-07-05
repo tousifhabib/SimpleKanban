@@ -1,4 +1,3 @@
-import { store } from '../../state/Store.js';
 import { i18n } from '../../services/i18n/i18nService.js';
 import { el } from '../../utils/domUtils.js';
 import {
@@ -14,7 +13,9 @@ const DUE_STATUS_KEYS = {
   'due-soon': 'card.dueStatus.soon',
 };
 
-export const renderCard = (card) => {
+// Pure view: a function of (card, ctx). ctx carries board-level data the
+// card needs — currently the label definitions.
+export const renderCard = (card, ctx = {}) => {
   const {
     id,
     priority,
@@ -44,7 +45,7 @@ export const renderCard = (card) => {
   return el(
     'div',
     { class: classList, draggable: true, dataset: { cardId: id } },
-    renderLabels(labels),
+    renderLabels(labels, ctx.labels || []),
     renderContent(completed, text),
     renderMeta({ startDate, dueDate, effort, updatedAt, completed }),
     el('span', { class: 'card-has-description', title: 'Has notes' }, '📝'),
@@ -52,12 +53,12 @@ export const renderCard = (card) => {
   );
 };
 
-const renderLabels = (labelIds) =>
+const renderLabels = (labelIds, allLabels) =>
   el(
     'div',
     { class: 'card-labels' },
     (labelIds || []).map((id) => {
-      const l = store.getLabels().find((x) => x.id === id);
+      const l = allLabels.find((x) => x.id === id);
       return l
         ? el(
             'span',

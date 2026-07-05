@@ -1,5 +1,8 @@
-import { store } from '../../state/Store.js';
-import { i18n } from '../../services/i18n/i18nService.js';
+// Global event delegation. Routes DOM events to the command map or the
+// injected handlers — no singleton imports; everything arrives as deps.
+
+import { fold as foldMaybe } from '../fp/maybe.js';
+import * as make from '../domain/board/commands.js';
 
 const ACTION_ALIASES = new Map([
   ['.label-delete-btn', 'delete-label'],
@@ -14,8 +17,14 @@ export const setupBoardEvents = ({
   modals,
   commands,
   formHandlers,
+  dispatch,
+  fx,
+  setLanguage,
+  importJson,
   openCard,
   saveColTitle,
+  onSwitchView,
+  onLabelToggle,
 }) => {
   const findAction = (target) => {
     const actionEl = target.closest('[data-action]');
@@ -32,13 +41,17 @@ export const setupBoardEvents = ({
     const t = e.target;
 
     const viewBtn = t.closest('.nav-btn');
-    if (viewBtn) return ui.onSwitchView?.(viewBtn.dataset.view);
+    if (viewBtn) return onSwitchView?.(viewBtn.dataset.view);
 
     if (t.id?.startsWith('cancel') || t.id?.endsWith('CloseBtn')) {
-      const modalName = [...modals.modals.keys()].find((k) =>
-        modals.modals.get(k).el.contains(t)
-      );
-      if (modalName) return modals.close(modalName);
+      const closed = foldMaybe(
+        () => false,
+        (name) => {
+          modals.close(name);
+          return true;
+        }
+      )(modals.nameContaining(t));
+      if (closed) return;
     }
 
     const { key, el } = findAction(t);
@@ -57,21 +70,23 @@ export const setupBoardEvents = ({
 
   const handleChange = (e) => {
     const t = e.target;
-    if (t.id === 'langSelector') i18n.setLanguage(t.value);
-    if (t.id === 'boardSelector') store.setActiveBoard(t.value);
+    if (t.id === 'langSelector') setLanguage(t.value);
+    if (t.id === 'boardSelector') dispatch(make.selectBoard()(t.value));
     if (t.id === 'importFileInput' && t.files[0]) {
-      const r = new FileReader();
-      r.onload = (ev) => store.importData(ev.target.result);
-      r.readAsText(t.files[0]);
+      const reader = new FileReader();
+      reader.onload = (ev) => importJson(ev.target.result);
+      reader.readAsText(t.files[0]);
     }
     if (t.matches('.card-complete-checkbox')) {
-      store.toggleCardComplete(
-        t.closest('.column').dataset.columnId,
-        t.closest('.card').dataset.cardId
+      dispatch(
+        make.toggleCardComplete(fx)(
+          t.closest('.column').dataset.columnId,
+          t.closest('.card').dataset.cardId
+        )
       );
     }
     if (t.closest('#labelsSelector')) {
-      ui.onLabelToggle?.(t.value, t.checked);
+      onLabelToggle?.(t.value, t.checked);
     }
   };
 

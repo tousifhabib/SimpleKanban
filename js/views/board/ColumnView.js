@@ -2,7 +2,7 @@ import { renderCard } from './CardView.js';
 import { i18n } from '../../services/i18n/i18nService.js';
 import { el } from '../../utils/domUtils.js';
 
-export const renderColumn = ({ id, title, cards }) => {
+export const renderColumn = ({ id, title, cards }, ctx = {}) => {
   const totalEffort = cards.reduce(
     (sum, c) => sum + (Number(c.effort) || 0),
     0
@@ -13,7 +13,11 @@ export const renderColumn = ({ id, title, cards }) => {
     'div',
     { class: 'column', draggable: true, dataset: { columnId: id } },
     renderHeader(title, totalEffort),
-    el('div', { class: 'cards' }, cards.map(renderCard)),
+    el(
+      'div',
+      { class: 'cards' },
+      cards.map((card) => renderCard(card, ctx))
+    ),
     renderFooter(t)
   );
 };

@@ -1,4 +1,3 @@
-import { store } from '../../state/Store.js';
 import GanttManager, { ZOOM_LEVELS } from '../../managers/GanttManager.js';
 import { i18n } from '../../services/i18n/i18nService.js';
 import { el } from '../../utils/domUtils.js';
@@ -15,9 +14,11 @@ import {
 export default class GanttView {
   constructor(
     container,
-    { onCardClick = () => {}, onNavigateBack = () => {} }
+    { getBoard, getLabels, onCardClick = () => {}, onNavigateBack = () => {} }
   ) {
     this.container = container;
+    this.getBoard = getBoard;
+    this.getLabels = getLabels;
     this.onCardClick = onCardClick;
     this.onNavigateBack = onNavigateBack;
     this.manager = new GanttManager();
@@ -28,15 +29,15 @@ export default class GanttView {
   }
 
   init() {
+    // Re-renders on state/i18n changes arrive via the app's refresh loop;
+    // only zoom changes are local.
     this.manager.subscribe(() => this.render());
-    store.subscribe(() => this.render());
-    i18n.subscribe(() => this.render());
     this.render();
   }
 
   render() {
-    const boardState = store.getState();
-    const labels = store.getLabels();
+    const boardState = this.getBoard();
+    const labels = this.getLabels();
     this.data = this.manager.transformToGanttData(boardState, labels);
     this.headers = this.manager.generateTimelineHeaders(this.data.range);
 
