@@ -1,13 +1,11 @@
 import {
-  addDebugInnerBoxToElement,
   getCardAfterElement,
   getColumnAfterElement,
 } from '../utils/dragUtils.js';
 import { performFlipAnimation } from '../utils/animUtils.js';
 
-const DEBUG_RATIO = 0.7;
+const INNER_RECT_RATIO = 0.7;
 const SWAP_THRESHOLD = 0.025;
-const ENABLE_DEBUG_BOXES = false;
 
 export default class DragDropManager {
   constructor(container, callbacks = {}) {
@@ -72,23 +70,11 @@ export default class DragDropManager {
       'text/plain',
       element.dataset.cardId || element.dataset.columnId
     );
-
-    if (ENABLE_DEBUG_BOXES) {
-      document
-        .querySelectorAll(type === 'card' ? '.card' : '.column')
-        .forEach((el) => addDebugInnerBoxToElement(el, DEBUG_RATIO));
-    }
   }
 
   handleDragEnd() {
     if (!this.dragState?.active) return;
     this.dragState.element.classList.remove('dragging');
-
-    if (ENABLE_DEBUG_BOXES) {
-      document
-        .querySelectorAll('.debug-inner-box')
-        .forEach((el) => el.remove());
-    }
     this.dragState = null;
   }
 
@@ -134,11 +120,6 @@ export default class DragDropManager {
       }
     }
 
-    if (ENABLE_DEBUG_BOXES) {
-      document
-        .querySelectorAll('.debug-inner-box')
-        .forEach((el) => el.remove());
-    }
     this.dragState = null;
   }
 
@@ -172,7 +153,7 @@ export default class DragDropManager {
       return {
         element,
         rect,
-        innerRect: this.calculateInnerRect(rect, DEBUG_RATIO),
+        innerRect: this.calculateInnerRect(rect, INNER_RECT_RATIO),
       };
     });
   }
@@ -203,7 +184,7 @@ export default class DragDropManager {
         width: rect.width,
         height: rect.height,
       },
-      DEBUG_RATIO
+      INNER_RECT_RATIO
     );
   }
 
@@ -217,13 +198,6 @@ export default class DragDropManager {
         ghostRect.top < target.innerRect.bottom &&
         ghostRect.bottom > target.innerRect.top;
 
-      if (ENABLE_DEBUG_BOXES) {
-        const debugBox = target.element.querySelector('.debug-inner-box');
-        if (debugBox) {
-          debugBox.style.borderColor = intersect ? 'green' : 'red';
-        }
-      }
-
       if (intersect && this.shouldSwap(ghostRect, target)) {
         this.performSwap(this.dragState.element, target.element);
         return true;
@@ -234,7 +208,8 @@ export default class DragDropManager {
 
   shouldSwap(ghostRect, target) {
     const { type, direction, rect } = this.dragState;
-    const ghostFullLeft = ghostRect.left - (rect.width * (1 - DEBUG_RATIO)) / 2;
+    const ghostFullLeft =
+      ghostRect.left - (rect.width * (1 - INNER_RECT_RATIO)) / 2;
 
     if (type === 'column') {
       if (direction === 'right' && target.rect.left < ghostFullLeft)
@@ -284,7 +259,7 @@ export default class DragDropManager {
   }
 
   handleFallbackCardMove(e) {
-    let container =
+    const container =
       e.target.closest('.cards') ??
       e.target.closest('.column')?.querySelector('.cards');
     if (!container) return;
