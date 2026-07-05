@@ -1,4 +1,9 @@
-import BoardController from './views/board/BoardController.js';
+// Composition root: the only place that news up the world. Static DOM is
+// rendered, the environment (all browser capabilities) is created once,
+// and the app shell wires the pure core to it.
+
+import { createEnv } from './ports/env.js';
+import { createApp } from './app/createApp.js';
 import { renderHeader } from './views/layout/Header.js';
 import { renderMainLayout } from './views/layout/MainLayout.js';
 import {
@@ -26,5 +31,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderRandomPickerModal()
   );
 
-  new BoardController();
+  createApp({ env: createEnv(window), doc: document });
 });

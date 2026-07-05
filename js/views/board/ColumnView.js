@@ -2,7 +2,7 @@ import { renderCard } from './CardView.js';
 import { i18n } from '../../services/i18n/i18nService.js';
 import { el } from '../../utils/domUtils.js';
 
-export const renderColumn = ({ id, title, cards }) => {
+export const renderColumn = ({ id, title, cards }, ctx = {}) => {
   const totalEffort = cards.reduce(
     (sum, c) => sum + (Number(c.effort) || 0),
     0
@@ -11,9 +11,17 @@ export const renderColumn = ({ id, title, cards }) => {
 
   return el(
     'div',
-    { class: 'column', draggable: true, dataset: { columnId: id } },
+    {
+      class: 'column',
+      draggable: !ctx.dragDisabled,
+      dataset: { columnId: id },
+    },
     renderHeader(title, totalEffort),
-    el('div', { class: 'cards' }, cards.map(renderCard)),
+    el(
+      'div',
+      { class: 'cards' },
+      cards.map((card) => renderCard(card, ctx))
+    ),
     renderFooter(t)
   );
 };
@@ -30,6 +38,7 @@ const renderHeader = (title, effort) =>
         {
           class: 'column-title-text',
           title: 'Click to edit',
+          tabindex: 0,
           dataset: { action: 'edit-column-title' },
         },
         title,
@@ -54,7 +63,11 @@ const renderHeader = (title, effort) =>
         style: { display: 'none' },
       })
     ),
-    el('button', { dataset: { action: 'delete-column' } }, '×')
+    el(
+      'button',
+      { 'aria-label': 'Delete column', dataset: { action: 'delete-column' } },
+      '×'
+    )
   );
 
 const renderFooter = (t) => [

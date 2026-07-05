@@ -1758,3 +1758,9 @@
     justify-content: center;
   }
 }
+
+/* Dragging is disabled while filters are active — remove the affordance. */
+.filters-active .card,
+.filters-active .column {
+  cursor: default;
+}

@@ -3,6 +3,9 @@
   "type": "module",
   "scripts": {
     "build": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format:check": "prettier . --check",
@@ -13,16 +16,18 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "fast-check": "^4.1.1",
     "html-webpack-plugin": "^5.5.3",
+    "javascript-obfuscator": "^5.1.0",
+    "jsdom": "^26.1.0",
     "mini-css-extract-plugin": "^2.7.6",
     "prettier": "^3.7.4",
     "style-loader": "^3.3.3",
     "terser-webpack-plugin": "^5.3.16",
+    "vitest": "^3.2.4",
     "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
-    "javascript-obfuscator": "^5.1.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.2.2",
     "webpack-obfuscator": "^3.6.0"
   }
 }

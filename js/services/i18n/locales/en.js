@@ -4,7 +4,7 @@ export default {
     import: '📥 Import',
     export: '📤 Export',
     labels: '🏷️ Labels',
-    addColumn: '+ Add ColumnView',
+    addColumn: '+ Add Column',
     pickForMe: '🎲 Pick for me',
     titles: {
       addBoard: 'Create New Board',
@@ -24,11 +24,11 @@ export default {
     confirmDeleteLabel: 'Delete label?',
     promptLabelName: 'Enter new label name:',
     promptLabelColor: 'Enter new color (hex):',
-    cardDuplicated: 'CardView duplicated',
+    cardDuplicated: 'Card duplicated',
   },
   card: {
     addTitle: 'Enter card title...',
-    btnAdd: 'Add CardView',
+    btnAdd: 'Add Card',
     btnCancel: 'Cancel',
     addBtnText: 'Add a card',
     duplicate: 'Duplicate',
@@ -40,7 +40,7 @@ export default {
       daysAgo: '{d}d ago',
     },
     detail: {
-      placeholderTitle: 'CardView Title',
+      placeholderTitle: 'Card Title',
       placeholderDesc: 'Add a more detailed description...',
       placeholderLog: 'Add a progress update...',
       labels: 'Labels',
@@ -168,6 +168,9 @@ export default {
     },
   },
   modals: {
+    import: {
+      confirmReplace: 'Importing will replace all boards and cards. Continue?',
+    },
     createBoard: {
       title: 'Create New Board',
       placeholder: 'Board Name',
@@ -195,9 +198,9 @@ export default {
       btnCancel: 'Cancel',
     },
     addColumn: {
-      title: 'Add New ColumnView',
-      placeholder: 'ColumnView Title',
-      btnAdd: 'Add ColumnView',
+      title: 'Add New Column',
+      placeholder: 'Column Title',
+      btnAdd: 'Add Column',
       btnCancel: 'Cancel',
     },
     manageLabels: {
@@ -227,7 +230,7 @@ export default {
       title: 'Your Next Task',
       noCards: 'No eligible cards found! You might be all caught up.',
       inColumn: 'In column:',
-      goToCard: 'Open CardView',
+      goToCard: 'Open Card',
       pickAgain: '🎲 Pick Again',
       stats: '{eligible} of {total} cards in selection pool',
     },
