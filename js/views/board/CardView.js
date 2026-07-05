@@ -49,6 +49,8 @@ export const renderCard = (card, ctx = {}) => {
       // No drag affordance while filters hide cards — a reorder computed
       // from a filtered view would be misleading.
       draggable: !ctx.dragDisabled,
+      tabindex: 0,
+      'aria-label': text,
       dataset: { cardId: id },
     },
     renderLabels(labels, ctx.labels || []),
@@ -151,6 +153,7 @@ const renderActions = () =>
         {
           class: 'card-action-btn',
           title: titles[action],
+          'aria-label': `${titles[action]} card`,
           dataset: { action },
         },
         icons[action]

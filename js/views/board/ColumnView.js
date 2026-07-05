@@ -38,6 +38,7 @@ const renderHeader = (title, effort) =>
         {
           class: 'column-title-text',
           title: 'Click to edit',
+          tabindex: 0,
           dataset: { action: 'edit-column-title' },
         },
         title,
@@ -62,7 +63,11 @@ const renderHeader = (title, effort) =>
         style: { display: 'none' },
       })
     ),
-    el('button', { dataset: { action: 'delete-column' } }, '×')
+    el(
+      'button',
+      { 'aria-label': 'Delete column', dataset: { action: 'delete-column' } },
+      '×'
+    )
   );
 
 const renderFooter = (t) => [

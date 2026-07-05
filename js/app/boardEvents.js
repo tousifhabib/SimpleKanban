@@ -104,8 +104,19 @@ export const setupBoardEvents = ({
   };
 
   const handleKeydown = (e) => {
-    if (e.key === 'Enter' && e.target.matches('.column-title-input'))
+    if (e.key !== 'Enter') return;
+    if (e.target.matches('.column-title-input')) {
       e.target.blur();
+    } else if (e.target.matches('.card')) {
+      // Cards are focusable; Enter opens the detail modal.
+      openCard(
+        e.target.dataset.cardId,
+        e.target.closest('.column').dataset.columnId
+      );
+    } else if (e.target.matches('.column-title-text')) {
+      // Column titles are focusable; Enter starts the rename.
+      commands.get('edit-column-title')?.(e.target);
+    }
   };
 
   document.addEventListener('click', handleClick);

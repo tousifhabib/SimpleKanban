@@ -17,12 +17,20 @@ export const renderLabelsList = (labels) =>
         { class: 'label-actions' },
         el(
           'button',
-          { class: 'label-edit-btn', dataset: { id: label.id } },
+          {
+            class: 'label-edit-btn',
+            'aria-label': `Edit label ${label.name}`,
+            dataset: { id: label.id },
+          },
           '✏️'
         ),
         el(
           'button',
-          { class: 'label-delete-btn', dataset: { id: label.id } },
+          {
+            class: 'label-delete-btn',
+            'aria-label': `Delete label ${label.name}`,
+            dataset: { id: label.id },
+          },
           '🗑️'
         )
       )
