@@ -7,5 +7,10 @@ export default defineConfig({
     restoreMocks: true,
     unstubGlobals: true,
     unstubEnvs: true,
+    env: {
+      // Deterministic date math (gantt ranges, aging) regardless of the
+      // machine's timezone and DST boundaries.
+      TZ: 'UTC',
+    },
   },
 });
